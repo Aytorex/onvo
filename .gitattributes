@@ -1,2 +1,14 @@
-# Auto detect text files and perform LF normalization
-* text eol=lf
+# Do not force all files as text — that corrupts binaries (PNG signature must stay exact).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
