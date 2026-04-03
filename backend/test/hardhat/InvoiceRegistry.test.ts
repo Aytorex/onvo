@@ -26,11 +26,13 @@ const DUMMY_PROOF = Array.from({ length: 8 }, () => 0n) as [
 async function deployFixture() {
   const [owner, emitter, payer, stranger] = await ethers.getSigners();
   const worldId = await ethers.deployContract('WorldIdRouterMock', []);
+  await worldId.setRevertMessage('WorldIdRouterMock: verify failed');
   const token = await ethers.deployContract('MockERC20', [
     'Mock USDC',
     'mUSDC',
     6,
   ]);
+  expect(await token.decimals()).to.equal(6);
   const registry = await ethers.deployContract('InvoiceRegistry', [
     owner.address,
     await worldId.getAddress(),

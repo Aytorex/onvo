@@ -20,6 +20,12 @@ jobs:
         with:
           version: nightly
 
+      # Same as ci-backend.yml: lib/ is gitignored; populate before forge build / coverage.
+      - name: Install Foundry libraries (OpenZeppelin, forge-std)
+        run: |
+          cd backend
+          forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 foundry-rs/forge-std@v1.9.7 --no-git
+
       # Slither + ignore-compile: crytic-compile needs full build-info JSON (with "output"); add --build-info.
       # Build only src contracts (path `contracts`), not test/script — keeps Slither scope to production .sol.
       - name: Forge build

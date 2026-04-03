@@ -21,6 +21,13 @@ jobs:
         with:
           version: nightly
 
+      # .gitmodules exists but submodule gitlinks are not in the tree; Hardhat (hardhat-foundry) resolves
+      # @openzeppelin imports via foundry.toml → lib/openzeppelin-contracts (see backend/.gitignore).
+      - name: Install Foundry libraries (OpenZeppelin, forge-std)
+        run: |
+          cd backend
+          forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 foundry-rs/forge-std@v1.9.7 --no-git
+
       - name: Set up environment
         uses: ./.github/actions/setup
 
