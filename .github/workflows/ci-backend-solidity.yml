@@ -1,0 +1,48 @@
+name: CI — Backend Solidity
+
+on:
+  workflow_call:
+
+jobs:
+  backend-solidity:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      # Slither + ignore-compile: crytic-compile needs full build-info JSON (with "output"); add --build-info.
+      # Build only src contracts (path `contracts`), not test/script — keeps Slither scope to production .sol.
+      - name: Forge build
+        run: |
+          cd backend
+          forge --version
+          forge build --build-info --sizes contracts
+
+      - name: Slither
+        uses: crytic/slither-action@v0.4.0
+        with:
+          target: "backend/contracts"
+          solc-version: "0.8.28"
+          slither-config: "./backend/slither.config.json"
+          ignore-compile: true
+
+      - name: Forge coverage
+        run: |
+          cd backend
+          forge coverage -vvv --report lcov
+
+      - name: Code coverage at 100% (Foundry)
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: "./backend/lcov.info"
+          min_coverage: 100

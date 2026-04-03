@@ -1,0 +1,28 @@
+name: Setup
+description: Common environment setup (Bun workspaces — install from repo root)
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 1.3.11
+
+    # Hardhat 3's CLI runs via `#!/usr/bin/env node`; use Node 22+ (Iterator helpers on Map, etc.).
+    - name: Setup Node.js for Hardhat / Next binaries
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+
+    - name: Cache Bun install cache
+      uses: actions/cache@v5
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: Install dependencies with Bun
+      shell: bash
+      run: bun install --frozen-lockfile

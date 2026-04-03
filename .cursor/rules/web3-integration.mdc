@@ -1,0 +1,75 @@
+# Web3 Integration Guidelines
+
+## Contract Integration Pattern
+
+Follow the established pattern in [frontend/src/contracts/ballot.contract.ts](mdc:frontend/src/contracts/ballot.contract.ts):
+
+- Export contract configuration with address, ABI, and fromBlock
+- Use `as const` for type safety
+- Keep contract addresses configurable for different environments
+
+## Transaction Handling
+
+Use the pattern from [frontend/src/hooks/useContract.ts](mdc:frontend/src/hooks/useContract.ts):
+
+- Combine `useWriteContract` and `useWaitForTransactionReceipt` for complete transaction lifecycle
+- Implement proper error handling with user feedback via toast notifications
+- Handle all transaction states: idle, pending, success, error
+- Provide success callbacks for UI updates
+
+## Provider Configuration
+
+The Web3Provider in [frontend/src/contexts/web3-provider.tsx](mdc:frontend/src/contexts/web3-provider.tsx) provides:
+
+- **WagmiProvider**: Core blockchain interaction functionality
+- **QueryClientProvider**: React Query for data fetching and caching
+- **ReownProvider**: Wallet connection UI with custom theming
+
+## Chain Configuration
+
+Configure chains in [frontend/src/lib/wagmi.config.ts](mdc:frontend/src/lib/wagmi.config.ts):
+
+- **Hardhat**: Local development chain
+- **Sepolia**: Ethereum testnet
+- **Base Sepolia**: Base testnet
+- **Ethereum (mainnet)**: Production L1
+- **Base**: Production L2
+- Use environment variables for RPC endpoints and API keys
+
+## Wallet Connectors
+
+Supported wallet connectors:
+
+- **MetaMask**: Primary wallet with dapp metadata
+- **Coinbase Wallet**: Popular exchange wallet
+- **Injected**: Generic injected wallet support
+- **Safe**: Multi-signature wallet support
+
+## Best Practices
+
+1. **Connection States**: Always check `isConnected` before attempting transactions
+2. **Error Handling**: Provide clear error messages for failed transactions
+3. **Loading States**: Show appropriate loading indicators during transactions
+4. **Network Switching**: Handle network changes gracefully
+5. **Gas Estimation**: Let users adjust gas settings when needed
+6. **Event Listening**: Listen to contract events for real-time updates
+
+## Data Fetching
+
+- Use Wagmi's built-in hooks for reading contract data
+- Implement proper caching strategies with React Query
+- Handle loading and error states for all data fetching operations
+- Use optimistic updates for better UX
+
+## Security Considerations
+
+1. **Input Validation**: Validate all user inputs before sending transactions
+2. **Address Validation**: Ensure addresses are properly formatted
+3. **Transaction Confirmation**: Always require user confirmation for transactions
+4. **Error Recovery**: Provide clear recovery paths for failed transactions
+5. **Network Validation**: Ensure users are on the correct network
+   description:
+   globs:
+   alwaysApply: false
+
+---

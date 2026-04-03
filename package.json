@@ -1,0 +1,14 @@
+{
+  "name": "dapp-boilerplate",
+  "private": true,
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "scripts": {
+    "prepare": "git config --local core.hooksPath .githooks"
+  },
+  "workspaces": ["frontend", "backend"],
+  "overrides": {
+    "serialize-javascript": "7.0.3"
+  }
+}

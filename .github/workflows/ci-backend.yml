@@ -1,0 +1,53 @@
+name: CI — Backend
+
+on:
+  workflow_call:
+
+jobs:
+  backend:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      # hardhat-foundry runs `forge remappings` when resolving Solidity imports (e.g. OpenZeppelin in lib/).
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Set up environment
+        uses: ./.github/actions/setup
+
+      - name: Spell check (cspell)
+        run: |
+          cd backend
+          bun run cspell
+
+      - name: Lint
+        run: |
+          cd backend
+          bun run lint
+
+      - name: Audit (high+)
+        run: |
+          cd backend
+          bun audit --audit-level=high
+
+      - name: Hardhat tests with coverage
+        run: |
+          cd backend
+          bun run test:hardhat:coverage
+
+      - name: Code coverage at 100% (Hardhat)
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: "./backend/coverage/lcov.info"
+          min_coverage: 100
+          # Paths are relative to backend/ (Hardhat cwd), same as SF: entries in lcov.info
+          exclude: "lib/**"

@@ -1,0 +1,45 @@
+# Solidity Development Guidelines
+
+## Contract Structure
+
+Follow the pattern established in [backend/contracts/Ballot.sol](mdc:backend/contracts/Ballot.sol):
+
+1. **SPDX License**: Always include `// SPDX-License-Identifier: GPL-3.0` at the top
+2. **Pragma**: Use `pragma solidity 0.8.24;` for consistency
+3. **Documentation**: Include comprehensive NatSpec comments for all functions and events
+4. **Events**: Emit events for all state-changing operations
+5. **Access Control**: Use `require` statements for access control with descriptive error messages
+
+## Testing Strategy
+
+The project uses dual testing frameworks:
+
+- **Foundry Tests**: Located in [backend/test/foundry/](mdc:backend/test/foundry/) for fast, gas-efficient testing
+- **Hardhat Tests**: Located in [backend/test/hardhat/](mdc:backend/test/hardhat/) for TypeScript integration testing
+
+## Development Commands
+
+From [backend/package.json](mdc:backend/package.json):
+
+- `bun run test` - Run both Foundry and Hardhat tests
+- `bun run test:foundry` - Run only Foundry tests
+- `bun run test:hardhat` - Run only Hardhat tests
+- `bun run lint` - Run all linting checks
+- `bun run slither` - Run security analysis
+
+## Security Best Practices
+
+1. **Reentrancy Protection**: Use checks-effects-interactions pattern
+2. **Access Control**: Implement proper role-based access control
+3. **Input Validation**: Validate all external inputs
+4. **Gas Optimization**: Use appropriate data types and storage patterns
+5. **Error Handling**: Use descriptive error messages in require statements
+
+## Deployment
+
+Use Hardhat Ignition for deployment scripts in [backend/ignition/modules/](mdc:backend/ignition/modules/).
+description:
+globs:
+alwaysApply: false
+
+---

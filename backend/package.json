@@ -1,0 +1,57 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "scripts": {
+    "cspell": "cspell --gitignore **/*.{js,ts,md,sol}",
+    "docgen": "forge doc",
+    "lint": "bun run lint:solhint && bun run lint:prettier:ts && bun run lint:prettier:sol",
+    "lint:prettier:sol": "prettier --log-level warn --ignore-path .gitignore '{contracts,test}/**/*.sol' --check",
+    "lint:prettier:sol:fix": "prettier --log-level warn --ignore-path .gitignore '{contracts,test}/**/*.sol' --write",
+    "lint:prettier:ts": "prettier --log-level warn --ignore-path .gitignore '**/*.{js,ts}' --check",
+    "lint:prettier:ts:fix": "prettier --log-level warn --ignore-path .gitignore '**/*.{js,ts}' --write",
+    "lint:solhint": "solhint -c solhint.config.cjs '{contracts,test}/**/*.sol'",
+    "slither": "poetry run slither .",
+    "start:node": "hardhat node",
+    "test": "bun run test:hardhat && bun run test:foundry",
+    "test:foundry": "forge test",
+    "test:hardhat": "hardhat test mocha",
+    "test:hardhat:coverage": "hardhat test mocha --coverage",
+    "test:hardhat:gas": "hardhat test mocha --gas-stats"
+  },
+  "overrides": {
+    "flatted": "^3.4.2",
+    "glob": "10.5.0",
+    "picomatch": "4.0.4"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-foundry": "^3.0.0",
+    "@nomicfoundation/hardhat-ethers": "^4.0.6",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.0",
+    "@nomicfoundation/hardhat-ignition": "^3.1.0",
+    "@nomicfoundation/hardhat-ignition-ethers": "^3.1.0",
+    "@nomicfoundation/hardhat-keystore": "^3.0.0",
+    "@nomicfoundation/hardhat-mocha": "^3.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^3.0.4",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.3",
+    "@nomicfoundation/hardhat-typechain": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^3.0.12",
+    "@nomicfoundation/ignition-core": "^3.0.7",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.19.0",
+    "chai": "^5.2.0",
+    "@cspell/dict-fr-fr": "^2.3.2",
+    "cspell": "^9.7.0",
+    "ethers": "^6.14.0",
+    "hardhat": "^3.2.0",
+    "mocha": "^11.0.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-solidity": "^2.3.1",
+    "solhint": "^6.1.0",
+    "typescript": "^5.9.2"
+  }
+}

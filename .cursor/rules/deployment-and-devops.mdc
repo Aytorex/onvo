@@ -1,0 +1,154 @@
+# Deployment and DevOps Guidelines
+
+## Smart Contract Deployment
+
+### Hardhat Ignition
+
+Use Hardhat Ignition for deployment scripts in [backend/ignition/modules/](mdc:backend/ignition/modules/):
+
+- Create deployment modules for each contract
+- Use environment-specific configurations
+- Implement proper deployment verification
+
+### Deployment Process
+
+1. **Local Development**: Deploy to Hardhat network for testing
+2. **Testnet**: Deploy to Polygon zkEVM Cardona for integration testing
+3. **Mainnet**: Deploy to Polygon zkEVM for production
+
+### Contract Verification
+
+- Use Hardhat Etherscan plugin for contract verification
+- Verify contracts on block explorers after deployment
+- Maintain deployment artifacts for reference
+
+## Frontend Deployment
+
+### Next.js Deployment
+
+The frontend uses Next.js 14 with configuration in [frontend/next.config.mjs](mdc:frontend/next.config.mjs):
+
+- Optimize for production builds
+- Configure environment variables
+- Set up proper caching strategies
+
+### Environment Configuration
+
+Required environment variables for deployment:
+
+- `ALCHEMY_ENDPOINT_URL_ETHEREUM_MAINNET`
+- `ALCHEMY_ENDPOINT_URL_ETHEREUM_SEPOLIA`
+- `ALCHEMY_ENDPOINT_URL_BASE_MAINNET`
+- `ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA`
+- `ALCHEMY_API_KEY`
+- `WALLET_CONNECT_PROJECT_ID`
+
+### Build Process
+
+From [frontend/package.json](mdc:frontend/package.json):
+
+- `bun run build` - Create production build
+- `bun run start` - Start production server
+- Ensure all dependencies are properly installed
+
+## CI/CD Pipeline
+
+### Pre-commit Hooks
+
+The project uses custom git hooks configured in prepare scripts:
+
+- Linting checks for code quality
+- Spell checking for documentation
+- Test execution for critical paths
+
+### Automated Testing
+
+- Run all tests before deployment
+- Include both Foundry and Hardhat tests
+- Perform security analysis with Slither
+- Check code coverage requirements
+
+### Deployment Stages
+
+1. **Development**: Local development with Hot Reload
+2. **Staging**: Testnet deployment for integration testing
+3. **Production**: Mainnet deployment with full verification
+
+## Environment Management
+
+### Configuration Files
+
+- Use environment-specific configuration files
+- Keep sensitive data in environment variables
+- Use .env files for local development
+- Implement proper secrets management
+
+### Network Configuration
+
+Configure networks in [frontend/src/lib/wagmi.config.ts](mdc:frontend/src/lib/wagmi.config.ts):
+
+- Hardhat for local development
+- Polygon zkEVM Cardona for testing
+- Polygon zkEVM for production
+
+## Monitoring and Analytics
+
+### Blockchain Monitoring
+
+- Monitor contract events and transactions
+- Track gas usage and optimization opportunities
+- Monitor for security vulnerabilities
+- Implement proper logging
+
+### Frontend Monitoring
+
+- Monitor user interactions and errors
+- Track performance metrics
+- Monitor Web3 connection success rates
+- Implement error tracking
+
+## Security Considerations
+
+### Smart Contract Security
+
+- Run Slither analysis before deployment
+- Perform manual security audits
+- Test with multiple scenarios
+- Implement proper access controls
+
+### Frontend Security
+
+- Validate all user inputs
+- Implement proper error handling
+- Use HTTPS in production
+- Secure environment variables
+
+## Backup and Recovery
+
+### Contract Backups
+
+- Maintain deployment artifacts
+- Store contract addresses and ABIs
+- Document deployment procedures
+- Keep backup of critical data
+
+### Frontend Backups
+
+- Version control all code changes
+- Maintain deployment history
+- Document configuration changes
+- Implement rollback procedures
+
+## Best Practices
+
+1. **Automation**: Automate deployment processes where possible
+2. **Testing**: Always test in staging before production
+3. **Documentation**: Maintain deployment documentation
+4. **Monitoring**: Implement comprehensive monitoring
+5. **Security**: Prioritize security in all deployments
+6. **Rollback**: Have rollback procedures ready
+   description:
+   globs:
+   alwaysApply: false
+
+---

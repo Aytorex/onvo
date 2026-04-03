@@ -1,0 +1,124 @@
+# Testing Strategy Guidelines
+
+## Backend Testing (Blockchain)
+
+### Dual Testing Framework
+
+The project uses both Foundry and Hardhat for comprehensive testing:
+
+**Foundry Tests** ([backend/test/foundry/](mdc:backend/test/foundry/)):
+
+- Fast, gas-efficient testing
+- Native Solidity testing environment
+- Use for unit tests and gas optimization
+- Run with `bun run test:foundry`
+
+**Hardhat Tests** ([backend/test/hardhat/](mdc:backend/test/hardhat/)):
+
+- TypeScript integration tests
+- Better integration with development tools
+- Use for complex integration scenarios
+- Run with `bun run test:hardhat`
+
+### Test Structure
+
+Follow the pattern in [backend/test/foundry/Ballot.t.sol](mdc:backend/test/foundry/Ballot.t.sol):
+
+- Use descriptive test names
+- Test all public functions
+- Test edge cases and error conditions
+- Test events emission
+- Test access control
+
+### Testing Commands
+
+From [backend/package.json](mdc:backend/package.json):
+
+- `bun run test` - Run all tests (Foundry + Hardhat)
+- `bun run test:foundry` - Run only Foundry tests
+- `bun run test:hardhat` - Run only Hardhat tests
+
+### Security Testing
+
+- **Slither**: Run `bun run slither` for static analysis
+- **Invariant Testing**: Use Foundry's invariant testing for complex scenarios
+- **Fuzzing**: Implement fuzz tests for input validation
+
+## Frontend Testing
+
+### Component Testing
+
+Test components in isolation:
+
+- Test UI components from [frontend/src/components/ui/](mdc:frontend/src/components/ui/)
+- Test shared components from [frontend/src/components/shared/](mdc:frontend/src/components/shared/)
+- Test Web3 integration components
+
+### Web3 Integration Testing
+
+Test blockchain interactions:
+
+- Mock Wagmi hooks for testing
+- Test transaction flows
+- Test error handling
+- Test connection states
+
+### Testing Tools
+
+- **Jest**: Unit testing framework
+- **React Testing Library**: Component testing
+- **MSW**: Mock service worker for API mocking
+- **Wagmi Testing**: Mock blockchain interactions
+
+## Integration Testing
+
+### End-to-End Testing
+
+Test complete user flows:
+
+- Wallet connection
+- Contract interactions
+- Transaction confirmation
+- Error recovery
+
+### Cross-Environment Testing
+
+Test across different environments:
+
+- Local Hardhat network
+- Testnet (Polygon zkEVM Cardona)
+- Mainnet (Polygon zkEVM)
+
+## Test Data Management
+
+### Fixtures
+
+- Use consistent test data across all tests
+- Create reusable fixtures for common scenarios
+- Maintain test data in dedicated files
+
+### Mocking
+
+- Mock external dependencies
+- Mock blockchain interactions for frontend tests
+- Use realistic mock data
+
+## Coverage Requirements
+
+- **Backend**: Aim for >90% coverage on smart contracts
+- **Frontend**: Aim for >80% coverage on critical components
+- **Integration**: Test all major user flows
+
+## Best Practices
+
+1. **Test Isolation**: Each test should be independent
+2. **Descriptive Names**: Use clear, descriptive test names
+3. **Arrange-Act-Assert**: Follow AAA pattern for test structure
+4. **Error Testing**: Test both success and failure scenarios
+5. **Gas Testing**: Monitor gas usage in Foundry tests
+6. **Performance Testing**: Test with realistic data volumes
+   description:
+   globs:
+   alwaysApply: false
+
+---

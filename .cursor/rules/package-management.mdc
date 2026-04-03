@@ -1,0 +1,86 @@
+---
+description: Bun workspace installs, lockfile, and script conventions for this monorepo.
+globs: package.json,bun.lock,**/package.json
+alwaysApply: false
+---
+
+# Package Management Guidelines
+
+## Layout
+
+The repo is a **Bun workspace**: root [package.json](mdc:package.json) lists `frontend` and `backend` in `workspaces`. One lockfile at the root: [bun.lock](mdc:bun.lock).
+
+- Backend: [backend/package.json](mdc:backend/package.json)
+- Frontend: [frontend/package.json](mdc:frontend/package.json)
+
+## Package Manager
+
+- **Primary**: [Bun](https://bun.sh) for installs and running scripts (runtime and package manager)
+- **Lock file**: Commit the root `bun.lock` for reproducible installs
+- **Installation**: From the repository root, run `bun install` (installs all workspace packages)
+
+## Backend Dependencies
+
+Key dependencies from [backend/package.json](mdc:backend/package.json):
+
+- **Hardhat** — Ethereum development environment
+- **Ethers** — Ethereum library
+- **Foundry**: Installed via curl script for testing and deployment
+- **TypeScript** — Type safety
+- **Testing**: Chai, Mocha, Foundry for comprehensive testing
+- **Linting**: Prettier, Solhint, Slither for code quality
+
+## Frontend Dependencies
+
+Key dependencies from [frontend/package.json](mdc:frontend/package.json):
+
+- **Next.js** — React framework
+- **React** — UI library
+- **Web3**: Wagmi, Viem, Reown
+- **UI**: Radix UI components, shadcn/ui, Tailwind CSS
+- **Forms**: React Hook Form with Zod validation
+- **State**: TanStack Query for server state management
+
+## Development Scripts
+
+### Backend (`cd backend`)
+
+- `bun run prepare` — Set up git hooks
+- `bun run test` — Run all tests (Foundry + Hardhat)
+- `bun run lint` — Run all linting checks
+- `bun run start:node` — Start local Hardhat node
+
+### Frontend (`cd frontend`)
+
+- `bun run prepare` — Set up git hooks
+- `bun run dev` — Start development server
+- `bun run build` — Build for production
+- `bun run lint` — Run linting checks
+
+### From repo root (optional)
+
+- `bun run --filter frontend <script>` / `bun run --filter backend <script>` — Run a script in one workspace without changing directory
+
+## Git Hooks
+
+The project uses custom git hooks configured in the prepare scripts:
+
+- Set `core.hooksPath` to `.githooks` for consistent pre-commit checks
+- Hooks run linting and spell checking automatically
+
+## Environment Variables
+
+Required environment variables for frontend:
+
+- `ALCHEMY_ENDPOINT_URL_ETHEREUM_MAINNET`
+- `ALCHEMY_ENDPOINT_URL_ETHEREUM_SEPOLIA`
+- `ALCHEMY_ENDPOINT_URL_BASE_MAINNET`
+- `ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA`
+- `ALCHEMY_API_KEY`
+- `WALLET_CONNECT_PROJECT_ID`
+
+## Best Practices
+
+1. **Workspace install**: After changing any `package.json`, run `bun install` from the repo root
+2. **Lock file**: Always commit the root `bun.lock` for reproducible CI and local installs
+3. **Scripts**: Use `bun run <script>` for npm scripts; use `bunx <cli>` for one-off binaries (e.g. `bunx hardhat`)

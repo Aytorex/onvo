@@ -1,0 +1,21 @@
+name: CI Tests
+
+on:
+  pull_request: {}
+  push:
+    branches: ["main", "dev"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    uses: ./.github/workflows/ci-backend.yml
+
+  frontend:
+    uses: ./.github/workflows/ci-frontend.yml
+
+  backend-solidity:
+    uses: ./.github/workflows/ci-backend-solidity.yml
