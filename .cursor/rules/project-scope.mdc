@@ -1,0 +1,133 @@
+---
+alwaysApply: true
+---
+
+# Onvo — Cahier des charges MVP
+
+**Hackathon :** ETHGlobal Cannes 2026 — Vendredi 21h → Dimanche 09h  
+**Stack :** TypeScript, NestJS, React, Web3  
+**Équipe :** 4 développeurs full-stack
+
+## Contexte produit
+
+Onvo est une **app de facturation B2B vérifiée on-chain**. Un freelance ou une entreprise émet des factures certifiées (hash **PDF** inscrit on-chain), et une société cliente les paie en stablecoin euro (**EURC** / **USDC**) via **Arc**, avec vérification de l’identité de l’émetteur via **World ID**.
+
+## Stack sponsors
+
+| Sponsor | Rôle |
+|--------|------|
+| **World ID 4.0** | Authentification de l’émetteur (proof of humanity) |
+| **Dynamic** | Onboarding wallet côté émetteur |
+| **Rabby Wallet** | Connexion côté payeur (WalletConnect / injected provider) |
+| **Arc (Circle L1)** | Paiement en EURC / USDC on-chain |
+| **Ledger** | Clear Signing — signature sécurisée des transactions (émission et paiement) |
+| **Smart contract (EVM Arc)** | `InvoiceRegistry.sol` — vérification émetteur, stockage hash, gestion des statuts |
+
+## Flow émetteur (freelance)
+
+1. Connexion via **World ID 4.0** (proof of humanity) — déblocage de l’accès.
+2. **Mega-form** : infos émetteur, infos client, lignes de facturation, montant, TVA, date d’échéance.
+3. Prévisualisation **HTML** temps réel (split-screen).
+4. Validation → génération **PDF** avec injection de métadonnées.
+5. Hash **SHA-256** du PDF → inscription hash + données structurées dans le smart contract sur **Arc** (transaction signée).
+6. Si Ledger connecté → **Clear Signing** (affichage lisible avant signature).
+7. Facture créée avec statut **PENDING**.
+8. **Lien de paiement unique** généré (contient l’ID facture on-chain).
+9. **Dashboard** : liste des factures émises (**PENDING** / **PAID** / **CANCELLED**).
+10. Possibilité d’**annuler** une facture (transaction on-chain → **CANCELLED**).
+11. **Export** à tout moment (PDF généré, CSV des données).
+
+## Flow payeur (société cliente)
+
+12. Réception du lien de paiement.
+13. Page de paiement dédiée (accès **public**).
+14. Connexion avec **Rabby** (injected EVM provider).
+15. Visualisation de la facture (données smart contract + hash vérifié).
+16. Clic « Payer » → transaction **EURC/USDC** sur **Arc Testnet** vers l’adresse émetteur.
+17. Le smart contract vérifie que l’émetteur est **World ID** vérifié avant d’accepter le paiement.
+18. Si Ledger connecté → **Clear Signing** de la transaction.
+19. Statut facture → **PAID** on-chain.
+20. Historique consultable on-chain.
+
+## Pages de l’application
+
+### Page 1 — Dashboard émetteur (protégé par World ID)
+
+- Connexion World ID 4.0.
+- Liste des factures + statuts (**PENDING** / **PAID** / **CANCELLED**).
+- Bouton « Nouvelle facture ».
+- Actions par facture : voir, annuler, exporter.
+
+### Page 2 — Création de facture (protégé par World ID)
+
+- Mega-form complet.
+- Preview HTML temps réel (formulaire à gauche, preview à droite).
+- Bouton « Générer » → PDF + hash + inscription on-chain.
+- Ledger Clear Signing si connecté.
+- Résultat : lien de paiement copié / partagé.
+
+### Page 3 — Paiement (accès public via lien unique)
+
+- Connexion Rabby (injected provider).
+- Visualisation facture (données on-chain + PDF).
+- Bouton « Payer en EURC/USDC ».
+- Ledger Clear Signing si connecté.
+- Confirmation de paiement + statut mis à jour.
+
+## Smart contract — `InvoiceRegistry.sol`
+
+**Fonctions :**
+
+- `createInvoice(bytes32 invoiceHash, address emitter, address recipient, uint256 amount, address token)` — vérifie World ID de l’émetteur, stocke hash + données.
+- `payInvoice(uint256 invoiceId)` — vérifie validité émetteur, accepte transfert EURC/USDC, statut → **PAID**.
+- `cancelInvoice(uint256 invoiceId)` — émetteur uniquement, statut → **CANCELLED**.
+- `getInvoice(uint256 invoiceId)` — lecture données + statut.
+
+**Événements :** `InvoiceCreated`, `InvoicePaid`, `InvoiceCancelled`.
+
+## Répartition des 4 développeurs
+
+| Dev | Rôle | Périmètre | Stack |
+|-----|------|-----------|--------|
+| **1** | Smart Contracts | `InvoiceRegistry.sol`, déploiement Arc Testnet, scripts Hardhat | Solidity, Hardhat, ethers.js, Arc EVM |
+| **2** | Auth & identité | World ID 4.0 (IDKit + proof validation), onboarding, session NestJS, Dynamic | React, IDKit, Dynamic, React SDK, NestJS |
+| **3** | Invoice UI | Mega-form, preview HTML, génération PDF, page paiement Rabby, Ledger Clear Signing | React, pdfmake, viem, Ledger SDK |
+| **4** | Backend & bridge | NestJS API (CRUD invoices, hash PDF, bridge contrat), lien paiement, export CSV | NestJS, ethers.js, IPFS / Pinata optionnel |
+
+**Point d’assemblage :** Dev 1 livre l’**ABI** + adresse du contrat → Dev 3 et Dev 4 branchent dessus. Dev 2 livre le hook `useWorldIDVerified()` → Dev 3 et Dev 4 l’utilisent pour protéger les routes.
+
+## Scope MVP
+
+### Dans le scope
+
+- Connexion **World ID** obligatoire pour émettre.
+- Mega-form + preview HTML temps réel.
+- Génération **PDF** + hash SHA-256.
+- Inscription hash + données on-chain (**Arc Testnet**).
+- Lien de paiement unique.
+- Paiement EURC/USDC via Rabby sur Arc.
+- Vérification World ID de l’émetteur dans le contrat.
+- Statuts **PENDING** / **PAID** / **CANCELLED**.
+- Annulation de facture.
+- Export PDF et/ou CSV.
+- Ledger Clear Signing (émission et paiement).
+- Historique on-chain consultable.
+
+### Hors scope
+
+- KYB complet (vérification d’entreprise).
+- Multi-devises / conversion FX.
+- Système de relance automatique.
+- Signature multi-parties (multisig côté payeur).
+- Conformité légale française « réelle ».
+- Mobile natif.
+- Notifications email/SMS.
+
+## Livrables requis (sponsors)
+
+| Sponsor | Livrable |
+|---------|----------|
+| **World ID 4.0** | Proof validation backend + contrainte réelle sur `createInvoice` |
+| **Dynamic** | App déployée, usage du SDK JS (auth + wallet intégrés) |
+| **Arc** | Contrat déployé sur Arc Testnet + diagramme d’architecture + vidéo + dépôt GitHub |
+| **Ledger** | Clear Signing sur au moins une transaction (émission **ou** paiement) |
