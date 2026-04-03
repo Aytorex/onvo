@@ -13,5 +13,11 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["./hardhat.config.ts", "./ignition/**/*.ts", "./test/**/*.ts", "./typechain-types/**/*.ts"]
+  "include": [
+    "./hardhat.config.ts",
+    "./ignition/**/*.ts",
+    "./scripts/**/*.ts",
+    "./test/**/*.ts",
+    "./typechain-types/**/*.ts"
+  ]
 }

@@ -1,4 +1,3 @@
 {
-  "detectors_to_exclude": "solc-version",
-  "filter_paths": "(/mock/|^test/|^script/|^lib/|node_modules/)"
+  "filter_paths": "node_modules|lib/openzeppelin-contracts|contracts/mocks"
 }

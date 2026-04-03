@@ -17,7 +17,10 @@
     "typechain",
     "vaul",
     "viem",
-    "wagmi"
+    "wagmi",
+    "Reentrancy",
+    "IERC",
+    "keccak"
   ],
   "ignorePaths": ["**/lib/**", "*.config.*"],
   "overrides": [

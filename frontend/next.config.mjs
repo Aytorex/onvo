@@ -13,6 +13,10 @@ const nextConfig = {
       process.env.ALCHEMY_ENDPOINT_URL_ARC_TESTNET ??
       process.env.ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA ??
       '',
+    NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS:
+      process.env.NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS ?? '',
+    NEXT_PUBLIC_INVOICE_REGISTRY_FROM_BLOCK:
+      process.env.NEXT_PUBLIC_INVOICE_REGISTRY_FROM_BLOCK ?? '0',
   },
   reactStrictMode: true,
   serverExternalPackages: ['pino-pretty', 'encoding'],
