@@ -326,7 +326,7 @@ describe('InvoiceRegistry', () => {
       await registry
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 800n, DUMMY_PROOF);
-      const hash = ethers.keccak256(ethers.toUtf8Bytes('newtok'));
+      const hash = ethers.keccak256(ethers.toUtf8Bytes('newInvoice'));
       await registry
         .connect(emitter)
         .createInvoice(hash, emitter.address, payer.address, 1n, newToken);

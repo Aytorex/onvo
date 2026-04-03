@@ -20,7 +20,9 @@
     "wagmi",
     "Reentrancy",
     "IERC",
-    "keccak"
+    "keccak",
+    "EURC",
+    "etherscan"
   ],
   "ignorePaths": ["**/lib/**", "*.config.*"],
   "overrides": [
