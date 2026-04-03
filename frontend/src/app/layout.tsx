@@ -7,7 +7,6 @@ import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/contexts/theme-provider';
 import { I18nProvider } from '@/contexts/i18n-provider';
-import { MainNavigation } from '@/components/shared/main-navigation';
 import { Web3Provider } from '@/contexts/web3-provider';
 
 const fontSans = FontSans({
@@ -16,8 +15,8 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: 'The Ballot Project',
-  description: 'Ballot dApp dashboard',
+  title: 'Onvo',
+  description: 'B2B invoicing powered by World ID',
 };
 
 export default async function RootLayout({
@@ -37,13 +36,13 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <I18nProvider>
             <Web3Provider cookies={cookieHeader}>
-              <MainNavigation>{children}</MainNavigation>
+              {children}
               <Sonner
                 toastOptions={{
                   classNames: {

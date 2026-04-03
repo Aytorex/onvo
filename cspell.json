@@ -8,6 +8,10 @@
     "connectbutton",
     "describedby",
     "embla",
+    "idkit",
+    "noopener",
+    "noreferrer",
+    "onvo",
     "reown",
     "nomicfoundation",
     "openzeppelin",
@@ -22,7 +26,9 @@
     "IERC",
     "keccak",
     "EURC",
-    "etherscan"
+    "etherscan",
+    "worldcoin",
+    "worldid"
   ],
   "ignorePaths": ["**/lib/**", "*.config.*"],
   "overrides": [
