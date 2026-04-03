@@ -53,5 +53,5 @@ jobs:
           path: "./backend/lcov.info"
           min_coverage: 100
           # SF: paths are relative to backend/. very_good_coverage splits `exclude` on spaces (not commas).
-          # Mocks: not production code. InvoiceRegistry: covered at 100% in CI backend Hardhat, not in Foundry tests.
+          # Mocks are exercised only as test doubles; production contracts are Ballot + InvoiceRegistry (Foundry tests).
           exclude: "lib/** contracts/mocks/**"
