@@ -8,6 +8,11 @@ const nodeStub = path.join(__dirname, 'src/lib/node-stub.ts');
 const nextConfig = {
   env: {
     WALLET_CONNECT_PROJECT_ID: process.env.WALLET_CONNECT_PROJECT_ID ?? '',
+    ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY ?? '',
+    ALCHEMY_ENDPOINT_URL_ARC_TESTNET:
+      process.env.ALCHEMY_ENDPOINT_URL_ARC_TESTNET ??
+      process.env.ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA ??
+      '',
   },
   reactStrictMode: true,
   serverExternalPackages: ['pino-pretty', 'encoding'],

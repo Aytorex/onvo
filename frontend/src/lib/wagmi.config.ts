@@ -1,23 +1,17 @@
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import {
-  base,
-  baseSepolia,
-  hardhat,
-  mainnet,
-  sepolia,
-} from '@reown/appkit/networks';
+import { arcTestnet, hardhat } from '@reown/appkit/networks';
 import { cookieStorage, createStorage, http } from 'wagmi';
 
-const {
-  ALCHEMY_ENDPOINT_URL_BASE_MAINNET = '',
-  ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA = '',
-  ALCHEMY_ENDPOINT_URL_ETHEREUM_MAINNET = '',
-  ALCHEMY_ENDPOINT_URL_ETHEREUM_SEPOLIA = '',
-  ALCHEMY_API_KEY = '',
-} = process.env;
+/**
+ * Read env without destructuring `process.env` — Next.js only inlines
+ * `process.env.KEY` when KEY is listed in `next.config.mjs` `env` (or `NEXT_PUBLIC_*`).
+ */
+const alchemyArcUrl = process.env.ALCHEMY_ENDPOINT_URL_ARC_TESTNET ?? '';
+const alchemyApiKey = process.env.ALCHEMY_API_KEY ?? '';
+const walletConnectProjectId = process.env.WALLET_CONNECT_PROJECT_ID ?? '';
 
 /** Reown Cloud project ID (https://dashboard.reown.com), same as WalletConnect v2. */
-export const projectId = process.env.WALLET_CONNECT_PROJECT_ID?.trim() ?? '';
+export const projectId = walletConnectProjectId.trim();
 
 if (!projectId) {
   throw new Error(
@@ -25,7 +19,7 @@ if (!projectId) {
   );
 }
 
-export const networks = [hardhat, sepolia, baseSepolia, mainnet, base] as const;
+export const networks = [arcTestnet] as const;
 
 export const wagmiAdapter = new WagmiAdapter({
   projectId,
@@ -37,16 +31,7 @@ export const wagmiAdapter = new WagmiAdapter({
   }),
   transports: {
     [hardhat.id]: http(),
-    [sepolia.id]: http(
-      `${ALCHEMY_ENDPOINT_URL_ETHEREUM_SEPOLIA}${ALCHEMY_API_KEY}`,
-    ),
-    [baseSepolia.id]: http(
-      `${ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA}${ALCHEMY_API_KEY}`,
-    ),
-    [mainnet.id]: http(
-      `${ALCHEMY_ENDPOINT_URL_ETHEREUM_MAINNET}${ALCHEMY_API_KEY}`,
-    ),
-    [base.id]: http(`${ALCHEMY_ENDPOINT_URL_BASE_MAINNET}${ALCHEMY_API_KEY}`),
+    [arcTestnet.id]: http(`${alchemyArcUrl}${alchemyApiKey}`),
   },
 });
 
