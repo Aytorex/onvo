@@ -19,7 +19,7 @@ if (!projectId) {
   );
 }
 
-export const networks = [arcTestnet] as const;
+export const networks = [hardhat, arcTestnet] as const;
 
 export const wagmiAdapter = new WagmiAdapter({
   projectId,
