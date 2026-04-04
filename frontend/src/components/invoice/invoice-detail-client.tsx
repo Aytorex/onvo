@@ -33,7 +33,7 @@ function statusLabel(s: 0 | 1 | 2, t: (key: string) => string) {
 }
 
 export function InvoiceDetailClient() {
-  const { t } = useTranslation('common'); 
+  const { t } = useTranslation('common');
   const router = useRouter();
   const params = useParams();
   const idStr = typeof params.id === 'string' ? params.id : '';
