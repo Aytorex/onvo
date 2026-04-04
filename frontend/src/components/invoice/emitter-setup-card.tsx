@@ -208,7 +208,7 @@ export function EmitterSetupCard({ onRegistered }: Props) {
                       )}
                     >
                       {!isConnected ? (
-                        <div className="flex gap-3">
+                        <div className="flex items-center gap-3">
                           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted/80">
                             <Lock
                               className="size-[18px] text-muted-foreground"

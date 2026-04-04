@@ -72,16 +72,16 @@ export default function LoginPage() {
 
             <Button
               size="lg"
-              className="w-full"
+              className="w-full gap-2"
               onClick={handleVerifyClick}
               disabled={isLoadingRp}
             >
               {isLoadingRp ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
               ) : (
-                <ShieldCheck className="mr-2 h-4 w-4" />
+                <ShieldCheck className="h-4 w-4 shrink-0" />
               )}
-              {t('auth.verifyButton')}
+              <span className="leading-none">{t('auth.verifyButton')}</span>
             </Button>
 
             {error && (
