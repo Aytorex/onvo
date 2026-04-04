@@ -28,7 +28,7 @@ Deploy on **Arc Testnet** (needs `PRIVATE_KEY`, RPC via `ALCHEMY_ENDPOINT_URL_AR
    $ cp ignition/parameters/invoice-registry.arc.example.json ignition/parameters/invoice-registry.arc.json
    ```
 
-2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `worldIdRouter`, `externalNullifierHash` (decimal string), and `initialOwner`. You can drop `allowedTokens` to keep the module default (Arc USDC + EURC).
+2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `worldIdRouter`, `externalNullifierHash` (decimal string), `initialOwner`, and `commissionRecipient` (Onvo treasury wallet). You can drop `allowedTokens` to keep the module default (Arc USDC + EURC).
 
 3. Deploy:
 

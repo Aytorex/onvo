@@ -24,6 +24,7 @@ const doc = JSON.parse(readFileSync(paramsPath, 'utf8')) as {
     worldIdRouter?: string;
     externalNullifierHash?: string;
     allowedTokens?: string[];
+    commissionRecipient?: string;
   };
 };
 
@@ -52,6 +53,12 @@ if (m.initialOwner == null || m.initialOwner === '') {
   );
 }
 
+if (m.commissionRecipient == null || m.commissionRecipient === '') {
+  throw new Error(
+    'invoice-registry.arc.json: set InvoiceRegistryProdModule.commissionRecipient (Onvo treasury)',
+  );
+}
+
 const allowedTokens =
   m.allowedTokens != null && m.allowedTokens.length > 0
     ? m.allowedTokens
@@ -63,4 +70,5 @@ export default [
   m.worldIdRouter,
   m.externalNullifierHash,
   allowedTokens,
+  m.commissionRecipient,
 ];

@@ -30,6 +30,7 @@ contract InvoiceRegistryTest is Test {
     address internal emitter;
     address internal payer;
     address internal stranger;
+    address internal treasury;
 
     event InvoiceCreated(
         uint256 indexed invoiceId,
@@ -38,14 +39,18 @@ contract InvoiceRegistryTest is Test {
         address recipient,
         uint256 amount,
         address token_,
-        string vatNumber
+        string vatNumber,
+        uint256 worldIdNullifierHash
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
         address indexed payer_,
         uint256 amount,
-        address token_
+        address token_,
+        uint256 commissionAmount
     );
+    event CommissionBpsUpdated(uint256 newCommissionBps);
+    event CommissionRecipientUpdated(address indexed newRecipient);
     event InvoiceCancelled(uint256 indexed invoiceId, address indexed emitter_);
 
     function setUp() public {
@@ -53,10 +58,12 @@ contract InvoiceRegistryTest is Test {
         emitter = makeAddr("emitter");
         payer = makeAddr("payer");
         stranger = makeAddr("stranger");
+        treasury = makeAddr("treasury");
         vm.label(owner, "owner");
         vm.label(emitter, "emitter");
         vm.label(payer, "payer");
         vm.label(stranger, "stranger");
+        vm.label(treasury, "treasury");
 
         worldId = new WorldIdRouterMock();
         worldId.setRevertMessage("WorldIdRouterMock: verify failed");
@@ -69,7 +76,8 @@ contract InvoiceRegistryTest is Test {
             owner,
             address(worldId),
             EXTERNAL_NULLIFIER,
-            tokens
+            tokens,
+            treasury
         );
 
         token.mint(payer, 1_000_000);
@@ -91,6 +99,7 @@ contract InvoiceRegistryTest is Test {
         vm.prank(emitter);
         registry.registerWithWorldId(1, 1, 777, dummyProof);
         assertTrue(registry.isEmitterVerified(emitter));
+        assertEq(registry.emitterWorldIdNullifier(emitter), 777);
     }
 
     function testRevertWhenRegisterWithWorldIdRouterReverts() public {
@@ -106,6 +115,33 @@ contract InvoiceRegistryTest is Test {
         vm.expectRevert("InvoiceRegistry: nullifier used");
         registry.registerWithWorldId(2, 1, 999, dummyProof);
         vm.stopPrank();
+    }
+
+    function testSecondRegisterWithWorldIdOverwritesEmitterNullifier() public {
+        vm.startPrank(emitter);
+        registry.registerWithWorldId(1, 1, 111, dummyProof);
+        assertEq(registry.emitterWorldIdNullifier(emitter), 111);
+        registry.registerWithWorldId(2, 1, 222, dummyProof);
+        assertEq(registry.emitterWorldIdNullifier(emitter), 222);
+        vm.stopPrank();
+
+        uint256 id = _nextInvoiceId(emitter);
+        vm.prank(emitter);
+        registry.createInvoice(
+            id,
+            keccak256("snap"),
+            emitter,
+            payer,
+            1,
+            address(token),
+            "",
+            INV_YEAR,
+            INV_MONTH
+        );
+        (, , , , , , uint256 wid, InvoiceRegistry.Status st) = registry
+            .getInvoice(id);
+        assertEq(wid, 222);
+        assertEq(uint256(st), uint256(InvoiceRegistry.Status.Pending));
     }
 
     /* createInvoice */
@@ -124,7 +160,8 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
-            SAMPLE_VAT_NUMBER
+            SAMPLE_VAT_NUMBER,
+            777
         );
         registry.createInvoice(
             id,
@@ -145,6 +182,7 @@ contract InvoiceRegistryTest is Test {
             uint256 amt,
             address tok,
             string memory vat_,
+            uint256 worldId_,
             InvoiceRegistry.Status status
         ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
@@ -153,6 +191,7 @@ contract InvoiceRegistryTest is Test {
         assertEq(amt, amount);
         assertEq(tok, address(token));
         assertEq(vat_, SAMPLE_VAT_NUMBER);
+        assertEq(worldId_, 777);
         assertEq(uint256(status), uint256(InvoiceRegistry.Status.Pending));
     }
 
@@ -454,17 +493,23 @@ contract InvoiceRegistryTest is Test {
             INV_MONTH
         );
 
+        uint256 fee =
+            (amount * registry.commissionBps()) /
+                registry.COMMISSION_BPS_DENOMINATOR();
+        uint256 net = amount - fee;
         uint256 emitterBefore = token.balanceOf(emitter);
+        uint256 treasuryBefore = token.balanceOf(treasury);
         vm.prank(payer);
         token.approve(address(registry), amount);
         vm.prank(payer);
         vm.expectEmit(true, true, true, true);
-        emit InvoicePaid(id, payer, amount, address(token));
+        emit InvoicePaid(id, payer, amount, address(token), fee);
         registry.payInvoice(id);
 
-        (, , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
+        (, , , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Paid));
-        assertEq(token.balanceOf(emitter), emitterBefore + amount);
+        assertEq(token.balanceOf(emitter), emitterBefore + net);
+        assertEq(token.balanceOf(treasury), treasuryBefore + fee);
     }
 
     function testRevertWhenPayInvoiceInvalidId() public {
@@ -520,6 +565,36 @@ contract InvoiceRegistryTest is Test {
         vm.stopPrank();
     }
 
+    function testPayInvoiceZeroCommissionBpsFullToEmitter() public {
+        vm.prank(owner);
+        registry.setCommissionBps(0);
+        _registerEmitter();
+        bytes32 hash = keccak256("pay-zero-fee");
+        uint256 amount = 50_000;
+        uint256 id = _nextInvoiceId(emitter);
+        vm.prank(emitter);
+        registry.createInvoice(
+            id,
+            hash,
+            emitter,
+            payer,
+            amount,
+            address(token),
+            "",
+            INV_YEAR,
+            INV_MONTH
+        );
+        uint256 emitterBefore = token.balanceOf(emitter);
+        vm.prank(payer);
+        token.approve(address(registry), amount);
+        vm.prank(payer);
+        vm.expectEmit(true, true, true, true);
+        emit InvoicePaid(id, payer, amount, address(token), 0);
+        registry.payInvoice(id);
+        assertEq(token.balanceOf(emitter), emitterBefore + amount);
+        assertEq(token.balanceOf(treasury), 0);
+    }
+
     function testRevertWhenPayInvoiceCancelled() public {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
@@ -549,6 +624,8 @@ contract InvoiceRegistryTest is Test {
     }
 
     function testRevertWhenPayInvoiceInsufficientAllowance() public {
+        vm.prank(owner);
+        registry.setCommissionBps(0);
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
@@ -660,7 +737,7 @@ contract InvoiceRegistryTest is Test {
         emit InvoiceCancelled(id, emitter);
         registry.cancelInvoice(id);
 
-        (, , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
+        (, , , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Cancelled));
     }
 
@@ -744,6 +821,51 @@ contract InvoiceRegistryTest is Test {
         registry.getInvoice(1);
     }
 
+    /* commission config */
+
+    function testDefaultCommissionBpsAndRecipient() public view {
+        assertEq(registry.commissionBps(), 10);
+        assertEq(registry.commissionRecipient(), treasury);
+        assertEq(registry.COMMISSION_BPS_DENOMINATOR(), 10_000);
+    }
+
+    function testSetCommissionBpsAndRecipientOwner() public {
+        vm.startPrank(owner);
+        vm.expectEmit(false, false, false, true);
+        emit CommissionBpsUpdated(100);
+        registry.setCommissionBps(100);
+        assertEq(registry.commissionBps(), 100);
+
+        vm.expectEmit(true, false, false, false);
+        emit CommissionRecipientUpdated(emitter);
+        registry.setCommissionRecipient(emitter);
+        vm.stopPrank();
+        assertEq(registry.commissionRecipient(), emitter);
+    }
+
+    function testRevertWhenSetCommissionBpsTooHigh() public {
+        vm.prank(owner);
+        vm.expectRevert("InvoiceRegistry: commission bps too high");
+        registry.setCommissionBps(10_001);
+    }
+
+    function testRevertWhenSetCommissionBpsNotOwner() public {
+        vm.prank(stranger);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                stranger
+            )
+        );
+        registry.setCommissionBps(1);
+    }
+
+    function testRevertWhenSetCommissionRecipientZero() public {
+        vm.prank(owner);
+        vm.expectRevert("InvoiceRegistry: zero commission recipient");
+        registry.setCommissionRecipient(ZERO);
+    }
+
     /* addAllowedToken */
 
     function testAddAllowedTokenOnlyOwner() public {
@@ -787,7 +909,7 @@ contract InvoiceRegistryTest is Test {
             INV_MONTH
         );
 
-        (bytes32 invoiceHash_, , , , , , ) = registry.getInvoice(id);
+        (bytes32 invoiceHash_, , , , , , , ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
     }
 
@@ -797,14 +919,27 @@ contract InvoiceRegistryTest is Test {
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
         vm.expectRevert("InvoiceRegistry: zero worldId");
-        new InvoiceRegistry(owner, ZERO, 1, tokens);
+        new InvoiceRegistry(owner, ZERO, 1, tokens, treasury);
     }
 
     function testRevertWhenConstructorZeroToken() public {
         address[] memory tokens = new address[](1);
         tokens[0] = ZERO;
         vm.expectRevert("InvoiceRegistry: zero token");
-        new InvoiceRegistry(owner, address(worldId), 1, tokens);
+        new InvoiceRegistry(owner, address(worldId), 1, tokens, treasury);
+    }
+
+    function testRevertWhenConstructorZeroCommissionRecipient() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(token);
+        vm.expectRevert("InvoiceRegistry: zero commission recipient");
+        new InvoiceRegistry(
+            owner,
+            address(worldId),
+            EXTERNAL_NULLIFIER,
+            tokens,
+            ZERO
+        );
     }
 
     /// @dev Constructor loop + `_addAllowedToken` for more than one token.
@@ -819,7 +954,8 @@ contract InvoiceRegistryTest is Test {
             owner,
             address(worldId),
             EXTERNAL_NULLIFIER,
-            tokens
+            tokens,
+            treasury
         );
         assertTrue(r.allowedToken(address(tA)));
         assertTrue(r.allowedToken(address(tB)));

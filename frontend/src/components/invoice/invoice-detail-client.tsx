@@ -6,7 +6,13 @@ import {
   formatClientPhysicalAddressFromMeta,
   formatEmitterPhysicalAddressFromMeta,
 } from '@/lib/invoice-address';
-import { readInvoice } from '@/lib/invoice-contract';
+import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
+import {
+  formatWorldIdNullifierForDisplay,
+  readCommissionConfig,
+  readInvoice,
+  type CommissionConfig,
+} from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import {
   downloadBase64Pdf,
@@ -39,6 +45,8 @@ export function InvoiceDetailClient() {
   const [data, setData] = useState<Awaited<
     ReturnType<typeof readInvoice>
   > | null>(null);
+  const [commissionConfig, setCommissionConfig] =
+    useState<CommissionConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,9 +54,18 @@ export function InvoiceDetailClient() {
       setLoading(false);
       return;
     }
-    void readInvoice(publicClient, invoiceId)
-      .then(setData)
-      .catch(() => setData(null))
+    void Promise.all([
+      readInvoice(publicClient, invoiceId),
+      readCommissionConfig(publicClient).catch(() => null),
+    ])
+      .then(([inv, cfg]) => {
+        setData(inv);
+        setCommissionConfig(cfg);
+      })
+      .catch(() => {
+        setData(null);
+        setCommissionConfig(null);
+      })
       .finally(() => setLoading(false));
   }, [invoiceId, publicClient]);
 
@@ -102,6 +119,11 @@ export function InvoiceDetailClient() {
   const clientRegisteredOfficeText = meta
     ? formatClientPhysicalAddressFromMeta(meta).trim()
     : '';
+
+  const worldIdDisplay =
+    data.worldIdNullifierHash !== 0n
+      ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
+      : (meta?.emitterWorldIdNullifier?.trim() ?? '');
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -161,6 +183,16 @@ export function InvoiceDetailClient() {
             </dd>
           </div>
         ) : null}
+        {worldIdDisplay ? (
+          <div className="sm:col-span-2">
+            <dt className="text-muted-foreground">
+              {t('invoice.detail.emitterWorldId')}
+            </dt>
+            <dd className="mt-1 break-all font-mono text-xs">
+              {worldIdDisplay}
+            </dd>
+          </div>
+        ) : null}
         {meta ? (
           <>
             <div>
@@ -195,19 +227,21 @@ export function InvoiceDetailClient() {
                 </dd>
               </div>
             ) : null}
-            {meta.emitterWorldIdNullifier?.trim() ? (
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">
-                  {t('invoice.detail.emitterWorldId')}
-                </dt>
-                <dd className="mt-1 break-all font-mono text-xs">
-                  {meta.emitterWorldIdNullifier.trim()}
-                </dd>
-              </div>
-            ) : null}
           </>
         ) : null}
       </dl>
+
+      {data.status === 0 && commissionConfig ? (
+        <InvoiceCommissionPanel
+          config={commissionConfig}
+          grossAmount={data.amount}
+        />
+      ) : null}
+      {data.status === 0 && !commissionConfig && !loading ? (
+        <p className="text-sm text-muted-foreground">
+          {t('invoice.commission.unavailable')}
+        </p>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="secondary">

@@ -36,7 +36,7 @@ async function nextInvoiceId(
 }
 
 async function deployFixture() {
-  const [owner, emitter, payer, stranger] = await ethers.getSigners();
+  const [owner, emitter, payer, stranger, treasury] = await ethers.getSigners();
   const worldId = await ethers.deployContract('WorldIdRouterMock', []);
   await worldId.setRevertMessage('WorldIdRouterMock: verify failed');
   const token = await ethers.deployContract('MockERC20', [
@@ -50,10 +50,20 @@ async function deployFixture() {
     await worldId.getAddress(),
     EXTERNAL_NULLIFIER,
     [await token.getAddress()],
+    treasury.address,
   ]);
   await token.mint(payer.address, 1_000_000n);
   await token.mint(emitter.address, 1_000_000n);
-  return { owner, emitter, payer, stranger, worldId, token, registry };
+  return {
+    owner,
+    emitter,
+    payer,
+    stranger,
+    treasury,
+    worldId,
+    token,
+    registry,
+  };
 }
 
 describe('InvoiceRegistry', () => {
@@ -65,6 +75,9 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, nullifier, DUMMY_PROOF);
       expect(await registry.isEmitterVerified(emitter.address)).to.equal(true);
+      expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
+        nullifier,
+      );
     });
 
     it('reverts when router is configured to revert', async () => {
@@ -86,6 +99,39 @@ describe('InvoiceRegistry', () => {
           .connect(emitter)
           .registerWithWorldId(2n, 1n, nullifier, DUMMY_PROOF),
       ).to.be.revertedWith('InvoiceRegistry: nullifier used');
+    });
+
+    it('overwrites emitterWorldIdNullifier on a second successful registration', async () => {
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
+      await registry
+        .connect(emitter)
+        .registerWithWorldId(1n, 1n, 111n, DUMMY_PROOF);
+      expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
+        111n,
+      );
+      await registry
+        .connect(emitter)
+        .registerWithWorldId(2n, 1n, 222n, DUMMY_PROOF);
+      expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
+        222n,
+      );
+      const id = await nextInvoiceId(registry, emitter.address);
+      await registry
+        .connect(emitter)
+        .createInvoice(
+          id,
+          ethers.keccak256(ethers.toUtf8Bytes('snap')),
+          emitter.address,
+          payer.address,
+          1n,
+          token,
+          EMPTY_VAT_NUMBER,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      const inv = await registry.getInvoice(id);
+      expect(inv.worldIdNullifierHash_).to.equal(222n);
     });
   });
 
@@ -123,6 +169,7 @@ describe('InvoiceRegistry', () => {
           amount,
           token,
           SAMPLE_VAT_NUMBER,
+          100n,
         );
 
       const inv = await registry.getInvoice(id);
@@ -132,6 +179,7 @@ describe('InvoiceRegistry', () => {
       expect(inv.amount).to.equal(amount);
       expect(inv.token).to.equal(await token.getAddress());
       expect(inv.vatNumber).to.equal(SAMPLE_VAT_NUMBER);
+      expect(inv.worldIdNullifierHash_).to.equal(100n);
       expect(inv.status).to.equal(0n);
     });
 
@@ -329,19 +377,20 @@ describe('InvoiceRegistry', () => {
     }
 
     it('transfers token and sets Paid', async () => {
-      const { emitter, payer, registry, token, amount, invoiceId } =
+      const { emitter, payer, treasury, registry, token, amount, invoiceId } =
         await setupPaidFlow();
       const regAddr = await registry.getAddress();
+      const fee = (amount * 10n) / 10_000n;
+      const net = amount - fee;
       await token.connect(payer).approve(regAddr, amount);
       await expect(registry.connect(payer).payInvoice(invoiceId))
         .to.emit(registry, 'InvoicePaid')
-        .withArgs(invoiceId, payer.address, amount, token);
+        .withArgs(invoiceId, payer.address, amount, token, fee);
 
       const inv = await registry.getInvoice(invoiceId);
       expect(inv.status).to.equal(1n);
-      expect(await token.balanceOf(emitter.address)).to.equal(
-        1_000_000n + amount,
-      );
+      expect(await token.balanceOf(emitter.address)).to.equal(1_000_000n + net);
+      expect(await token.balanceOf(treasury.address)).to.equal(fee);
     });
 
     it('reverts for invalid id', async () => {
@@ -380,6 +429,20 @@ describe('InvoiceRegistry', () => {
       await expect(
         registry.connect(payer).payInvoice(invoiceId),
       ).to.be.revertedWithCustomError(token, 'ERC20InsufficientAllowance');
+    });
+
+    it('with zero commission bps sends full amount to emitter', async () => {
+      const { owner, emitter, payer, registry, token, amount, invoiceId } =
+        await setupPaidFlow();
+      await registry.connect(owner).setCommissionBps(0n);
+      const regAddr = await registry.getAddress();
+      await token.connect(payer).approve(regAddr, amount);
+      await expect(registry.connect(payer).payInvoice(invoiceId))
+        .to.emit(registry, 'InvoicePaid')
+        .withArgs(invoiceId, payer.address, amount, token, 0n);
+      expect(await token.balanceOf(emitter.address)).to.equal(
+        1_000_000n + amount,
+      );
     });
   });
 
@@ -452,6 +515,50 @@ describe('InvoiceRegistry', () => {
     });
   });
 
+  describe('commission config', () => {
+    it('defaults to 10 bps and exposes treasury', async () => {
+      const { treasury, registry } = await loadFixture(deployFixture);
+      expect(await registry.commissionBps()).to.equal(10n);
+      expect(await registry.commissionRecipient()).to.equal(treasury.address);
+      expect(await registry.COMMISSION_BPS_DENOMINATOR()).to.equal(10_000n);
+    });
+
+    it('owner can set commission bps and recipient', async () => {
+      const { owner, emitter, registry } = await loadFixture(deployFixture);
+      await expect(registry.connect(owner).setCommissionBps(100n))
+        .to.emit(registry, 'CommissionBpsUpdated')
+        .withArgs(100n);
+      expect(await registry.commissionBps()).to.equal(100n);
+      await expect(
+        registry.connect(owner).setCommissionRecipient(emitter.address),
+      )
+        .to.emit(registry, 'CommissionRecipientUpdated')
+        .withArgs(emitter.address);
+      expect(await registry.commissionRecipient()).to.equal(emitter.address);
+    });
+
+    it('reverts setCommissionBps when not owner', async () => {
+      const { stranger, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(stranger).setCommissionBps(1n),
+      ).to.be.revertedWithCustomError(registry, 'OwnableUnauthorizedAccount');
+    });
+
+    it('reverts setCommissionBps above 100%', async () => {
+      const { owner, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(owner).setCommissionBps(10_001n),
+      ).to.be.revertedWith('InvoiceRegistry: commission bps too high');
+    });
+
+    it('reverts setCommissionRecipient to zero', async () => {
+      const { owner, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(owner).setCommissionRecipient(ZERO),
+      ).to.be.revertedWith('InvoiceRegistry: zero commission recipient');
+    });
+  });
+
   describe('addAllowedToken', () => {
     it('allows only owner to add token', async () => {
       const { owner, stranger, registry } = await loadFixture(deployFixture);
@@ -495,6 +602,7 @@ describe('InvoiceRegistry', () => {
         );
       const inv = await registry.getInvoice(id);
       expect(inv.invoiceHash_).to.equal(hash);
+      expect(inv.worldIdNullifierHash_).to.equal(800n);
     });
   });
 
@@ -560,7 +668,7 @@ describe('InvoiceRegistry', () => {
 
   describe('constructor', () => {
     it('reverts when worldId router is zero', async () => {
-      const [owner] = await ethers.getSigners();
+      const [owner, , , , treasury] = await ethers.getSigners();
       const token = await ethers.deployContract('MockERC20', ['T', 'T', 6]);
       await expect(
         ethers.deployContract('InvoiceRegistry', [
@@ -568,12 +676,13 @@ describe('InvoiceRegistry', () => {
           ZERO,
           1n,
           [await token.getAddress()],
+          treasury.address,
         ]),
       ).to.be.revertedWith('InvoiceRegistry: zero worldId');
     });
 
     it('reverts when allowed token is zero address', async () => {
-      const [owner] = await ethers.getSigners();
+      const [owner, , , , treasury] = await ethers.getSigners();
       const worldId = await ethers.deployContract('WorldIdRouterMock', []);
       await expect(
         ethers.deployContract('InvoiceRegistry', [
@@ -581,8 +690,24 @@ describe('InvoiceRegistry', () => {
           await worldId.getAddress(),
           1n,
           [ZERO],
+          treasury.address,
         ]),
       ).to.be.revertedWith('InvoiceRegistry: zero token');
+    });
+
+    it('reverts when commission recipient is zero', async () => {
+      const [owner] = await ethers.getSigners();
+      const worldId = await ethers.deployContract('WorldIdRouterMock', []);
+      const token = await ethers.deployContract('MockERC20', ['T', 'T', 6]);
+      await expect(
+        ethers.deployContract('InvoiceRegistry', [
+          owner.address,
+          await worldId.getAddress(),
+          1n,
+          [await token.getAddress()],
+          ZERO,
+        ]),
+      ).to.be.revertedWith('InvoiceRegistry: zero commission recipient');
     });
   });
 });

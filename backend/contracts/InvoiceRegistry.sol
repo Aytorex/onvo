@@ -44,6 +44,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address token;
         /// @dev Emitter VAT identification number (e.g. EU VAT ID), max 64 bytes.
         string vatNumber;
+        /// @dev World ID nullifier hash of the emitter at invoice creation (same as last successful {registerWithWorldId} for `emitter`).
+        uint256 worldIdNullifierHash;
         Status status;
     }
 
@@ -55,9 +57,23 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @dev Count of invoices already minted for `emitter` in calendar month `year * 100 + month`.
     mapping(address => mapping(uint256 => uint256))
         private _invoiceCountByEmitterMonth;
+    /// @dev Last World ID nullifier hash recorded for `emitter` in {registerWithWorldId} (also snapshotted on each invoice).
+    mapping(address => uint256) public emitterWorldIdNullifier;
 
     address public immutable worldIdRouter;
     uint256 public immutable externalNullifierHash;
+
+    /// @dev Basis points denominator (100% = 10_000). Default commission is 10 bps = 0.1%.
+    uint256 public constant COMMISSION_BPS_DENOMINATOR = 10_000;
+
+    /// @dev Commission on payment, in basis points of the invoice `amount` (gross debited from payer).
+    uint256 public commissionBps;
+
+    /// @dev Onvo treasury wallet receiving commission transfers.
+    address public commissionRecipient;
+
+    event CommissionBpsUpdated(uint256 newCommissionBps);
+    event CommissionRecipientUpdated(address indexed newRecipient);
 
     event InvoiceCreated(
         uint256 indexed invoiceId,
@@ -66,13 +82,15 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address recipient,
         uint256 amount,
         address token,
-        string vatNumber
+        string vatNumber,
+        uint256 worldIdNullifierHash
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
         address indexed payer,
         uint256 amount,
-        address token
+        address token,
+        uint256 commissionAmount
     );
     event InvoiceCancelled(uint256 indexed invoiceId, address indexed emitter);
 
@@ -80,11 +98,18 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address initialOwner,
         address worldIdRouter_,
         uint256 externalNullifierHash_,
-        address[] memory tokens
+        address[] memory tokens,
+        address commissionRecipient_
     ) Ownable(initialOwner) {
         require(worldIdRouter_ != address(0), "InvoiceRegistry: zero worldId");
+        require(
+            commissionRecipient_ != address(0),
+            "InvoiceRegistry: zero commission recipient"
+        );
         worldIdRouter = worldIdRouter_;
         externalNullifierHash = externalNullifierHash_;
+        commissionRecipient = commissionRecipient_;
+        commissionBps = 10;
         uint256 len = tokens.length;
         for (uint256 i = 0; i < len; ) {
             _addAllowedToken(tokens[i]);
@@ -92,6 +117,26 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
                 ++i;
             }
         }
+    }
+
+    /// @notice Updates commission rate (basis points of gross invoice amount). Max 100%.
+    function setCommissionBps(uint256 newBps) external onlyOwner {
+        require(
+            newBps <= COMMISSION_BPS_DENOMINATOR,
+            "InvoiceRegistry: commission bps too high"
+        );
+        commissionBps = newBps;
+        emit CommissionBpsUpdated(newBps);
+    }
+
+    /// @notice Updates the wallet that receives commission on each payment.
+    function setCommissionRecipient(address newRecipient) external onlyOwner {
+        require(
+            newRecipient != address(0),
+            "InvoiceRegistry: zero commission recipient"
+        );
+        commissionRecipient = newRecipient;
+        emit CommissionRecipientUpdated(newRecipient);
     }
 
     function addAllowedToken(address token) external onlyOwner {
@@ -118,6 +163,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         );
         _nullifierUsed[nullifierHash] = true;
         isEmitterVerified[msg.sender] = true;
+        emitterWorldIdNullifier[msg.sender] = nullifierHash;
         uint256 signalHash =
             uint256(keccak256(abi.encodePacked(msg.sender))) / 256;
         IWorldIdRouter(worldIdRouter).verifyProof(
@@ -271,6 +317,12 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
 
         _validateNewInvoiceId(invoiceId, emitter, year, month);
 
+        uint256 worldIdNullifierHash_ = emitterWorldIdNullifier[emitter];
+        require(
+            worldIdNullifierHash_ != 0,
+            "InvoiceRegistry: emitter world id missing"
+        );
+
         _hashUsed[invoiceHash_] = true;
         uint256 ym = _yearMonthKey(year, month);
         _invoiceCountByEmitterMonth[emitter][ym] =
@@ -282,6 +334,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             amount: amount,
             token: token,
             vatNumber: vatNumber,
+            worldIdNullifierHash: worldIdNullifierHash_,
             status: Status.Pending
         });
 
@@ -292,7 +345,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             recipient,
             amount,
             token,
-            vatNumber
+            vatNumber,
+            worldIdNullifierHash_
         );
     }
 
@@ -305,9 +359,23 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         );
         require(allowedToken[inv.token], "InvoiceRegistry: token not allowed");
 
+        uint256 gross = inv.amount;
+        uint256 fee = (gross * commissionBps) / COMMISSION_BPS_DENOMINATOR;
+        if (fee > 0) {
+            require(
+                commissionRecipient != address(0),
+                "InvoiceRegistry: zero commission recipient"
+            );
+        }
+        uint256 netToEmitter = gross - fee;
+
         inv.status = Status.Paid;
-        emit InvoicePaid(invoiceId, msg.sender, inv.amount, inv.token);
-        IERC20(inv.token).safeTransferFrom(msg.sender, inv.emitter, inv.amount);
+        emit InvoicePaid(invoiceId, msg.sender, gross, inv.token, fee);
+        IERC20 t = IERC20(inv.token);
+        if (fee > 0) {
+            t.safeTransferFrom(msg.sender, commissionRecipient, fee);
+        }
+        t.safeTransferFrom(msg.sender, inv.emitter, netToEmitter);
     }
 
     function cancelInvoice(uint256 invoiceId) external {
@@ -330,6 +398,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             uint256 amount,
             address token,
             string memory vatNumber,
+            uint256 worldIdNullifierHash_,
             Status status
         )
     {
@@ -341,6 +410,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             inv.amount,
             inv.token,
             inv.vatNumber,
+            inv.worldIdNullifierHash,
             inv.status
         );
     }

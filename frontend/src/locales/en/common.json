@@ -273,6 +273,17 @@
       "pdfUnavailable": "PDF not available locally.",
       "loadingSessionAria": "Loading session"
     },
+    "commission": {
+      "title": "Onvo fee (on payment)",
+      "rate": "Commission rate",
+      "rateValue": "{{percent}}% of the payment amount",
+      "recipient": "Fee recipient wallet (Onvo)",
+      "gross": "Gross amount (debited from payer, smallest units)",
+      "fee": "Platform fee (smallest units)",
+      "net": "Net to issuer after fee (smallest units)",
+      "note": "The payer must approve the gross amount; the contract forwards the fee to Onvo then the remainder to the issuer.",
+      "unavailable": "Could not load commission settings from the registry."
+    },
     "form": {
       "accessDenied": "Access restricted —",
       "accessDeniedLink": "sign in with World ID",

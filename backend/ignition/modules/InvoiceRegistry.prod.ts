@@ -14,6 +14,7 @@ export default buildModule('InvoiceRegistryProdModule', (m) => {
     m.getParameter('worldIdRouter'),
     m.getParameter('externalNullifierHash'),
     m.getParameter('allowedTokens', [ARC_USDC, ARC_EURC]),
+    m.getParameter('commissionRecipient'),
   ]);
   return { registry };
 });

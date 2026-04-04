@@ -273,6 +273,17 @@
       "pdfUnavailable": "PDF non disponible en local.",
       "loadingSessionAria": "Chargement de la session"
     },
+    "commission": {
+      "title": "Commission Onvo (au paiement)",
+      "rate": "Taux de commission",
+      "rateValue": "{{percent}}% du montant payé",
+      "recipient": "Wallet destinataire des frais (Onvo)",
+      "gross": "Montant brut (débité au payeur, plus petite unité)",
+      "fee": "Frais plateforme (plus petite unité)",
+      "net": "Net pour l'émetteur après frais (plus petite unité)",
+      "note": "Le payeur doit approuver le montant brut ; le contrat envoie la commission à Onvo puis le reliquat à l'émetteur.",
+      "unavailable": "Impossible de charger les paramètres de commission depuis le registre."
+    },
     "form": {
       "accessDenied": "Accès réservé —",
       "accessDeniedLink": "connectez-vous avec World ID",
