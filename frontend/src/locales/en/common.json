@@ -195,6 +195,11 @@
       "clientUnknown": "Unknown client",
       "colStatus": "Status",
       "colActions": "Actions",
+      "rowActionsAria": "Actions for this invoice",
+      "copyInvoiceId": "Copy ID",
+      "copyInvoiceIdAria": "Copy displayed invoice reference (F-0x…)",
+      "copyInvoiceIdSuccess": "Invoice reference copied.",
+      "copyInvoiceIdError": "Could not copy (browser permissions).",
       "view": "View",
       "export": "Export",
       "cancel": "Cancel",
@@ -227,7 +232,15 @@
       "pdfUnavailable": "PDF not available locally.",
       "storedMetaMissing": "Full invoice layout is not stored on this device — only on-chain fields are shown below.",
       "onChainDetailsSummary": "On-chain details",
-      "loadingSessionAria": "Loading session"
+      "loadingSessionAria": "Loading session",
+      "copyInvoiceIdDecimal": "Copy full decimal ID",
+      "copyInvoiceIdDecimalAria": "Copy full on-chain invoice id (decimal integer)",
+      "copyInvoiceIdDecimalSuccess": "Decimal ID copied.",
+      "copyInvoiceIdDecimalError": "Could not copy (browser permissions).",
+      "copyInvoiceLabel": "Copy full invoice reference (F-0x…)",
+      "copyInvoiceLabelAria": "Copy full formatted invoice label",
+      "copyInvoiceLabelSuccess": "Invoice reference copied.",
+      "copyInvoiceLabelError": "Could not copy (browser permissions)."
     },
     "commission": {
       "title": "Onvo fee (on payment)",

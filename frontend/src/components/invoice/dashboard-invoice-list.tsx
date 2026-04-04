@@ -1,6 +1,5 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,6 +10,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { InvoiceStatusBadge } from '@/components/invoice/invoice-status-badge';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
@@ -27,32 +34,85 @@ import {
   shortAddr,
   tokenSymbolForAddress,
 } from '@/lib/invoice-row-display';
-import { Link2, Search, X } from 'lucide-react';
+import {
+  Copy,
+  Eye,
+  FileDown,
+  Link2,
+  MoreVertical,
+  Search,
+  X,
+  XCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
-function statusBadge(status: 0 | 1 | 2, t: (key: string) => string) {
-  if (status === 0)
-    return (
-      <Badge variant="outline" className="border-amber-500/60 text-amber-400">
-        {t('invoice.status.pending')}
-      </Badge>
+function InvoiceIdTruncateCopy({ label }: { label: string }) {
+  const { t } = useTranslation('common');
+  const textRef = useRef<HTMLSpanElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [truncated, setTruncated] = useState(false);
+
+  /** Même chaîne que l’affichage (`formatOnvoInvoiceLabel`), pas le uint256 décimal. */
+  const copyValue = label;
+
+  const updateTruncated = useCallback(() => {
+    const el = textRef.current;
+    if (!el) return;
+    setTruncated(el.scrollWidth > el.clientWidth + 1);
+  }, []);
+
+  useLayoutEffect(() => {
+    updateTruncated();
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(updateTruncated);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [label, updateTruncated]);
+
+  const onCopy = () => {
+    void navigator.clipboard.writeText(copyValue).then(
+      () => {
+        toast.success(t('invoice.dashboard.copyInvoiceIdSuccess'));
+      },
+      () => {
+        toast.error(t('invoice.dashboard.copyInvoiceIdError'));
+      },
     );
-  if (status === 1)
-    return (
-      <Badge
-        variant="outline"
-        className="border-emerald-500/60 text-emerald-400"
-      >
-        {t('invoice.status.paid')}
-      </Badge>
-    );
+  };
+
   return (
-    <Badge variant="secondary" className="text-muted-foreground">
-      {t('invoice.status.cancelled')}
-    </Badge>
+    <div
+      ref={containerRef}
+      className="flex min-w-0 w-full max-w-[min(100%,14rem)] items-center gap-0.5 sm:max-w-[min(100%,18rem)]"
+    >
+      <span
+        ref={textRef}
+        className="min-w-0 flex-1 truncate font-mono text-xs"
+        title={label}
+      >
+        {label}
+      </span>
+      {truncated ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+          onClick={onCopy}
+          aria-label={t('invoice.dashboard.copyInvoiceIdAria')}
+          title={t('invoice.dashboard.copyInvoiceId')}
+        >
+          <Copy className="size-3.5" aria-hidden />
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -90,6 +150,9 @@ export function DashboardInvoiceList({
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <Button asChild variant="secondary">
+          <Link href="/dashboard">{t('invoice.detail.back')}</Link>
+        </Button>
         <p className="max-w-xl text-muted-foreground text-sm">
           {t('invoice.dashboard.invoiceListLead')}
         </p>
@@ -236,8 +299,10 @@ export function DashboardInvoiceList({
                     key={r.invoiceId.toString()}
                     className="group border-border/60"
                   >
-                    <TableCell className="align-top font-mono text-xs">
-                      {formatOnvoInvoiceLabel(r.invoiceId)}
+                    <TableCell className="align-top min-w-0 max-w-[min(100vw,20rem)]">
+                      <InvoiceIdTruncateCopy
+                        label={formatOnvoInvoiceLabel(r.invoiceId)}
+                      />
                     </TableCell>
                     <TableCell className="align-top text-sm">
                       {r.meta?.invoiceNumber ? (
@@ -262,35 +327,63 @@ export function DashboardInvoiceList({
                     <TableCell className="align-top text-right font-medium text-sm tabular-nums">
                       {amt} <span className="text-muted-foreground">{sym}</span>
                     </TableCell>
-                    <TableCell className="align-top">
-                      {statusBadge(r.status, t)}
+                    <TableCell className="align-top whitespace-nowrap">
+                      <InvoiceStatusBadge status={r.status} t={t} />
                     </TableCell>
                     <TableCell className="align-top text-right">
-                      <div className="flex flex-wrap justify-end gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/invoice/${r.invoiceId.toString()}`}>
-                            {t('invoice.dashboard.view')}
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onExportPdf(r.invoiceId)}
-                        >
-                          {t('invoice.dashboard.export')}
-                        </Button>
-                        {r.status === 0 ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
+                            type="button"
                             variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            disabled={isCancelPending}
-                            onClick={() => onCancel(r.invoiceId)}
+                            size="icon"
+                            className="size-8 text-muted-foreground hover:text-foreground"
+                            aria-label={t('invoice.dashboard.rowActionsAria')}
                           >
-                            {t('invoice.dashboard.cancel')}
+                            <MoreVertical className="size-4" aria-hidden />
                           </Button>
-                        ) : null}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="min-w-[10rem]"
+                        >
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/invoice/${r.invoiceId.toString()}`}
+                              className="flex cursor-pointer items-center gap-2"
+                            >
+                              <Eye className="size-4 opacity-70" aria-hidden />
+                              {t('invoice.dashboard.view')}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="flex cursor-pointer items-center gap-2"
+                            onSelect={() => onExportPdf(r.invoiceId)}
+                          >
+                            <FileDown
+                              className="size-4 opacity-70"
+                              aria-hidden
+                            />
+                            {t('invoice.dashboard.export')}
+                          </DropdownMenuItem>
+                          {r.status === 0 ? (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive"
+                                disabled={isCancelPending}
+                                onSelect={() => onCancel(r.invoiceId)}
+                              >
+                                <XCircle
+                                  className="size-4 opacity-80"
+                                  aria-hidden
+                                />
+                                {t('invoice.dashboard.cancel')}
+                              </DropdownMenuItem>
+                            </>
+                          ) : null}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );

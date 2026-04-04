@@ -32,3 +32,16 @@ export function formatOnvoInvoiceLabel(invoiceId: bigint): string {
   const hex = worldIdPacked.toString(16).padStart(40, '0');
   return `F-0x${hex}-${year}-${mo}-${seq}`;
 }
+
+/**
+ * Raccourci pour titres / listes : `headLen` premiers caractères + … + `tailLen` derniers.
+ * Par défaut 5 + 17 (affichage fiche facture, onglet navigateur).
+ */
+export function cropOnvoLabelMiddle(
+  label: string,
+  headLen = 5,
+  tailLen = 17,
+): string {
+  if (label.length <= headLen + tailLen) return label;
+  return `${label.slice(0, headLen)}…${label.slice(-tailLen)}`;
+}
