@@ -220,6 +220,7 @@
       "payPage": "Page paiement",
       "downloadPdf": "Télécharger PDF",
       "downloadStarted": "Téléchargement démarré.",
+      "downloadWatermarkFailed": "Impossible de préparer le PDF avec filigrane DUPLICATA.",
       "pdfUnavailable": "PDF non disponible en local.",
       "storedMetaMissing": "La mise en page complète de la facture n’est pas stockée sur cet appareil — seuls les champs on-chain sont affichés ci-dessous.",
       "onChainDetailsSummary": "Détails on-chain",

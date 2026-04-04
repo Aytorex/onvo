@@ -220,6 +220,7 @@
       "payPage": "Payment page",
       "downloadPdf": "Download PDF",
       "downloadStarted": "Download started.",
+      "downloadWatermarkFailed": "Could not prepare the duplicate watermarked PDF.",
       "pdfUnavailable": "PDF not available locally.",
       "storedMetaMissing": "Full invoice layout is not stored on this device — only on-chain fields are shown below.",
       "onChainDetailsSummary": "On-chain details",

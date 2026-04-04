@@ -12,6 +12,7 @@ import {
 } from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import { invoiceMetaToFormValues } from '@/lib/invoice-meta-to-form';
+import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import {
   downloadBase64Pdf,
   getInvoiceMeta,
@@ -32,7 +33,7 @@ function statusLabel(s: 0 | 1 | 2, t: (key: string) => string) {
 }
 
 export function InvoiceDetailClient() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common'); 
   const router = useRouter();
   const params = useParams();
   const idStr = typeof params.id === 'string' ? params.id : '';
@@ -47,6 +48,7 @@ export function InvoiceDetailClient() {
   const [commissionConfig, setCommissionConfig] =
     useState<CommissionConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfDownloadPending, setPdfDownloadPending] = useState(false);
 
   useEffect(() => {
     if (!invoiceId || !publicClient) {
@@ -141,9 +143,24 @@ export function InvoiceDetailClient() {
         {pdf ? (
           <Button
             variant="outline"
+            disabled={pdfDownloadPending}
             onClick={() => {
-              downloadBase64Pdf(pdf, `invoice-${invoiceId.toString()}.pdf`);
-              toast.success(t('invoice.detail.downloadStarted'));
+              void (async () => {
+                setPdfDownloadPending(true);
+                try {
+                  const stamped = await applyDuplicataWatermarkToPdfBase64(pdf);
+                  downloadBase64Pdf(
+                    stamped,
+                    `invoice-${invoiceId.toString()}-duplicata.pdf`,
+                  );
+                  toast.success(t('invoice.detail.downloadStarted'));
+                } catch (e) {
+                  console.error(e);
+                  toast.error(t('invoice.detail.downloadWatermarkFailed'));
+                } finally {
+                  setPdfDownloadPending(false);
+                }
+              })();
             }}
           >
             {t('invoice.detail.downloadPdf')}
