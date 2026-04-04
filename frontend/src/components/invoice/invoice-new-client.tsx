@@ -725,7 +725,7 @@ export function InvoiceNewClient() {
                 </TabsTrigger>
               </TabsList>
 
-              <div className="min-h-0 flex-1 overscroll-contain pb-6">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
                 {/* ── Tab: Issuer ── */}
                 <TabsContent value="issuer" className="mt-4 space-y-4">
                   <div className="grid gap-4">
