@@ -159,7 +159,7 @@ export function DashboardClient({
 
   const actionsRow = (
     <div className="flex flex-wrap gap-2">
-      <Button asChild>
+      <Button variant="default" asChild>
         <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
       </Button>
       <Button

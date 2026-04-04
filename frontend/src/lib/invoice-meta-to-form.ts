@@ -4,7 +4,9 @@ import type { InvoiceFormValues, InvoiceMetaRecord } from '@/lib/invoice-types';
  * Reconstruit les valeurs du formulaire depuis le meta stocké (localStorage)
  * pour réutiliser `InvoicePreviewDocument` — même rendu que le PDF.
  */
-export function invoiceMetaToFormValues(meta: InvoiceMetaRecord): InvoiceFormValues {
+export function invoiceMetaToFormValues(
+  meta: InvoiceMetaRecord,
+): InvoiceFormValues {
   const lines = meta.lines.map((line, i) => ({
     ...line,
     id: line.id?.trim() ? line.id : `line-${i}`,
