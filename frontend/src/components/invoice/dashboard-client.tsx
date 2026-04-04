@@ -49,12 +49,13 @@ export function DashboardClient({
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { switchChainAsync } = useSwitchChain();
-  const { writeContractAsync, isPending: isCancelPending } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
 
   const { refetchEmitterVerified, emitterReady } = useEmitterOnChainReady();
 
   const [rows, setRows] = useState<InvoiceRowView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelBusy, setCancelBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!address || !publicClientArc) {
@@ -99,26 +100,45 @@ export function DashboardClient({
 
   const onCancel = async (invoiceId: bigint) => {
     if (!address) return;
+    setCancelBusy(true);
     try {
-      await switchChainAsync({ chainId: registryChainId });
-    } catch {
-      toast.error(t('invoice.toast.arcNetworkRequired'));
-      return;
-    }
-    try {
-      await writeContractAsync({
-        address: invoiceRegistryContract.address,
-        abi: invoiceRegistryContract.abi,
-        functionName: 'cancelInvoice',
-        args: [invoiceId],
-        chainId: registryChainId,
-      });
-      toast.success(t('invoice.toast.cancelSent'));
-      await load();
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : t('invoice.toast.cancelFailed'),
-      );
+      try {
+        await switchChainAsync({ chainId: registryChainId });
+      } catch {
+        toast.error(t('invoice.toast.arcNetworkRequired'));
+        return;
+      }
+      if (!publicClientArc) {
+        toast.error(t('invoice.toast.cancelFailed'));
+        return;
+      }
+      const loadingToastId = toast.loading(t('invoice.toast.cancelPending'));
+      try {
+        const hash = await writeContractAsync({
+          address: invoiceRegistryContract.address,
+          abi: invoiceRegistryContract.abi,
+          functionName: 'cancelInvoice',
+          args: [invoiceId],
+          chainId: registryChainId,
+        });
+        const receipt = await publicClientArc.waitForTransactionReceipt({
+          hash,
+        });
+        toast.dismiss(loadingToastId);
+        if (receipt.status !== 'success') {
+          toast.error(t('invoice.toast.cancelFailed'));
+          return;
+        }
+        toast.success(t('invoice.toast.cancelConfirmed'));
+        await load();
+      } catch (e) {
+        toast.dismiss(loadingToastId);
+        toast.error(
+          e instanceof Error ? e.message : t('invoice.toast.cancelFailed'),
+        );
+      }
+    } finally {
+      setCancelBusy(false);
     }
   };
 
@@ -193,7 +213,7 @@ export function DashboardClient({
           actionsSlot={actionsRow}
           onExportPdf={exportPdf}
           onCancel={(invoiceId) => void onCancel(invoiceId)}
-          isCancelPending={isCancelPending}
+          isCancelPending={cancelBusy}
         />
       </div>
     );
@@ -216,7 +236,7 @@ export function DashboardClient({
         exportDisabled={rows.length === 0}
         onCancel={(invoiceId) => void onCancel(invoiceId)}
         onExportPdf={exportPdf}
-        isCancelPending={isCancelPending}
+        isCancelPending={cancelBusy}
       />
     </div>
   );

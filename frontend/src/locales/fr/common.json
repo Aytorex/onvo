@@ -385,7 +385,8 @@
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) requis — changez de réseau dans le wallet.",
-      "cancelSent": "Annulation envoyée.",
+      "cancelPending": "Annulation en cours…",
+      "cancelConfirmed": "Facture annulée (confirmé on-chain).",
       "cancelFailed": "Annulation impossible",
       "pdfNotStored": "PDF non stocké localement pour cette facture.",
       "walletIssuerRequired": "Connectez le wallet émetteur pour signer la facture.",

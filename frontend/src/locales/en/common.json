@@ -385,7 +385,8 @@
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) required — switch network in your wallet.",
-      "cancelSent": "Cancellation submitted.",
+      "cancelPending": "Cancelling invoice…",
+      "cancelConfirmed": "Invoice cancelled (confirmed on-chain).",
       "cancelFailed": "Could not cancel",
       "pdfNotStored": "No PDF stored locally for this invoice.",
       "walletIssuerRequired": "Connect your issuer wallet to sign the invoice.",
