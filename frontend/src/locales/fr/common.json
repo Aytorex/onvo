@@ -10,7 +10,7 @@
     "connect": "Connecter",
     "disconnect": "Déconnecter",
     "connecting": "Connexion…",
-    "stableBalancesOnArc": "Soldes USDC et EURC sur Arc Testnet",
+    "stableBalancesOnArc": "Soldes sur Arc Testnet",
     "tokenBalanceLoading": "…",
     "tokenBalanceUnavailable": "—"
   },

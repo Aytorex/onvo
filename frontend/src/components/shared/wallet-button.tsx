@@ -138,28 +138,23 @@ export function WalletButton() {
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex min-w-0 cursor-default items-center gap-1">
-                <UsdcIcon className="h-4 w-4" />
-                <span className="text-sm font-semibold tracking-tight">
-                  {usdcSeg}
+              <span className="inline-flex min-w-0 cursor-default items-center gap-1.5 sm:gap-2">
+                <span className="inline-flex min-w-0 items-center gap-1">
+                  <UsdcIcon className="h-4 w-4" />
+                  <span className="text-sm font-semibold tracking-tight">
+                    {usdcSeg}
+                  </span>
                 </span>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" align="start">
-              {t('wallet.stableBalancesOnArc')}
-            </TooltipContent>
-          </Tooltip>
-          <Separator
-            orientation="vertical"
-            decorative
-            className="h-4 w-px shrink-0"
-          />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex min-w-0 cursor-default items-center gap-1">
-                <EurcIcon className="h-4 w-4" />
-                <span className="text-sm font-semibold tracking-tight">
-                  {eurcSeg}
+                <Separator
+                  orientation="vertical"
+                  decorative
+                  className="h-4 w-px shrink-0"
+                />
+                <span className="inline-flex min-w-0 items-center gap-1">
+                  <EurcIcon className="h-4 w-4" />
+                  <span className="text-sm font-semibold tracking-tight">
+                    {eurcSeg}
+                  </span>
                 </span>
               </span>
             </TooltipTrigger>

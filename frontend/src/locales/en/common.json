@@ -10,7 +10,7 @@
     "connect": "Connect",
     "disconnect": "Disconnect",
     "connecting": "Connecting…",
-    "stableBalancesOnArc": "USDC and EURC balances on Arc Testnet",
+    "stableBalancesOnArc": "Balances on Arc Testnet",
     "tokenBalanceLoading": "…",
     "tokenBalanceUnavailable": "—"
   },
