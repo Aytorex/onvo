@@ -12,3 +12,4 @@
 - On-chain World ID proof verification via a router is not assumed for MVP on Arc; `worldIdAddress` on the invoice struct is optional derived metadata with off-chain/API trust for verification.
 - Payment flow retains commission (basis points) and a treasury/commission recipient on `payInvoice`.
 - A documented future option for stronger binding without a World ID router on Arc is EIP-712–signed attestations from a dedicated `attester` address (e.g. backend key) verified with `ecrecover`.
+- Human-readable invoice reference is `F-0x<full emitter 40 hex>-<seq>` (no middle truncation); the pay page shows this plus the compact packed-id hex segment, not the raw decimal `uint256` string.
