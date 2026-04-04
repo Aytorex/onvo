@@ -2,20 +2,23 @@
 
 import { DashboardHomeView } from '@/components/invoice/dashboard-home';
 import { DashboardInvoiceList } from '@/components/invoice/dashboard-invoice-list';
+import { EmitterSetupCard } from '@/components/invoice/emitter-setup-card';
 import { Button } from '@/components/ui/button';
 import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
+import { getMergedEmitterInvoiceIds } from '@/lib/emitter-invoice-ids';
+import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { readInvoice } from '@/lib/invoice-contract';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import {
   downloadBase64Pdf,
   getInvoiceMeta,
   getInvoicePdfBase64,
-  getStoredInvoiceIds,
 } from '@/lib/invoice-storage';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import { useWorldID } from '@/lib/worldid';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -43,13 +46,15 @@ export function DashboardClient({
     nullifier: sessionWorldIdNullifier,
   } = useWorldID();
   const { address, isConnected } = useAccount();
+  const { emitterReady, refetchEmitterVerified } = useEmitterOnChainReady();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { switchChainAsync } = useSwitchChain();
-  const { writeContractAsync, isPending: isCancelPending } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
 
   const [rows, setRows] = useState<InvoiceRowView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelBusy, setCancelBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!address || !publicClientArc) {
@@ -57,7 +62,12 @@ export function DashboardClient({
       setLoading(false);
       return;
     }
-    const ids = getStoredInvoiceIds(address, sessionWorldIdNullifier);
+    const ids = await getMergedEmitterInvoiceIds(
+      publicClientArc,
+      address,
+      address,
+      sessionWorldIdNullifier,
+    );
     const next: InvoiceRowView[] = [];
     for (const id of ids) {
       try {
@@ -94,26 +104,45 @@ export function DashboardClient({
 
   const onCancel = async (invoiceId: bigint) => {
     if (!address) return;
+    setCancelBusy(true);
     try {
-      await switchChainAsync({ chainId: registryChainId });
-    } catch {
-      toast.error(t('invoice.toast.arcNetworkRequired'));
-      return;
-    }
-    try {
-      await writeContractAsync({
-        address: invoiceRegistryContract.address,
-        abi: invoiceRegistryContract.abi,
-        functionName: 'cancelInvoice',
-        args: [invoiceId],
-        chainId: registryChainId,
-      });
-      toast.success(t('invoice.toast.cancelSent'));
-      await load();
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : t('invoice.toast.cancelFailed'),
-      );
+      try {
+        await switchChainAsync({ chainId: registryChainId });
+      } catch {
+        toast.error(t('invoice.toast.arcNetworkRequired'));
+        return;
+      }
+      if (!publicClientArc) {
+        toast.error(t('invoice.toast.cancelFailed'));
+        return;
+      }
+      const loadingToastId = toast.loading(t('invoice.toast.cancelPending'));
+      try {
+        const hash = await writeContractAsync({
+          address: invoiceRegistryContract.address,
+          abi: invoiceRegistryContract.abi,
+          functionName: 'cancelInvoice',
+          args: [invoiceId],
+          chainId: registryChainId,
+        });
+        const receipt = await publicClientArc.waitForTransactionReceipt({
+          hash,
+        });
+        toast.dismiss(loadingToastId);
+        if (receipt.status !== 'success') {
+          toast.error(t('invoice.toast.cancelFailed'));
+          return;
+        }
+        toast.success(t('invoice.toast.cancelConfirmed'));
+        await load();
+      } catch (e) {
+        toast.dismiss(loadingToastId);
+        toast.error(
+          e instanceof Error ? e.message : t('invoice.toast.cancelFailed'),
+        );
+      }
+    } finally {
+      setCancelBusy(false);
     }
   };
 
@@ -163,8 +192,11 @@ export function DashboardClient({
 
   const actionsRow = (
     <div className="flex flex-wrap gap-2 shrink-0">
-      <Button variant="default" asChild>
-        <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
+      <Button variant="default" className="gap-2" asChild>
+        <Link href="/invoice/new">
+          <Plus className="size-4 shrink-0" aria-hidden />
+          {t('invoice.dashboard.newInvoice')}
+        </Link>
       </Button>
       <Button
         variant="outline"
@@ -179,6 +211,11 @@ export function DashboardClient({
   if (variant === 'invoices') {
     return (
       <div className="space-y-8 p-4">
+        {!emitterReady ? (
+          <EmitterSetupCard
+            onRegistered={() => void refetchEmitterVerified()}
+          />
+        ) : null}
         {!isConnected ? (
           <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
             {t('invoice.dashboard.connectWalletHint')}
@@ -191,14 +228,19 @@ export function DashboardClient({
           actionsSlot={actionsRow}
           onExportPdf={exportPdf}
           onCancel={(invoiceId) => void onCancel(invoiceId)}
-          isCancelPending={isCancelPending}
+          isCancelPending={cancelBusy}
         />
       </div>
     );
   }
 
   return (
-    <div className="p-4">
+    <div className="space-y-8 p-4">
+      {!emitterReady ? (
+        <EmitterSetupCard
+          onRegistered={() => void refetchEmitterVerified()}
+        />
+      ) : null}
       <DashboardHomeView
         rows={rows}
         loading={loading}
@@ -213,7 +255,7 @@ export function DashboardClient({
         exportDisabled={rows.length === 0}
         onCancel={(invoiceId) => void onCancel(invoiceId)}
         onExportPdf={exportPdf}
-        isCancelPending={isCancelPending}
+        isCancelPending={cancelBusy}
       />
     </div>
   );

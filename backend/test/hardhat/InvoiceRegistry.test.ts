@@ -43,6 +43,7 @@ describe('InvoiceRegistry', () => {
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pdf-hash-1'));
       const amount = 1000n;
       const id = await nextInvoiceId(registry, emitter.address);
+      const worldIdAddr = await registry.worldIdAddressFromNullifier(WORLD_META);
       await expect(
         registry
           .connect(emitter)
@@ -66,7 +67,7 @@ describe('InvoiceRegistry', () => {
           amount,
           token,
           SAMPLE_VAT_NUMBER,
-          WORLD_META,
+          worldIdAddr,
         );
 
       const inv = await registry.getInvoice(id);
@@ -76,7 +77,7 @@ describe('InvoiceRegistry', () => {
       expect(inv.amount).to.equal(amount);
       expect(inv.token).to.equal(await token.getAddress());
       expect(inv.vatNumber).to.equal(SAMPLE_VAT_NUMBER);
-      expect(inv.worldIdNullifierHash_).to.equal(WORLD_META);
+      expect(inv.worldIdAddress_).to.equal(worldIdAddr);
       expect(inv.status).to.equal(0n);
     });
 
@@ -483,7 +484,9 @@ describe('InvoiceRegistry', () => {
         );
       const inv = await registry.getInvoice(id);
       expect(inv.invoiceHash_).to.equal(hash);
-      expect(inv.worldIdNullifierHash_).to.equal(42n);
+      expect(inv.worldIdAddress_).to.equal(
+        await registry.worldIdAddressFromNullifier(42n),
+      );
     });
   });
 
@@ -565,9 +568,10 @@ describe('InvoiceRegistry', () => {
     it('registers nullifier for emitter and isWorldIdAuthorizedForEmitter is true', async () => {
       const { emitter, registry } = await loadFixture(deployFixture);
       const h = 4242n;
+      const derived = await registry.worldIdAddressFromNullifier(h);
       await expect(registry.connect(emitter).bindWorldId(h))
         .to.emit(registry, 'WorldIdBound')
-        .withArgs(emitter.address, h);
+        .withArgs(emitter.address, derived);
       expect(
         await registry.isWorldIdAuthorizedForEmitter(emitter.address, h),
       ).to.equal(true);

@@ -2,13 +2,19 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    SafeERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title InvoiceRegistry
-/// @notice On-chain invoice registry with ERC-20 settlement and optional World ID nullifier metadata (off-chain verified on Arc).
-/// @dev Invoice ID layout: `uint160(emitter) << 96 | seq` with `seq` in 96 low bits, unique and incremental per emitter wallet.
+/// @notice On-chain invoice registry with ERC-20 settlement and optional World ID metadata (off-chain verified on Arc).
+/// @dev Invoice ID layout: `uint160(emitter) << 96 | seq` with `seq` in 96 low bits.
+///      World ID IDKit gives a `uint256` nullifier; we store `address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))))`
+///      so the chain only sees `address` types; bindings and reads use the same derivation.
 contract InvoiceRegistry is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -29,8 +35,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address token;
         /// @dev Emitter VAT identification number (e.g. EU VAT ID), max 64 bytes.
         string vatNumber;
-        /// @dev World ID nullifier hash (metadata; verified off-chain / API on Arc — no on-chain proof in MVP).
-        uint256 worldIdNullifierHash;
+        /// @dev Derived World ID identity address (see `worldIdAddressFromNullifier`). `address(0)` if unused.
+        address worldIdAddress;
         Status status;
     }
 
@@ -40,8 +46,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @dev Number of invoices already created by this emitter (used for next sequence).
     mapping(address => uint256) private _invoiceCountByEmitter;
 
-    /// @dev Emitter → nullifier hash → registered via `bindWorldId` (off-chain verified). Same nullifier may appear on several emitters; no global exclusivity.
-    mapping(address => mapping(uint256 => bool)) private _worldIdRegistered;
+    /// @dev Emitter → derived World ID address → registered via `bindWorldId`.
+    mapping(address => mapping(address => bool)) private _worldIdRegistered;
 
     /// @dev Basis points denominator (100% = 10_000). Default commission is 10 bps = 0.1%.
     uint256 public constant COMMISSION_BPS_DENOMINATOR = 10_000;
@@ -63,7 +69,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         uint256 amount,
         address token,
         string vatNumber,
-        uint256 worldIdNullifierHash
+        address worldIdAddress
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
@@ -73,7 +79,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         uint256 commissionAmount
     );
     event InvoiceCancelled(uint256 indexed invoiceId, address indexed emitter);
-    event WorldIdBound(address indexed emitter, uint256 indexed nullifierHash);
+    event WorldIdBound(address indexed emitter, address indexed worldIdAddress);
 
     constructor(
         address initialOwner,
@@ -93,6 +99,20 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
                 ++i;
             }
         }
+    }
+
+    /// @notice Deterministic address derived from a World ID nullifier (same rule as off-chain IDKit → chain bridge).
+    function worldIdAddressFromNullifier(
+        uint256 nullifier
+    ) public pure returns (address) {
+        if (nullifier == 0) return address(0);
+        return _worldIdAddressFromNullifier(nullifier);
+    }
+
+    function _worldIdAddressFromNullifier(
+        uint256 nullifier
+    ) private pure returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))));
     }
 
     /// @notice Updates commission rate (basis points of gross invoice amount). Max 100%.
@@ -124,34 +144,45 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         allowedToken[token] = true;
     }
 
-    /// @notice Registers a World ID nullifier hash for `msg.sender` as emitter (signal off-chain; Arc has no World ID router).
-    /// @dev Several nullifiers per emitter; the same nullifier can also be registered by other emitters. No on-chain proof — product trust + API verification.
-    function bindWorldId(uint256 nullifierHash) external {
-        require(nullifierHash != 0, "InvoiceRegistry: zero nullifier");
-        if (!_worldIdRegistered[msg.sender][nullifierHash]) {
-            _worldIdRegistered[msg.sender][nullifierHash] = true;
-            emit WorldIdBound(msg.sender, nullifierHash);
+    /// @notice Registers the World ID nullifier for `msg.sender` as emitter (stored as derived `address`).
+    function bindWorldId(uint256 nullifier) external {
+        require(nullifier != 0, "InvoiceRegistry: zero nullifier");
+        address idAddr = _worldIdAddressFromNullifier(nullifier);
+        if (!_worldIdRegistered[msg.sender][idAddr]) {
+            _worldIdRegistered[msg.sender][idAddr] = true;
+            emit WorldIdBound(msg.sender, idAddr);
         }
     }
 
-    /// @notice Returns true if this nullifier was registered for `emitter` via `bindWorldId`.
+    /// @notice Returns true if this nullifier’s derived address was registered for `emitter` via `bindWorldId`.
     function isWorldIdAuthorizedForEmitter(
         address emitter,
-        uint256 nullifierHash
+        uint256 nullifier
     ) external view returns (bool) {
-        if (nullifierHash == 0) return false;
-        return _worldIdRegistered[emitter][nullifierHash];
+        if (nullifier == 0) return false;
+        return
+            _worldIdRegistered[emitter][
+                _worldIdAddressFromNullifier(nullifier)
+            ];
     }
 
     /// @notice Packs emitter address and sequence into the on-chain invoice id (96-bit sequence per emitter).
-    function packInvoiceId(address emitter, uint256 seq) public pure returns (uint256 invoiceId) {
+    function packInvoiceId(
+        address emitter,
+        uint256 seq
+    ) public pure returns (uint256 invoiceId) {
         require(emitter != address(0), "InvoiceRegistry: zero emitter");
-        require(seq > 0 && seq <= _SEQ_MASK, "InvoiceRegistry: invalid sequence");
+        require(
+            seq > 0 && seq <= _SEQ_MASK,
+            "InvoiceRegistry: invalid sequence"
+        );
         invoiceId = (uint256(uint160(emitter)) << 96) | seq;
     }
 
     /// @notice Decodes emitter and sequence from a packed invoice id.
-    function parseInvoiceId(uint256 invoiceId) public pure returns (address emitter, uint256 seq) {
+    function parseInvoiceId(
+        uint256 invoiceId
+    ) public pure returns (address emitter, uint256 seq) {
         emitter = address(uint160(invoiceId >> 96));
         seq = invoiceId & _SEQ_MASK;
     }
@@ -162,20 +193,24 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     }
 
     /// @notice Number of invoices created by `emitter` (sequences `1` .. count).
-    function getInvoiceCountForEmitter(address emitter) external view returns (uint256) {
+    function getInvoiceCountForEmitter(
+        address emitter
+    ) external view returns (uint256) {
         return _invoiceCountByEmitter[emitter];
     }
 
-    /// @notice Last created invoice id for `emitter`, or `0` if none. Previous ids: `packInvoiceId(emitter, seq - 1)` down to seq 1 (or multicall `getInvoice`).
-    function getLastInvoiceIdForEmitter(address emitter) external view returns (uint256) {
+    /// @notice Last created invoice id for `emitter`, or `0` if none.
+    function getLastInvoiceIdForEmitter(
+        address emitter
+    ) external view returns (uint256) {
         if (emitter == address(0)) return 0;
         uint256 count = _invoiceCountByEmitter[emitter];
         if (count == 0) return 0;
         return packInvoiceId(emitter, count);
     }
 
-    /// @notice Creates an invoice; `invoiceId` must equal {getNextInvoiceId}(emitter) (emitter in high 160 bits, seq in low 96).
-    /// @dev `worldIdNullifierHash_` is optional metadata (0 if unused); World ID is verified off-chain on Arc for MVP.
+    /// @notice Creates an invoice; `invoiceId` must equal {getNextInvoiceId}(emitter).
+    /// @param worldIdNullifier_ World ID nullifier from IDKit (`0` = no World ID metadata on this invoice).
     function createInvoice(
         uint256 invoiceId,
         bytes32 invoiceHash_,
@@ -184,7 +219,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         uint256 amount,
         address token,
         string calldata vatNumber,
-        uint256 worldIdNullifierHash_
+        uint256 worldIdNullifier_
     ) external {
         require(msg.sender == emitter, "InvoiceRegistry: not emitter");
         require(recipient != address(0), "InvoiceRegistry: zero recipient");
@@ -207,6 +242,10 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             "InvoiceRegistry: id already used"
         );
 
+        address worldIdAddr = worldIdNullifier_ == 0
+            ? address(0)
+            : _worldIdAddressFromNullifier(worldIdNullifier_);
+
         _hashUsed[invoiceHash_] = true;
         unchecked {
             _invoiceCountByEmitter[emitter] += 1;
@@ -218,7 +257,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             amount: amount,
             token: token,
             vatNumber: vatNumber,
-            worldIdNullifierHash: worldIdNullifierHash_,
+            worldIdAddress: worldIdAddr,
             status: Status.Pending
         });
 
@@ -230,7 +269,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             amount,
             token,
             vatNumber,
-            worldIdNullifierHash_
+            worldIdAddr
         );
     }
 
@@ -278,7 +317,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             uint256 amount,
             address token,
             string memory vatNumber,
-            uint256 worldIdNullifierHash_,
+            address worldIdAddress_,
             Status status
         )
     {
@@ -290,7 +329,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             inv.amount,
             inv.token,
             inv.vatNumber,
-            inv.worldIdNullifierHash,
+            inv.worldIdAddress,
             inv.status
         );
     }

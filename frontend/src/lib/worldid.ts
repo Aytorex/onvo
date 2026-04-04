@@ -118,6 +118,24 @@ export function extractNullifierFromIdKitResult(result: IDKitResult): string {
   return '';
 }
 
+/**
+ * Parses IDKit nullifier string to `uint256` (`bigint`).
+ * Passed to `bindWorldId` / `createInvoice`; the contract derives the stored `address`
+ * via `worldIdAddressFromNullifier` (same rule everywhere).
+ */
+export function parseWorldIdNullifierToBigInt(
+  s: string | null | undefined,
+): bigint | null {
+  const t = s?.trim();
+  if (!t) return null;
+  try {
+    if (t.startsWith('0x') || t.startsWith('0X')) return BigInt(t);
+    return BigInt(t);
+  } catch {
+    return null;
+  }
+}
+
 export function useWorldID() {
   const router = useRouter();
   const { address } = useAccount();

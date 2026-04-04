@@ -220,7 +220,17 @@
       "export": "Export",
       "cancel": "Cancel",
       "connectWorldIdLink": "Sign in with World ID",
-      "loadingSessionAria": "Loading session"
+      "loadingSessionAria": "Loading session",
+      "emitterSetupKicker": "Get started",
+      "emitterSetupTitle": "Complete your issuer setup",
+      "emitterSetupSubtitle": "Connect your wallet first, then verify with World ID to issue invoices.",
+      "emitterSetupStepsAria": "Setup steps",
+      "setupStepWallet": "1 — Wallet",
+      "emitterSetupWalletLead": "Connect the wallet you will use to sign invoices on Arc.",
+      "walletConnected": "Connected",
+      "setupStepRegister": "2 — World ID",
+      "emitterSetupWorldLead": "Verify with World ID to prove you are a human issuer. This links your wallet on-chain.",
+      "setupRegisterAfterWallet": "Verify with World ID"
     },
     "detail": {
       "worldIdRequired": "World ID required",
@@ -363,7 +373,9 @@
     "registerEmitter": {
       "title": "On-chain issuer registration",
       "description": "Verify your identity with World ID to link your wallet as a verified emitter. Use the same wallet you use to sign invoices.",
-      "button": "Register my wallet with World ID"
+      "button": "Register my wallet with World ID",
+      "buttonShort": "Register",
+      "bindingInProgress": "Confirming registration on Arc — check your wallet if a prompt appears."
     },
     "errors": {
       "worldIdV3Expected": "Expected World ID v3 response (Orb legacy).",
@@ -392,9 +404,10 @@
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) required — switch network in your wallet.",
-      "cancelSent": "Cancellation submitted.",
+      "cancelPending": "Cancelling invoice…",
+      "cancelConfirmed": "Invoice cancelled (confirmed on-chain).",
       "cancelFailed": "Could not cancel",
-      "pdfNotStored": "No PDF stored locally for this invoice.",
+      "pdfNotStored": "PDF is only available on the browser where the invoice was created (not on-chain).",
       "walletIssuerRequired": "Connect your issuer wallet to sign the invoice.",
       "previewUnavailable": "Preview unavailable.",
       "tokenEnv": "Set NEXT_PUBLIC_TOKEN_USDC and NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).",

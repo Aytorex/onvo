@@ -1,14 +1,17 @@
 import { invoiceRegistryContract } from '@/lib/contract';
 import {
+  getAddress,
+  isAddressEqual,
   parseEventLogs,
+  zeroAddress,
   type PublicClient,
   type TransactionReceipt,
 } from 'viem';
 
-/** Decimal string for display (matches typical World IDKit nullifier formatting). */
-export function formatWorldIdNullifierForDisplay(value: bigint): string {
-  if (value === 0n) return '';
-  return value.toString(10);
+/** Checksummed `address` for UI; empty when unset (`0x…0`). Matches on-chain `worldIdAddress`. */
+export function formatWorldIdAddressForDisplay(value: `0x${string}`): string {
+  if (isAddressEqual(value, zeroAddress)) return '';
+  return getAddress(value);
 }
 
 export type CommissionConfig = {
@@ -55,7 +58,7 @@ export async function readInvoice(
   amount: bigint;
   token: `0x${string}`;
   vatNumber: string;
-  worldIdNullifierHash: bigint;
+  worldIdAddress: `0x${string}`;
   status: 0 | 1 | 2;
 }> {
   const [
@@ -65,7 +68,7 @@ export async function readInvoice(
     amount,
     token,
     vatNumber,
-    worldIdNullifierHash,
+    worldIdAddress,
     status,
   ] = (await client.readContract({
     address: invoiceRegistryContract.address,
@@ -79,7 +82,7 @@ export async function readInvoice(
     bigint,
     `0x${string}`,
     string,
-    bigint,
+    `0x${string}`,
     number,
   ];
   return {
@@ -89,7 +92,7 @@ export async function readInvoice(
     amount,
     token,
     vatNumber,
-    worldIdNullifierHash,
+    worldIdAddress,
     status: status as 0 | 1 | 2,
   };
 }
@@ -120,17 +123,20 @@ export async function readLastInvoiceIdForEmitter(
   })) as bigint;
 }
 
-/** On-chain registration: nullifier lié à l’émetteur via `bindWorldId` (plusieurs nullifiers possibles par wallet). */
+/**
+ * On-chain registration: nullifier IDKit (`uint256`) enregistré via `bindWorldId`;
+ * le contrat stocke l’identité sous forme d’`address` dérivée (`worldIdAddressFromNullifier`).
+ */
 export async function readWorldIdAuthorizedForEmitter(
   client: PublicClient,
   emitter: `0x${string}`,
-  nullifierHash: bigint,
+  worldIdNullifier: bigint,
 ): Promise<boolean> {
   return (await client.readContract({
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
     functionName: 'isWorldIdAuthorizedForEmitter',
-    args: [emitter, nullifierHash],
+    args: [emitter, worldIdNullifier],
   })) as boolean;
 }
 

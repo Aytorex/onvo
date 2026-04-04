@@ -16,7 +16,7 @@ export const GET_INVOICE_OUTPUT_ABI = [
   { name: 'amount', type: 'uint256' },
   { name: 'token', type: 'address' },
   { name: 'vatNumber', type: 'string' },
-  { name: 'worldIdNullifierHash_', type: 'uint256' },
+  { name: 'worldIdAddress_', type: 'address' },
   { name: 'status', type: 'uint8' },
 ] as const satisfies readonly AbiParameter[];
 
@@ -26,10 +26,7 @@ export type SerializedGetInvoiceTuple = Hex;
 export function serializeGetInvoiceTuple(
   values: readonly unknown[],
 ): SerializedGetInvoiceTuple {
-  return encodeAbiParameters(
-    [...GET_INVOICE_OUTPUT_ABI],
-    values as never,
-  );
+  return encodeAbiParameters([...GET_INVOICE_OUTPUT_ABI], values as never);
 }
 
 /** ABI-decodes transport hex back to the same tuple shape as `readContract`. */

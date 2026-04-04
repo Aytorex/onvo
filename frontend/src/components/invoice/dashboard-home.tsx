@@ -112,7 +112,7 @@ export function DashboardHomeView({
 }: {
   rows: InvoiceRowView[];
   loading: boolean;
-  alertsSlot: ReactNode;
+  alertsSlot?: ReactNode;
   onExportAllCsv: () => void;
   exportDisabled: boolean;
   onCancel: (invoiceId: bigint) => void;
@@ -148,6 +148,7 @@ export function DashboardHomeView({
       </div>
 
       <div className="space-y-10">
+        {alertsSlot}
         <section
           className={cn(
             'relative overflow-hidden rounded-3xl border border-border/70',
@@ -172,7 +173,7 @@ export function DashboardHomeView({
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button size="lg" className="gap-2" asChild>
                   <Link href="/invoice/new">
-                    <Plus className="size-4" aria-hidden />
+                    <Plus className="size-4 shrink-0" aria-hidden />
                     {t('invoice.dashboard.newInvoice')}
                   </Link>
                 </Button>
@@ -202,8 +203,6 @@ export function DashboardHomeView({
             <DecorativeInvoiceStack />
           </div>
         </section>
-
-        {alertsSlot}
 
         {!loading && rows.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -291,7 +290,7 @@ export function DashboardHomeView({
               </p>
               <Button className="mt-6 gap-2" asChild>
                 <Link href="/invoice/new">
-                  <Plus className="size-4" aria-hidden />
+                  <Plus className="size-4 shrink-0" aria-hidden />
                   {t('invoice.dashboard.newInvoice')}
                 </Link>
               </Button>

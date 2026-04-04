@@ -220,7 +220,17 @@
       "export": "Exporter",
       "cancel": "Annuler",
       "connectWorldIdLink": "Connectez-vous avec World ID",
-      "loadingSessionAria": "Chargement de la session"
+      "loadingSessionAria": "Chargement de la session",
+      "emitterSetupKicker": "Pour commencer",
+      "emitterSetupTitle": "Terminez la configuration émetteur",
+      "emitterSetupSubtitle": "Connectez d'abord votre wallet, puis vérifiez avec World ID pour émettre des factures.",
+      "emitterSetupStepsAria": "Étapes de configuration",
+      "setupStepWallet": "1 — Wallet",
+      "emitterSetupWalletLead": "Connectez le wallet que vous utiliserez pour signer les factures sur Arc.",
+      "walletConnected": "Connecté",
+      "setupStepRegister": "2 — World ID",
+      "emitterSetupWorldLead": "Vérifiez avec World ID pour prouver que vous êtes un émetteur humain. Cela lie votre wallet on-chain.",
+      "setupRegisterAfterWallet": "Vérifier avec World ID"
     },
     "detail": {
       "worldIdRequired": "World ID requis",
@@ -363,7 +373,9 @@
     "registerEmitter": {
       "title": "Enregistrement émetteur on-chain",
       "description": "Vérifiez votre identité avec World ID pour lier votre wallet en tant qu'émetteur vérifié. Utilisez le même wallet que pour signer les factures.",
-      "button": "Enregistrer mon wallet avec World ID"
+      "button": "Enregistrer mon wallet avec World ID",
+      "buttonShort": "Enregistrer",
+      "bindingInProgress": "Confirmation sur Arc — ouvrez votre wallet si une fenêtre s’affiche."
     },
     "errors": {
       "worldIdV3Expected": "Réponse World ID v3 attendue (Orb legacy).",
@@ -392,9 +404,10 @@
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) requis — changez de réseau dans le wallet.",
-      "cancelSent": "Annulation envoyée.",
+      "cancelPending": "Annulation en cours…",
+      "cancelConfirmed": "Facture annulée (confirmé on-chain).",
       "cancelFailed": "Annulation impossible",
-      "pdfNotStored": "PDF non stocké localement pour cette facture.",
+      "pdfNotStored": "Le PDF n’est disponible que sur le navigateur où la facture a été créée (non stocké on-chain).",
       "walletIssuerRequired": "Connectez le wallet émetteur pour signer la facture.",
       "previewUnavailable": "Aperçu indisponible.",
       "tokenEnv": "Configurez NEXT_PUBLIC_TOKEN_USDC et NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).",

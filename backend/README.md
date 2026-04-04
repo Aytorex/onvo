@@ -35,7 +35,7 @@ Verify on ArcScan (uses `ARCSCAN_API_KEY` in [`hardhat.config.ts`](hardhat.confi
 $ bun run verify:invoice:arc -- 0xYourDeployedInvoiceRegistry
 ```
 
-After deploy, set `NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS` in the frontend env and refresh `frontend/src/lib/invoice-registry-abi.json` from `artifacts/contracts/InvoiceRegistry.sol/InvoiceRegistry.json` when the contract ABI changes.
+After deploy, set `NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS` in the frontend env and refresh `frontend/src/lib/invoice-registry-abi.json` when the contract ABI changes (e.g. `cd backend && forge inspect InvoiceRegistry abi --json | jq '.' > ../frontend/src/lib/invoice-registry-abi.json`).
 
 Run hardhat tests with coverage:
 

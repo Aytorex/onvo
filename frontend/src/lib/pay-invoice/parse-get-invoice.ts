@@ -52,18 +52,12 @@ function coerceUint256(value: unknown): bigint {
   throw new TypeError('getInvoice: invalid amount');
 }
 
-function worldIdNullifierToIssuerDisplay(raw: unknown): string {
-  if (typeof raw === 'bigint') {
-    return raw === 0n ? '' : raw.toString(10);
-  }
-  if (typeof raw === 'string' && /^-?\d+$/.test(raw)) {
-    return BigInt(raw) === 0n ? '' : raw;
-  }
+function worldIdAddressToIssuerDisplay(raw: unknown): string {
   if (typeof raw === 'string' && isAddress(raw)) {
     const a = getAddress(raw);
     return isAddressEqual(a, zeroAddress) ? '' : a;
   }
-  throw new TypeError('getInvoice: invalid worldId nullifier');
+  throw new TypeError('getInvoice: invalid worldIdAddress');
 }
 
 export function normalizeInvoiceStatus(value: unknown): InvoiceStatus {
@@ -109,7 +103,7 @@ export function parseGetInvoiceResult(
     throw new TypeError('getInvoice: invalid vatNumber');
   }
 
-  const issuerWorldId = worldIdNullifierToIssuerDisplay(row[6]);
+  const issuerWorldId = worldIdAddressToIssuerDisplay(row[6]);
   const status = normalizeInvoiceStatus(row[7]);
 
   return {

@@ -1,18 +1,18 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowLeft, Menu } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { MagicRings } from '@/components/shared/magic-rings';
 import { LanguageToggle } from '@/components/shared/language-toggle';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { MagicRings } from '@/components/shared/magic-rings';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ArrowLeft, Menu } from 'lucide-react';
+import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthLayout({
   children,
@@ -47,7 +47,7 @@ export default function AuthLayout({
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t('invoice.detail.back')}
           </Button>
         </Link>
       </div>

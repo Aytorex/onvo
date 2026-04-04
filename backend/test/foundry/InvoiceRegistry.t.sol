@@ -32,7 +32,7 @@ contract InvoiceRegistryTest is Test {
         uint256 amount,
         address token_,
         string vatNumber,
-        uint256 worldIdNullifierHash
+        address worldIdAddress
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
@@ -44,7 +44,7 @@ contract InvoiceRegistryTest is Test {
     event CommissionBpsUpdated(uint256 newCommissionBps);
     event CommissionRecipientUpdated(address indexed newRecipient);
     event InvoiceCancelled(uint256 indexed invoiceId, address indexed emitter_);
-    event WorldIdBound(address indexed emitter, uint256 indexed nullifierHash);
+    event WorldIdBound(address indexed emitter, address indexed worldIdAddress);
 
     function setUp() public {
         owner = makeAddr("owner");
@@ -64,6 +64,10 @@ contract InvoiceRegistryTest is Test {
         token.mint(emitter, 1_000_000);
     }
 
+    function _widAddr(uint256 nullifier) internal pure returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))));
+    }
+
     function _nextInvoiceId(address em) internal view returns (uint256) {
         return registry.getNextInvoiceId(em);
     }
@@ -73,6 +77,8 @@ contract InvoiceRegistryTest is Test {
     function testCreateInvoicePendingAndEvent() public {
         bytes32 hash = keccak256("pdf-hash-1");
         uint256 amount = 1000;
+        uint256 nullifier = 777;
+        address wid = _widAddr(nullifier);
         uint256 id = _nextInvoiceId(emitter);
         vm.prank(emitter);
         vm.expectEmit(true, true, true, true);
@@ -84,7 +90,7 @@ contract InvoiceRegistryTest is Test {
             amount,
             address(token),
             SAMPLE_VAT_NUMBER,
-            777
+            wid
         );
         registry.createInvoice(
             id,
@@ -94,7 +100,7 @@ contract InvoiceRegistryTest is Test {
             amount,
             address(token),
             SAMPLE_VAT_NUMBER,
-            777
+            nullifier
         );
 
         (
@@ -104,7 +110,7 @@ contract InvoiceRegistryTest is Test {
             uint256 amt,
             address tok,
             string memory vat_,
-            uint256 worldId_,
+            address worldIdStored,
             InvoiceRegistry.Status status
         ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
@@ -113,7 +119,7 @@ contract InvoiceRegistryTest is Test {
         assertEq(amt, amount);
         assertEq(tok, address(token));
         assertEq(vat_, SAMPLE_VAT_NUMBER);
-        assertEq(worldId_, 777);
+        assertEq(worldIdStored, wid);
         assertEq(uint256(status), uint256(InvoiceRegistry.Status.Pending));
     }
 
@@ -647,9 +653,10 @@ contract InvoiceRegistryTest is Test {
 
     function testBindWorldIdAndIsAuthorized() public {
         uint256 h = 4242;
+        address derived = _widAddr(h);
         vm.prank(emitter);
-        vm.expectEmit(true, true, false, true);
-        emit WorldIdBound(emitter, h);
+        vm.expectEmit(true, true, true, true);
+        emit WorldIdBound(emitter, derived);
         registry.bindWorldId(h);
         assertTrue(registry.isWorldIdAuthorizedForEmitter(emitter, h));
     }
