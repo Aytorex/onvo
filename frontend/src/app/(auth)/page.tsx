@@ -7,13 +7,13 @@ import {
   orbLegacy,
   type RpContext,
 } from '@worldcoin/idkit';
+import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { useWorldID, fetchRpContext, WORLD_ID_CONFIG } from '@/lib/worldid';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -57,15 +57,13 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md px-4">
-      <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+      <Card className="border-border/60 bg-card shadow-md backdrop-blur-sm">
         <CardHeader className="items-center space-y-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/15">
             <ShieldCheck className="h-8 w-8 text-primary" />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              Onvo
-            </CardTitle>
+            <OnvoLogo className="text-center text-3xl sm:text-4xl" />
             <CardDescription className="text-base text-muted-foreground">
               B2B invoicing powered by World ID
             </CardDescription>

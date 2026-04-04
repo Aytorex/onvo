@@ -43,16 +43,7 @@ export default async function RootLayout({
           <I18nProvider>
             <Web3Provider cookies={cookieHeader}>
               {children}
-              <Sonner
-                toastOptions={{
-                  classNames: {
-                    info: 'dark:bg-gray-700 dark:text-white bg-gray-200',
-                    error: 'dark:bg-red-700 dark:text-white bg-red-500',
-                    success: 'dark:bg-green-700 dark:text-white bg-green-400',
-                  },
-                  duration: 4000,
-                }}
-              />
+              <Sonner duration={4000} />
               <Toaster />
             </Web3Provider>
           </I18nProvider>

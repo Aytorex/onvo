@@ -23,7 +23,7 @@ export function NotFoundContent() {
             404
           </p>
           <div className="space-y-2">
-            <CardTitle className="text-xl font-semibold sm:text-2xl">
+            <CardTitle className="text-xl sm:text-2xl">
               {t('notFound.title')}
             </CardTitle>
             <CardDescription className="text-pretty text-base">

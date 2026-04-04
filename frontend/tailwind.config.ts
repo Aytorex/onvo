@@ -23,6 +23,7 @@ const config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        heading: 'hsl(var(--heading))',
         warning: 'hsl(var(--warning))',
         'warning-foreground': 'hsl(var(--warning-foreground))',
         primary: {
@@ -52,6 +53,13 @@ const config = {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
+        },
+        onvo: {
+          navy: '#1A2151',
+          purple: '#7C3AED',
+          cyan: '#38BDF8',
+          bg: '#F4F6FB',
+          text: '#1E1E2E',
         },
       },
       borderRadius: {

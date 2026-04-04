@@ -13,19 +13,40 @@ export default function PayPage({
 
   if (!token?.trim()) {
     return (
-      <p className="text-center text-sm text-muted-foreground">
-        {t('pay.missingToken')}
-      </p>
+      <section
+        className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8"
+        aria-labelledby="pay-heading"
+      >
+        <h1
+          id="pay-heading"
+          className="text-xl font-bold tracking-tight text-heading sm:text-2xl"
+        >
+          {t('pay.title')}
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          {t('pay.missingToken')}
+        </p>
+      </section>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <h1 className="text-lg font-semibold tracking-tight">{t('pay.title')}</h1>
-      <p className="text-sm text-muted-foreground">{t('pay.tokenReceived')}</p>
-      <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-border bg-muted/30 p-4 font-mono text-xs leading-relaxed">
+    <section
+      className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8"
+      aria-labelledby="pay-heading"
+    >
+      <h1
+        id="pay-heading"
+        className="text-xl font-bold tracking-tight text-heading sm:text-2xl"
+      >
+        {t('pay.title')}
+      </h1>
+      <p className="mt-2 text-sm font-semibold text-foreground">
+        {t('pay.tokenReceived')}
+      </p>
+      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all rounded-xl border border-border bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground">
         {token}
       </pre>
-    </div>
+    </section>
   );
 }
