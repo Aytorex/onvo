@@ -1,6 +1,7 @@
-import { defineConfig } from 'hardhat/config';
 import hardhatFoundry from '@nomicfoundation/hardhat-foundry';
 import hardhatToolboxMochaEthers from '@nomicfoundation/hardhat-toolbox-mocha-ethers';
+import 'dotenv/config';
+import { defineConfig } from 'hardhat/config';
 
 const {
   ETHERSCAN_API_KEY = '',

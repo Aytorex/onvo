@@ -6,20 +6,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @dev World ID router / group manager entrypoint (IDKit must use the same signal hash rule).
-interface IWorldIdRouter {
-    function verifyProof(
-        uint256 root,
-        uint256 groupId,
-        uint256 signalHash,
-        uint256 nullifierHash,
-        uint256 externalNullifierHash,
-        uint256[8] calldata proof
-    ) external;
-}
-
 /// @title InvoiceRegistry
 /// @notice On-chain invoice hash registry with World ID–gated emitters and ERC-20 settlement.
+/// @dev World ID proof verification happens off-chain via the REST API (`POST /api/v4/verify`).
+///      A `trustedVerifier` backend wallet calls {registerEmitter} after successful off-chain verification.
 /// @dev Invoice IDs are packed `uint256` values encoding `F-<wid160>-<year>-<month>-<seq>` (human form off-chain).
 ///      Layout: worldIdPacked (160 bits) << 96 | year (16) << 80 | month (8) << 72 | sequence (40 low bits).
 ///      `worldIdPacked` is `uint160(uint256(keccak256(abi.encodePacked(worldIdNullifierHash))))` (same as {worldIdNullifierToPacked160}).
@@ -45,7 +35,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address token;
         /// @dev Emitter VAT identification number (e.g. EU VAT ID), max 64 bytes.
         string vatNumber;
-        /// @dev World ID nullifier hash of the emitter at invoice creation (same as last successful {registerWithWorldId} for `emitter`).
+        /// @dev World ID nullifier hash of the emitter at registration (snapshotted on each invoice).
         uint256 worldIdNullifierHash;
         Status status;
     }
@@ -58,11 +48,11 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @dev Count of invoices already minted for this World ID nullifier in calendar month `year * 100 + month`.
     mapping(uint256 => mapping(uint256 => uint256))
         private _invoiceCountByNullifierMonth;
-    /// @dev Last World ID nullifier hash recorded for `emitter` in {registerWithWorldId} (also snapshotted on each invoice).
+    /// @dev Last World ID nullifier hash recorded for `emitter` in {registerEmitter} (also snapshotted on each invoice).
     mapping(address => uint256) public emitterWorldIdNullifier;
 
-    address public immutable worldIdRouter;
-    uint256 public immutable externalNullifierHash;
+    /// @dev Backend wallet authorized to call {registerEmitter} after off-chain World ID v4 proof verification.
+    address public trustedVerifier;
 
     /// @dev Basis points denominator (100% = 10_000). Default commission is 10 bps = 0.1%.
     uint256 public constant COMMISSION_BPS_DENOMINATOR = 10_000;
@@ -73,6 +63,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @dev Onvo treasury wallet receiving commission transfers.
     address public commissionRecipient;
 
+    event EmitterRegistered(address indexed emitter, uint256 nullifierHash);
+    event TrustedVerifierUpdated(address indexed newVerifier);
     event CommissionBpsUpdated(uint256 newCommissionBps);
     event CommissionRecipientUpdated(address indexed newRecipient);
 
@@ -97,18 +89,19 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
 
     constructor(
         address initialOwner,
-        address worldIdRouter_,
-        uint256 externalNullifierHash_,
+        address trustedVerifier_,
         address[] memory tokens,
         address commissionRecipient_
     ) Ownable(initialOwner) {
-        require(worldIdRouter_ != address(0), "InvoiceRegistry: zero worldId");
+        require(
+            trustedVerifier_ != address(0),
+            "InvoiceRegistry: zero verifier"
+        );
         require(
             commissionRecipient_ != address(0),
             "InvoiceRegistry: zero commission recipient"
         );
-        worldIdRouter = worldIdRouter_;
-        externalNullifierHash = externalNullifierHash_;
+        trustedVerifier = trustedVerifier_;
         commissionRecipient = commissionRecipient_;
         commissionBps = 10;
         uint256 len = tokens.length;
@@ -149,32 +142,29 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         allowedToken[token] = true;
     }
 
-    /// @notice Binds `msg.sender` as a verified emitter via World ID proof.
-    /// @dev `signalHash` is `uint256(keccak256(abi.encodePacked(msg.sender))) / 256` (same as `>> 8`); IDKit / backend must match.
-    /// @dev CEI: storage is updated before `verifyProof`. If the call reverts, the whole tx rolls back (nullifier not persisted).
-    function registerWithWorldId(
-        uint256 root,
-        uint256 groupId,
-        uint256 nullifierHash,
-        uint256[8] calldata proof
-    ) external nonReentrant {
+    /// @notice Updates the backend wallet authorized to register emitters.
+    function setTrustedVerifier(address newVerifier) external onlyOwner {
+        require(newVerifier != address(0), "InvoiceRegistry: zero verifier");
+        trustedVerifier = newVerifier;
+        emit TrustedVerifierUpdated(newVerifier);
+    }
+
+    /// @notice Registers `emitter` as a verified emitter with World ID nullifier.
+    /// @dev Only callable by {trustedVerifier} after off-chain World ID v4 proof verification via `POST /api/v4/verify`.
+    function registerEmitter(address emitter, uint256 nullifierHash) external {
+        require(
+            msg.sender == trustedVerifier,
+            "InvoiceRegistry: not trusted verifier"
+        );
+        require(emitter != address(0), "InvoiceRegistry: zero emitter");
         require(
             !_nullifierUsed[nullifierHash],
             "InvoiceRegistry: nullifier used"
         );
         _nullifierUsed[nullifierHash] = true;
-        isEmitterVerified[msg.sender] = true;
-        emitterWorldIdNullifier[msg.sender] = nullifierHash;
-        uint256 signalHash =
-            uint256(keccak256(abi.encodePacked(msg.sender))) / 256;
-        IWorldIdRouter(worldIdRouter).verifyProof(
-            root,
-            groupId,
-            signalHash,
-            nullifierHash,
-            externalNullifierHash,
-            proof
-        );
+        isEmitterVerified[emitter] = true;
+        emitterWorldIdNullifier[emitter] = nullifierHash;
+        emit EmitterRegistered(emitter, nullifierHash);
     }
 
     /// @dev Lower 160 bits of keccak256(abi.encodePacked(nullifier)) — packed into invoice ids (matches off-chain helpers).

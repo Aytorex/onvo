@@ -15,26 +15,9 @@ export const invoiceRegistryContract = {
   abi: [
     {
       inputs: [
-        {
-          internalType: 'address',
-          name: 'initialOwner',
-          type: 'address',
-        },
-        {
-          internalType: 'address',
-          name: 'worldIdRouter_',
-          type: 'address',
-        },
-        {
-          internalType: 'uint256',
-          name: 'externalNullifierHash_',
-          type: 'uint256',
-        },
-        {
-          internalType: 'address[]',
-          name: 'tokens',
-          type: 'address[]',
-        },
+        { internalType: 'address', name: 'initialOwner', type: 'address' },
+        { internalType: 'address', name: 'trustedVerifier_', type: 'address' },
+        { internalType: 'address[]', name: 'tokens', type: 'address[]' },
         {
           internalType: 'address',
           name: 'commissionRecipient_',
@@ -45,42 +28,65 @@ export const invoiceRegistryContract = {
       type: 'constructor',
     },
     {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'owner',
-          type: 'address',
-        },
-      ],
+      inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
       name: 'OwnableInvalidOwner',
       type: 'error',
     },
     {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'account',
-          type: 'address',
-        },
-      ],
+      inputs: [{ internalType: 'address', name: 'account', type: 'address' }],
       name: 'OwnableUnauthorizedAccount',
       type: 'error',
     },
+    { inputs: [], name: 'ReentrancyGuardReentrantCall', type: 'error' },
     {
-      inputs: [],
-      name: 'ReentrancyGuardReentrantCall',
+      inputs: [{ internalType: 'address', name: 'token', type: 'address' }],
+      name: 'SafeERC20FailedOperation',
       type: 'error',
     },
     {
+      anonymous: false,
       inputs: [
         {
+          indexed: false,
+          internalType: 'uint256',
+          name: 'newCommissionBps',
+          type: 'uint256',
+        },
+      ],
+      name: 'CommissionBpsUpdated',
+      type: 'event',
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
           internalType: 'address',
-          name: 'token',
+          name: 'newRecipient',
           type: 'address',
         },
       ],
-      name: 'SafeERC20FailedOperation',
-      type: 'error',
+      name: 'CommissionRecipientUpdated',
+      type: 'event',
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: 'address',
+          name: 'emitter',
+          type: 'address',
+        },
+        {
+          indexed: false,
+          internalType: 'uint256',
+          name: 'nullifierHash',
+          type: 'uint256',
+        },
+      ],
+      name: 'EmitterRegistered',
+      type: 'event',
     },
     {
       anonymous: false,
@@ -160,32 +166,6 @@ export const invoiceRegistryContract = {
       anonymous: false,
       inputs: [
         {
-          indexed: false,
-          internalType: 'uint256',
-          name: 'newCommissionBps',
-          type: 'uint256',
-        },
-      ],
-      name: 'CommissionBpsUpdated',
-      type: 'event',
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: 'address',
-          name: 'newRecipient',
-          type: 'address',
-        },
-      ],
-      name: 'CommissionRecipientUpdated',
-      type: 'event',
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
           indexed: true,
           internalType: 'uint256',
           name: 'invoiceId',
@@ -239,58 +219,41 @@ export const invoiceRegistryContract = {
       type: 'event',
     },
     {
-      inputs: [],
-      name: 'COMMISSION_BPS_DENOMINATOR',
-      outputs: [
+      anonymous: false,
+      inputs: [
         {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256',
+          indexed: true,
+          internalType: 'address',
+          name: 'newVerifier',
+          type: 'address',
         },
       ],
+      name: 'TrustedVerifierUpdated',
+      type: 'event',
+    },
+    {
+      inputs: [],
+      name: 'COMMISSION_BPS_DENOMINATOR',
+      outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
       stateMutability: 'view',
       type: 'function',
     },
     {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'token',
-          type: 'address',
-        },
-      ],
+      inputs: [{ internalType: 'address', name: 'token', type: 'address' }],
       name: 'addAllowedToken',
       outputs: [],
       stateMutability: 'nonpayable',
       type: 'function',
     },
     {
-      inputs: [
-        {
-          internalType: 'address',
-          name: '',
-          type: 'address',
-        },
-      ],
+      inputs: [{ internalType: 'address', name: '', type: 'address' }],
       name: 'allowedToken',
-      outputs: [
-        {
-          internalType: 'bool',
-          name: '',
-          type: 'bool',
-        },
-      ],
+      outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
       stateMutability: 'view',
       type: 'function',
     },
     {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'invoiceId',
-          type: 'uint256',
-        },
-      ],
+      inputs: [{ internalType: 'uint256', name: 'invoiceId', type: 'uint256' }],
       name: 'cancelInvoice',
       outputs: [],
       stateMutability: 'nonpayable',
@@ -299,76 +262,28 @@ export const invoiceRegistryContract = {
     {
       inputs: [],
       name: 'commissionBps',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256',
-        },
-      ],
+      outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
       stateMutability: 'view',
       type: 'function',
     },
     {
       inputs: [],
       name: 'commissionRecipient',
-      outputs: [
-        {
-          internalType: 'address',
-          name: '',
-          type: 'address',
-        },
-      ],
+      outputs: [{ internalType: 'address', name: '', type: 'address' }],
       stateMutability: 'view',
       type: 'function',
     },
     {
       inputs: [
-        {
-          internalType: 'uint256',
-          name: 'invoiceId',
-          type: 'uint256',
-        },
-        {
-          internalType: 'bytes32',
-          name: 'invoiceHash_',
-          type: 'bytes32',
-        },
-        {
-          internalType: 'address',
-          name: 'emitter',
-          type: 'address',
-        },
-        {
-          internalType: 'address',
-          name: 'recipient',
-          type: 'address',
-        },
-        {
-          internalType: 'uint256',
-          name: 'amount',
-          type: 'uint256',
-        },
-        {
-          internalType: 'address',
-          name: 'token',
-          type: 'address',
-        },
-        {
-          internalType: 'string',
-          name: 'vatNumber',
-          type: 'string',
-        },
-        {
-          internalType: 'uint256',
-          name: 'year',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'month',
-          type: 'uint256',
-        },
+        { internalType: 'uint256', name: 'invoiceId', type: 'uint256' },
+        { internalType: 'bytes32', name: 'invoiceHash_', type: 'bytes32' },
+        { internalType: 'address', name: 'emitter', type: 'address' },
+        { internalType: 'address', name: 'recipient', type: 'address' },
+        { internalType: 'uint256', name: 'amount', type: 'uint256' },
+        { internalType: 'address', name: 'token', type: 'address' },
+        { internalType: 'string', name: 'vatNumber', type: 'string' },
+        { internalType: 'uint256', name: 'year', type: 'uint256' },
+        { internalType: 'uint256', name: 'month', type: 'uint256' },
       ],
       name: 'createInvoice',
       outputs: [],
@@ -376,222 +291,22 @@ export const invoiceRegistryContract = {
       type: 'function',
     },
     {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'worldIdNullifierHash',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'year',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'month',
-          type: 'uint256',
-        },
-      ],
-      name: 'getNextInvoiceId',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256',
-        },
-      ],
-      stateMutability: 'view',
-      type: 'function',
-    },
-    {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'worldIdNullifierHash',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'year',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'month',
-          type: 'uint256',
-        },
-      ],
-      name: 'getNextInvoiceSequence',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256',
-        },
-      ],
-      stateMutability: 'view',
-      type: 'function',
-    },
-    {
-      inputs: [
-        {
-          internalType: 'uint160',
-          name: 'worldIdPacked_',
-          type: 'uint160',
-        },
-        {
-          internalType: 'uint256',
-          name: 'year',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'month',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'sequence',
-          type: 'uint256',
-        },
-      ],
-      name: 'packInvoiceId',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: 'invoiceId',
-          type: 'uint256',
-        },
-      ],
-      stateMutability: 'pure',
-      type: 'function',
-    },
-    {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'invoiceId',
-          type: 'uint256',
-        },
-      ],
-      name: 'parseInvoiceId',
-      outputs: [
-        {
-          internalType: 'uint160',
-          name: 'worldIdPacked_',
-          type: 'uint160',
-        },
-        {
-          internalType: 'uint256',
-          name: 'year',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'month',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'sequence',
-          type: 'uint256',
-        },
-      ],
-      stateMutability: 'pure',
-      type: 'function',
-    },
-    {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'worldIdNullifierHash',
-          type: 'uint256',
-        },
-      ],
-      name: 'worldIdNullifierToPacked160',
-      outputs: [
-        {
-          internalType: 'uint160',
-          name: '',
-          type: 'uint160',
-        },
-      ],
-      stateMutability: 'pure',
-      type: 'function',
-    },
-    {
-      inputs: [],
-      name: 'externalNullifierHash',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256',
-        },
-      ],
-      stateMutability: 'view',
-      type: 'function',
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: '',
-          type: 'address',
-        },
-      ],
+      inputs: [{ internalType: 'address', name: '', type: 'address' }],
       name: 'emitterWorldIdNullifier',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256',
-        },
-      ],
+      outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
       stateMutability: 'view',
       type: 'function',
     },
     {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'invoiceId',
-          type: 'uint256',
-        },
-      ],
+      inputs: [{ internalType: 'uint256', name: 'invoiceId', type: 'uint256' }],
       name: 'getInvoice',
       outputs: [
-        {
-          internalType: 'bytes32',
-          name: 'invoiceHash_',
-          type: 'bytes32',
-        },
-        {
-          internalType: 'address',
-          name: 'emitter',
-          type: 'address',
-        },
-        {
-          internalType: 'address',
-          name: 'recipient',
-          type: 'address',
-        },
-        {
-          internalType: 'uint256',
-          name: 'amount',
-          type: 'uint256',
-        },
-        {
-          internalType: 'address',
-          name: 'token',
-          type: 'address',
-        },
-        {
-          internalType: 'string',
-          name: 'vatNumber',
-          type: 'string',
-        },
+        { internalType: 'bytes32', name: 'invoiceHash_', type: 'bytes32' },
+        { internalType: 'address', name: 'emitter', type: 'address' },
+        { internalType: 'address', name: 'recipient', type: 'address' },
+        { internalType: 'uint256', name: 'amount', type: 'uint256' },
+        { internalType: 'address', name: 'token', type: 'address' },
+        { internalType: 'string', name: 'vatNumber', type: 'string' },
         {
           internalType: 'uint256',
           name: 'worldIdNullifierHash_',
@@ -609,32 +324,15 @@ export const invoiceRegistryContract = {
     {
       inputs: [
         {
-          internalType: 'address',
-          name: '',
-          type: 'address',
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash',
+          type: 'uint256',
         },
+        { internalType: 'uint256', name: 'year', type: 'uint256' },
+        { internalType: 'uint256', name: 'month', type: 'uint256' },
       ],
-      name: 'isEmitterVerified',
-      outputs: [
-        {
-          internalType: 'bool',
-          name: '',
-          type: 'bool',
-        },
-      ],
-      stateMutability: 'view',
-      type: 'function',
-    },
-    {
-      inputs: [],
-      name: 'owner',
-      outputs: [
-        {
-          internalType: 'address',
-          name: '',
-          type: 'address',
-        },
-      ],
+      name: 'getNextInvoiceId',
+      outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
       stateMutability: 'view',
       type: 'function',
     },
@@ -642,10 +340,59 @@ export const invoiceRegistryContract = {
       inputs: [
         {
           internalType: 'uint256',
-          name: 'invoiceId',
+          name: 'worldIdNullifierHash',
           type: 'uint256',
         },
+        { internalType: 'uint256', name: 'year', type: 'uint256' },
+        { internalType: 'uint256', name: 'month', type: 'uint256' },
       ],
+      name: 'getNextInvoiceSequence',
+      outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [{ internalType: 'address', name: '', type: 'address' }],
+      name: 'isEmitterVerified',
+      outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [],
+      name: 'owner',
+      outputs: [{ internalType: 'address', name: '', type: 'address' }],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        { internalType: 'uint160', name: 'worldIdPacked_', type: 'uint160' },
+        { internalType: 'uint256', name: 'year', type: 'uint256' },
+        { internalType: 'uint256', name: 'month', type: 'uint256' },
+        { internalType: 'uint256', name: 'sequence', type: 'uint256' },
+      ],
+      name: 'packInvoiceId',
+      outputs: [
+        { internalType: 'uint256', name: 'invoiceId', type: 'uint256' },
+      ],
+      stateMutability: 'pure',
+      type: 'function',
+    },
+    {
+      inputs: [{ internalType: 'uint256', name: 'invoiceId', type: 'uint256' }],
+      name: 'parseInvoiceId',
+      outputs: [
+        { internalType: 'uint160', name: 'worldIdPacked_', type: 'uint160' },
+        { internalType: 'uint256', name: 'year', type: 'uint256' },
+        { internalType: 'uint256', name: 'month', type: 'uint256' },
+        { internalType: 'uint256', name: 'sequence', type: 'uint256' },
+      ],
+      stateMutability: 'pure',
+      type: 'function',
+    },
+    {
+      inputs: [{ internalType: 'uint256', name: 'invoiceId', type: 'uint256' }],
       name: 'payInvoice',
       outputs: [],
       stateMutability: 'nonpayable',
@@ -653,28 +400,10 @@ export const invoiceRegistryContract = {
     },
     {
       inputs: [
-        {
-          internalType: 'uint256',
-          name: 'root',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'groupId',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256',
-          name: 'nullifierHash',
-          type: 'uint256',
-        },
-        {
-          internalType: 'uint256[8]',
-          name: 'proof',
-          type: 'uint256[8]',
-        },
+        { internalType: 'address', name: 'emitter', type: 'address' },
+        { internalType: 'uint256', name: 'nullifierHash', type: 'uint256' },
       ],
-      name: 'registerWithWorldId',
+      name: 'registerEmitter',
       outputs: [],
       stateMutability: 'nonpayable',
       type: 'function',
@@ -687,13 +416,7 @@ export const invoiceRegistryContract = {
       type: 'function',
     },
     {
-      inputs: [
-        {
-          internalType: 'uint256',
-          name: 'newBps',
-          type: 'uint256',
-        },
-      ],
+      inputs: [{ internalType: 'uint256', name: 'newBps', type: 'uint256' }],
       name: 'setCommissionBps',
       outputs: [],
       stateMutability: 'nonpayable',
@@ -701,11 +424,7 @@ export const invoiceRegistryContract = {
     },
     {
       inputs: [
-        {
-          internalType: 'address',
-          name: 'newRecipient',
-          type: 'address',
-        },
+        { internalType: 'address', name: 'newRecipient', type: 'address' },
       ],
       name: 'setCommissionRecipient',
       outputs: [],
@@ -714,12 +433,15 @@ export const invoiceRegistryContract = {
     },
     {
       inputs: [
-        {
-          internalType: 'address',
-          name: 'newOwner',
-          type: 'address',
-        },
+        { internalType: 'address', name: 'newVerifier', type: 'address' },
       ],
+      name: 'setTrustedVerifier',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [{ internalType: 'address', name: 'newOwner', type: 'address' }],
       name: 'transferOwnership',
       outputs: [],
       stateMutability: 'nonpayable',
@@ -727,15 +449,22 @@ export const invoiceRegistryContract = {
     },
     {
       inputs: [],
-      name: 'worldIdRouter',
-      outputs: [
+      name: 'trustedVerifier',
+      outputs: [{ internalType: 'address', name: '', type: 'address' }],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
         {
-          internalType: 'address',
-          name: '',
-          type: 'address',
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash',
+          type: 'uint256',
         },
       ],
-      stateMutability: 'view',
+      name: 'worldIdNullifierToPacked160',
+      outputs: [{ internalType: 'uint160', name: '', type: 'uint160' }],
+      stateMutability: 'pure',
       type: 'function',
     },
   ] as const,

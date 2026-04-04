@@ -12,7 +12,7 @@ On-chain invoice registry: World ID–verified emitters, ERC-20 settlement (e.g.
 
 ### Core flows
 
-- **`registerWithWorldId`** — binds an emitter address to a verified World ID proof (nullifier tracked).
+- **`registerEmitter`** — binds an emitter address to a World ID nullifier (called by `trustedVerifier` after off-chain proof verification via `POST /api/v4/verify`).
 - **`createInvoice`** — emitter creates an invoice (unique hash, allowed token, structured invoice id encoding).
 - **`payInvoice`** — payer transfers token per invoice; updates status to **Paid**.
 - **`cancelInvoice`** — emitter cancels while **Pending**.

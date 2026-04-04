@@ -357,7 +357,7 @@
     },
     "registerEmitter": {
       "title": "Enregistrement émetteur on-chain",
-      "description": "Une transaction <code>registerWithWorldId</code> lie votre wallet à World ID sur Arc. Utilisez le même wallet que pour signer les factures.",
+      "description": "Vérifiez votre identité avec World ID pour lier votre wallet en tant qu'émetteur vérifié. Utilisez le même wallet que pour signer les factures.",
       "button": "Enregistrer mon wallet avec World ID"
     },
     "errors": {
@@ -405,7 +405,7 @@
       "worldIdInitRp": "Impossible d'initialiser World ID (RP).",
       "worldIdCancelled": "World ID annulé ou erreur.",
       "registerSuccess": "Adresse enregistrée comme émetteur vérifié.",
-      "registerTxFailed": "Transaction registerWithWorldId échouée.",
+      "registerTxFailed": "Échec de l'enregistrement de l'émetteur.",
       "connectWalletFirst": "Connectez d'abord votre wallet (même adresse que pour les factures).",
       "formValidationError": "Veuillez remplir tous les champs obligatoires."
     }
