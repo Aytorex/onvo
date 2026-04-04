@@ -12,7 +12,9 @@
     "connecting": "Connecting…",
     "stableBalancesOnArc": "Balances on Arc Testnet",
     "tokenBalanceLoading": "…",
-    "tokenBalanceUnavailable": "—"
+    "tokenBalanceUnavailable": "—",
+    "copyAddress": "Click to copy address",
+    "addressCopied": "Copied!"
   },
   "brand": {
     "logoAria": "ONVO"
