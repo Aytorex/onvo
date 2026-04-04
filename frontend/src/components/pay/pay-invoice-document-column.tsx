@@ -8,7 +8,6 @@ import {
   type InvoiceView,
 } from '@/lib/pay-invoice';
 
-import { PayInvoiceCopyHashButton } from '@/components/pay/pay-invoice-copy-hash-button';
 import { PayInvoiceLegalCard } from '@/components/pay/pay-invoice-legal-card';
 import { PayInvoiceStatusBadge } from '@/components/pay/pay-invoice-status-badge';
 
@@ -68,37 +67,28 @@ export function PayInvoiceDocumentColumn({
       <PayInvoiceLegalCard invoice={invoice} />
 
       <section
-        className="rounded-3xl border border-dashed border-border/70 bg-muted/10 p-6 sm:p-8"
+        className="rounded-2xl border border-border/50 bg-muted/[0.35] p-5 sm:p-6"
         aria-labelledby="pay-verify-authenticity"
       >
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-          <h2
-            id="pay-verify-authenticity"
-            className="text-base font-semibold text-heading"
-          >
-            {t('pay.verifyAuthenticityTitle')}
-          </h2>
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t('pay.verifyAuthenticityOptional')}
-          </span>
+        <h2
+          id="pay-verify-authenticity"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          {t('pay.verifyAuthenticityTitle')}
+        </h2>
+        <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
+          <p>{t('pay.verifyAuthenticityWhat')}</p>
+          <p>{t('pay.verifyAuthenticityWhere')}</p>
+          <p>{t('pay.verifyAuthenticityHow')}</p>
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {t('pay.verifyAuthenticityIntro')}
-        </p>
-        <div className="mt-4 rounded-xl border border-border/60 bg-card/80 p-4 dark:bg-card/50">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t('pay.invoiceHash')}
+        <div className="mt-5 rounded-xl border border-border/50 bg-background/80 p-3.5 shadow-sm dark:bg-card/40">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {t('pay.invoiceHashOnChain')}
           </p>
-          <code className="mt-2 block break-all font-mono text-xs leading-relaxed text-foreground sm:text-sm">
+          <code className="mt-2 block break-all font-mono text-[11px] leading-snug text-foreground sm:text-xs">
             {invoice.invoiceHash}
           </code>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <PayInvoiceCopyHashButton hash={invoice.invoiceHash} />
-          </div>
         </div>
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          {t('pay.pdfCompareHint')}
-        </p>
       </section>
     </div>
   );
