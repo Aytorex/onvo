@@ -131,11 +131,11 @@ export function InvoiceDetailClient() {
 
   return (
     <div className="p-4 space-y-8">
-      <div className="flex justify-between gap-2 w-full">
+      <div className="flex w-full items-center justify-between gap-2">
         <Button asChild variant="secondary">
           <Link href="/dashboard/invoices">{t('invoice.detail.back')}</Link>
         </Button>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4">
           <Button variant="default" asChild>
             <Link href={`/pay/${invoiceIdToUrlSegment(invoiceId)}`}>
               {t('invoice.detail.payPage')}

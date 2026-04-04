@@ -732,7 +732,7 @@ export function InvoiceNewClient() {
   if (successId !== null && successContext && successSummary) {
     const { dueFormatted, amountStr, mailtoHref } = successSummary;
     return (
-      <div className="mx-auto w-full max-w-xl animate-fade-in">
+      <div className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col overflow-y-auto overscroll-contain pb-6 animate-fade-in">
         <div
           className="relative overflow-hidden rounded-[1.75rem] border border-onvo-purple/20 bg-gradient-to-br from-card via-card to-onvo-purple/[0.07] shadow-2xl shadow-onvo-purple/15 dark:border-onvo-purple/35 dark:from-card dark:via-card dark:to-onvo-cyan/[0.06] dark:shadow-onvo-cyan/10"
           role="region"
