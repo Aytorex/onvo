@@ -163,6 +163,47 @@ contract InvoiceRegistryTest is Test {
         assertEq(seq1 + 1, seq2);
     }
 
+    /// @dev External call to `getNextInvoiceSequence` so forge coverage counts that entry point (not only via `getNextInvoiceId`).
+    function testGetNextInvoiceSequencePublicView() public {
+        assertEq(
+            registry.getNextInvoiceSequence(emitter, INV_YEAR, INV_MONTH),
+            1
+        );
+        _registerEmitter();
+        assertEq(
+            registry.getNextInvoiceSequence(emitter, INV_YEAR, INV_MONTH),
+            1
+        );
+        uint256 id = _nextInvoiceId(emitter);
+        vm.prank(emitter);
+        registry.createInvoice(
+            id,
+            keccak256("seq-view"),
+            emitter,
+            payer,
+            1,
+            address(token),
+            INV_YEAR,
+            INV_MONTH
+        );
+        assertEq(
+            registry.getNextInvoiceSequence(emitter, INV_YEAR, INV_MONTH),
+            2
+        );
+    }
+
+    /// @dev Full tuple decode via external `parseInvoiceId` (ABI / coverage).
+    function testParseInvoiceIdExternalDecodesPackedId() public view {
+        uint256 id = registry.packInvoiceId(emitter, INV_YEAR, INV_MONTH, 7);
+        (address e, uint256 y, uint256 m, uint256 s) = registry.parseInvoiceId(
+            id
+        );
+        assertEq(e, emitter);
+        assertEq(y, INV_YEAR);
+        assertEq(m, INV_MONTH);
+        assertEq(s, 7);
+    }
+
     function testRevertWhenCreateInvoiceIdEmitterMismatch() public {
         _registerEmitter();
         uint256 badId = registry.packInvoiceId(
