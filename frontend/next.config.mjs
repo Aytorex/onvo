@@ -18,6 +18,8 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_INVOICE_REGISTRY_FROM_BLOCK ?? '0',
     NEXT_PUBLIC_WORLD_APP_ID: process.env.NEXT_PUBLIC_WORLD_APP_ID ?? '',
     NEXT_PUBLIC_WORLD_RP_ID: process.env.NEXT_PUBLIC_WORLD_RP_ID ?? '',
+    NEXT_PUBLIC_TOKEN_USDC: process.env.NEXT_PUBLIC_TOKEN_USDC ?? '',
+    NEXT_PUBLIC_TOKEN_EURC: process.env.NEXT_PUBLIC_TOKEN_EURC ?? '',
   },
   reactStrictMode: true,
   serverExternalPackages: ['pino-pretty', 'encoding'],

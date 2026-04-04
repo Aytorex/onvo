@@ -1,0 +1,59 @@
+import {
+  parseEventLogs,
+  type PublicClient,
+  type TransactionReceipt,
+} from 'viem';
+import { invoiceRegistryContract } from '@/lib/contract';
+
+export async function readInvoice(
+  client: PublicClient,
+  invoiceId: bigint,
+): Promise<{
+  invoiceHash: `0x${string}`;
+  emitter: `0x${string}`;
+  recipient: `0x${string}`;
+  amount: bigint;
+  token: `0x${string}`;
+  status: 0 | 1 | 2;
+}> {
+  const [invoiceHash, emitter, recipient, amount, token, status] =
+    await client.readContract({
+      address: invoiceRegistryContract.address,
+      abi: invoiceRegistryContract.abi,
+      functionName: 'getInvoice',
+      args: [invoiceId],
+    });
+  return {
+    invoiceHash,
+    emitter,
+    recipient,
+    amount,
+    token,
+    status: status as 0 | 1 | 2,
+  };
+}
+
+export async function readEmitterVerified(
+  client: PublicClient,
+  emitter: `0x${string}`,
+): Promise<boolean> {
+  return client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'isEmitterVerified',
+    args: [emitter],
+  });
+}
+
+export function parseInvoiceCreatedInvoiceId(
+  receipt: TransactionReceipt,
+): bigint | undefined {
+  const parsed = parseEventLogs({
+    abi: invoiceRegistryContract.abi,
+    eventName: 'InvoiceCreated',
+    logs: receipt.logs,
+  });
+  const first = parsed[0];
+  if (!first || first.args.invoiceId === undefined) return undefined;
+  return first.args.invoiceId as bigint;
+}
