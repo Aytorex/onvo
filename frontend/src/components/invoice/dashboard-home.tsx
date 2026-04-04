@@ -4,7 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
-import { getTokenAddress, tokenDecimals } from '@/lib/invoice-tokens';
+import {
+  formatInvoiceTokenAmount,
+  shortAddr,
+  tokenSymbolForAddress,
+} from '@/lib/invoice-row-display';
 import { cn } from '@/lib/utils';
 import {
   ArrowRight,
@@ -23,29 +27,6 @@ import Link from 'next/link';
 import type { ComponentType, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-function shortAddr(a: string) {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
-
-function tokenSymbolForAddress(token: `0x${string}`): string {
-  const usdc = getTokenAddress('USDC').toLowerCase();
-  const eurc = getTokenAddress('EURC').toLowerCase();
-  const t = token.toLowerCase();
-  if (t === usdc) return 'USDC';
-  if (t === eurc) return 'EURC';
-  return 'TOKEN';
-}
-
-function formatTokenAmount(amount: bigint, token: `0x${string}`): string {
-  const dec = tokenDecimals();
-  const n = Number(amount) / 10 ** dec;
-  if (!Number.isFinite(n)) return amount.toString();
-  return new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
 
 function statusBadge(
   status: 0 | 1 | 2,
@@ -328,7 +309,7 @@ export function DashboardHomeView({
                 const title =
                   r.meta?.clientName?.trim() || shortAddr(r.recipient);
                 const sym = tokenSymbolForAddress(r.token);
-                const amt = formatTokenAmount(r.amount, r.token);
+                const amt = formatInvoiceTokenAmount(r.amount, r.token);
                 return (
                   <li key={r.invoiceId.toString()}>
                     <div

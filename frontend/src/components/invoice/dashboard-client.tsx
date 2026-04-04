@@ -1,22 +1,13 @@
 'use client';
 
 import { DashboardHomeView } from '@/components/invoice/dashboard-home';
+import { DashboardInvoiceList } from '@/components/invoice/dashboard-invoice-list';
 import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
   downloadBase64Pdf,
@@ -37,33 +28,6 @@ import {
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
-
-function statusBadge(status: 0 | 1 | 2, t: (key: string) => string) {
-  if (status === 0)
-    return (
-      <Badge variant="outline" className="border-amber-500/60 text-amber-400">
-        {t('invoice.status.pending')}
-      </Badge>
-    );
-  if (status === 1)
-    return (
-      <Badge
-        variant="outline"
-        className="border-emerald-500/60 text-emerald-400"
-      >
-        {t('invoice.status.paid')}
-      </Badge>
-    );
-  return (
-    <Badge variant="secondary" className="text-muted-foreground">
-      {t('invoice.status.cancelled')}
-    </Badge>
-  );
-}
-
-function shortAddr(a: string) {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
 
 export type DashboardClientVariant = 'home' | 'invoices';
 
@@ -188,79 +152,6 @@ export function DashboardClient({
     );
   }
 
-  const invoiceTable = loading ? (
-    <p className="text-sm text-muted-foreground">
-      {t('invoice.dashboard.loading')}
-    </p>
-  ) : rows.length === 0 ? (
-    <p className="text-sm text-muted-foreground">
-      {t('invoice.dashboard.emptyState')}
-    </p>
-  ) : (
-    <div className="rounded-xl border border-border/80">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('invoice.dashboard.colId')}</TableHead>
-            <TableHead>{t('invoice.dashboard.colRecipient')}</TableHead>
-            <TableHead>{t('invoice.dashboard.colAmountRaw')}</TableHead>
-            <TableHead>{t('invoice.dashboard.colToken')}</TableHead>
-            <TableHead>{t('invoice.dashboard.colStatus')}</TableHead>
-            <TableHead className="text-right">
-              {t('invoice.dashboard.colActions')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.invoiceId.toString()}>
-              <TableCell className="font-mono text-xs">
-                {formatOnvoInvoiceLabel(r.invoiceId)}
-              </TableCell>
-              <TableCell className="font-mono text-xs">
-                {shortAddr(r.recipient)}
-              </TableCell>
-              <TableCell className="font-mono text-xs">
-                {r.amount.toString()}
-              </TableCell>
-              <TableCell className="font-mono text-xs">
-                {shortAddr(r.token)}
-              </TableCell>
-              <TableCell>{statusBadge(r.status, t)}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex flex-wrap justify-end gap-1">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/invoice/${r.invoiceId.toString()}`}>
-                      {t('invoice.dashboard.view')}
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => exportPdf(r.invoiceId)}
-                  >
-                    {t('invoice.dashboard.export')}
-                  </Button>
-                  {r.status === 0 ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      disabled={isCancelPending}
-                      onClick={() => void onCancel(r.invoiceId)}
-                    >
-                      {t('invoice.dashboard.cancel')}
-                    </Button>
-                  ) : null}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-
   const actionsRow = (
     <div className="flex flex-wrap gap-2">
       <Button asChild>
@@ -279,15 +170,8 @@ export function DashboardClient({
   if (variant === 'invoices') {
     return (
       <div className="space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {t('invoice.dashboard.subtitle')}
-          </p>
-          {actionsRow}
-        </div>
-
         {!isConnected ? (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+          <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
             {t('invoice.dashboard.connectWalletHint')}
           </p>
         ) : null}
@@ -298,7 +182,14 @@ export function DashboardClient({
           />
         ) : null}
 
-        {invoiceTable}
+        <DashboardInvoiceList
+          rows={rows}
+          loading={loading}
+          actionsSlot={actionsRow}
+          onExportPdf={exportPdf}
+          onCancel={(invoiceId) => void onCancel(invoiceId)}
+          isCancelPending={isCancelPending}
+        />
       </div>
     );
   }
