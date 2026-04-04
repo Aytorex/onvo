@@ -42,6 +42,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address recipient;
         uint256 amount;
         address token;
+        /// @dev Emitter VAT identification number (e.g. EU VAT ID), max 64 bytes.
+        string vatNumber;
         Status status;
     }
 
@@ -63,7 +65,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address indexed emitter,
         address recipient,
         uint256 amount,
-        address token
+        address token,
+        string vatNumber
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
@@ -246,6 +249,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address recipient,
         uint256 amount,
         address token,
+        string calldata vatNumber,
         uint256 year,
         uint256 month
     ) external {
@@ -257,6 +261,10 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         require(recipient != address(0), "InvoiceRegistry: zero recipient");
         require(allowedToken[token], "InvoiceRegistry: token not allowed");
         require(amount > 0, "InvoiceRegistry: zero amount");
+        require(
+            bytes(vatNumber).length <= 64,
+            "InvoiceRegistry: vat number too long"
+        );
         require(!_hashUsed[invoiceHash_], "InvoiceRegistry: hash used");
         require(year >= 2000 && year <= 9999, "InvoiceRegistry: invalid year");
         require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
@@ -273,6 +281,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             recipient: recipient,
             amount: amount,
             token: token,
+            vatNumber: vatNumber,
             status: Status.Pending
         });
 
@@ -282,7 +291,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             emitter,
             recipient,
             amount,
-            token
+            token,
+            vatNumber
         );
     }
 
@@ -319,6 +329,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             address recipient,
             uint256 amount,
             address token,
+            string memory vatNumber,
             Status status
         )
     {
@@ -329,6 +340,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             inv.recipient,
             inv.amount,
             inv.token,
+            inv.vatNumber,
             inv.status
         );
     }

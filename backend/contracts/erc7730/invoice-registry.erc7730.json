@@ -33,9 +33,9 @@
           }
         ]
       },
-      "createInvoice(uint256 invoiceId,bytes32 invoiceHash_,address emitter,address recipient,uint256 amount,address token,uint256 year,uint256 month)": {
+      "createInvoice(uint256 invoiceId,bytes32 invoiceHash_,address emitter,address recipient,uint256 amount,address token,string vatNumber,uint256 year,uint256 month)": {
         "intent": "Register verified invoice on-chain",
-        "interpolatedIntent": "Invoice {year}-{month} — id {invoiceId} · total {amount} · client {recipient} · pay to {emitter} · ref {invoiceHash_}",
+        "interpolatedIntent": "Invoice {year}-{month} — id {invoiceId} · total {amount} · VAT ID {vatNumber} · client {recipient} · pay to {emitter} · ref {invoiceHash_}",
         "fields": [
           {
             "path": "invoiceId",
@@ -69,6 +69,11 @@
             "path": "token",
             "label": "Currency (settlement token)",
             "format": "addressName"
+          },
+          {
+            "path": "vatNumber",
+            "label": "VAT identification number",
+            "format": "text"
           },
           {
             "path": "year",

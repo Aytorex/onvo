@@ -33,6 +33,9 @@ export function createInvoiceFormSchema(t: TFunction<'common'>) {
     emitterCity: z.string().min(1, t('invoice.validation.emitterCityRequired')),
     emitterCountry: z.string(),
     emitterSiret: z.string(),
+    emitterVatNumber: z
+      .string()
+      .max(64, t('invoice.validation.emitterVatNumberMax')),
     emitterEmail: optionalEmail,
     clientName: z.string().min(1, t('invoice.validation.clientRequired')),
     clientStreet: z

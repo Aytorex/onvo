@@ -18,6 +18,8 @@ contract InvoiceRegistryTest is Test {
     /// @dev Fixed calendar period for deterministic packed invoice ids in tests.
     uint256 internal constant INV_YEAR = 2026;
     uint256 internal constant INV_MONTH = 4;
+    /// @dev Sample emitter VAT ID for event / storage checks.
+    string internal constant SAMPLE_VAT_NUMBER = "FR85939527636";
 
     uint256[8] internal dummyProof;
 
@@ -35,7 +37,8 @@ contract InvoiceRegistryTest is Test {
         address indexed emitter_,
         address recipient,
         uint256 amount,
-        address token_
+        address token_,
+        string vatNumber
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
@@ -114,7 +117,15 @@ contract InvoiceRegistryTest is Test {
         uint256 id = _nextInvoiceId(emitter);
         vm.prank(emitter);
         vm.expectEmit(true, true, true, true);
-        emit InvoiceCreated(id, hash, emitter, payer, amount, address(token));
+        emit InvoiceCreated(
+            id,
+            hash,
+            emitter,
+            payer,
+            amount,
+            address(token),
+            SAMPLE_VAT_NUMBER
+        );
         registry.createInvoice(
             id,
             hash,
@@ -122,6 +133,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            SAMPLE_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH
         );
@@ -132,6 +144,7 @@ contract InvoiceRegistryTest is Test {
             address recipient,
             uint256 amt,
             address tok,
+            string memory vat_,
             InvoiceRegistry.Status status
         ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
@@ -139,6 +152,7 @@ contract InvoiceRegistryTest is Test {
         assertEq(recipient, payer);
         assertEq(amt, amount);
         assertEq(tok, address(token));
+        assertEq(vat_, SAMPLE_VAT_NUMBER);
         assertEq(uint256(status), uint256(InvoiceRegistry.Status.Pending));
     }
 
@@ -153,6 +167,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -183,6 +198,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -221,6 +237,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -243,6 +260,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -260,6 +278,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH + 1
         );
@@ -278,6 +297,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -295,6 +315,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -315,6 +336,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(other),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -333,6 +355,29 @@ contract InvoiceRegistryTest is Test {
             payer,
             0,
             address(token),
+            "",
+            INV_YEAR,
+            INV_MONTH
+        );
+    }
+
+    function testRevertWhenCreateInvoiceVatNumberTooLong() public {
+        _registerEmitter();
+        bytes32 hash = keccak256("h-vat");
+        uint256 id = _nextInvoiceId(emitter);
+        // 65 bytes > 64 max
+        string memory tooLong =
+            "012345678901234567890123456789012345678901234567890123456789012345";
+        vm.prank(emitter);
+        vm.expectRevert("InvoiceRegistry: vat number too long");
+        registry.createInvoice(
+            id,
+            hash,
+            emitter,
+            payer,
+            1,
+            address(token),
+            tooLong,
             INV_YEAR,
             INV_MONTH
         );
@@ -350,6 +395,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             10,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -362,6 +408,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             20,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -381,6 +428,7 @@ contract InvoiceRegistryTest is Test {
             ZERO,
             1,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -401,6 +449,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -413,7 +462,7 @@ contract InvoiceRegistryTest is Test {
         emit InvoicePaid(id, payer, amount, address(token));
         registry.payInvoice(id);
 
-        (, , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
+        (, , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Paid));
         assertEq(token.balanceOf(emitter), emitterBefore + amount);
     }
@@ -430,6 +479,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             50_000,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -456,6 +506,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -482,6 +533,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -509,6 +561,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -539,6 +592,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -567,6 +621,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -595,6 +650,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             100,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -604,7 +660,7 @@ contract InvoiceRegistryTest is Test {
         emit InvoiceCancelled(id, emitter);
         registry.cancelInvoice(id);
 
-        (, , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
+        (, , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Cancelled));
     }
 
@@ -620,6 +676,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             100,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -641,6 +698,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             100,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -667,6 +725,7 @@ contract InvoiceRegistryTest is Test {
             payer,
             100,
             address(token),
+            "",
             INV_YEAR,
             INV_MONTH
         );
@@ -723,11 +782,12 @@ contract InvoiceRegistryTest is Test {
             payer,
             1,
             address(newToken),
+            "",
             INV_YEAR,
             INV_MONTH
         );
 
-        (bytes32 invoiceHash_, , , , , ) = registry.getInvoice(id);
+        (bytes32 invoiceHash_, , , , , , ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
     }
 

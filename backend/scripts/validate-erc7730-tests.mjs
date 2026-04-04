@@ -21,7 +21,7 @@ const TX_HASH = /^0x[0-9a-fA-F]{64}$/;
 
 /** Expected function selectors in `tests` array order (Ledger cs-tester vectors). */
 const EXPECTED_SELECTORS = [
-  '0x6b0fb2ea', // createInvoice
+  '0x8340f22c', // createInvoice
   '0xac60a6cd', // payInvoice
   '0xda9c273d', // cancelInvoice
   '0x12b914ef', // registerWithWorldId
