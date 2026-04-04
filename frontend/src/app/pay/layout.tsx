@@ -1,4 +1,3 @@
-import { PayMiniKitProvider } from '@/components/pay/pay-minikit-provider';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 
 export default function PayLayout({
@@ -7,13 +6,11 @@ export default function PayLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <PayMiniKitProvider>
-      <div className="pay-page flex min-h-screen flex-col bg-background px-4 py-8 text-foreground sm:py-12">
-        <header className="mx-auto mb-8 w-full max-w-6xl">
-          <OnvoLogo />
-        </header>
-        <main className="mx-auto w-full max-w-6xl flex-1">{children}</main>
-      </div>
-    </PayMiniKitProvider>
+    <div className="pay-page flex min-h-screen flex-col bg-background px-4 py-8 text-foreground sm:py-12">
+      <header className="mx-auto mb-8 w-full max-w-6xl">
+        <OnvoLogo />
+      </header>
+      <main className="mx-auto w-full max-w-6xl flex-1">{children}</main>
+    </div>
   );
 }

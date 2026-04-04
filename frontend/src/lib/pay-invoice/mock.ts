@@ -14,7 +14,7 @@ export function getMockInvoice(invoiceId: bigint): InvoiceView {
     amount: BigInt(1_500_000),
     status: INVOICE_STATUS.Pending,
     vatNumber: 'FRXX999999999 (demo)',
-    issuerWorldId: '0x4444444444444444444444444444444444444444',
+    issuerWorldId: '0x655c7a01f42fdb7b3ea446274be75a9c25c83b13',
   };
 }
 

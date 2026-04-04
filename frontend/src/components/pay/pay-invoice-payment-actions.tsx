@@ -1,20 +1,20 @@
 'use client';
 
+import { ExternalLink, Loader2, Usb, Wallet } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChainId } from 'wagmi';
-import { ExternalLink, Loader2, Usb, Wallet } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import {
   explorerTxUrl,
   generateMockTxHash,
   INVOICE_STATUS,
   type InvoiceView,
 } from '@/lib/pay-invoice';
+import { cn } from '@/lib/utils';
 
 import { PayInvoiceCopyHashButton } from '@/components/pay/pay-invoice-copy-hash-button';
 
@@ -107,9 +107,14 @@ export function PayInvoicePaymentActions({
             </Badge>
             <Button
               type="button"
+              variant="outline"
               size="lg"
               disabled={phase === 'simulating'}
-              className="h-14 w-full rounded-xl bg-[#000000] text-base font-semibold text-white shadow-md transition hover:bg-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
+              className={cn(
+                'h-14 w-full rounded-xl border-0 bg-[#000000] text-base font-semibold text-white shadow-md',
+                'hover:bg-neutral-900 hover:text-white',
+                'focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2',
+              )}
               onClick={() => void runMockPayment('ledger')}
             >
               {simulatingLedger ? (
@@ -130,17 +135,22 @@ export function PayInvoicePaymentActions({
             variant="outline"
             size="lg"
             disabled={phase === 'simulating'}
-            className="h-12 w-full rounded-xl border-2 border-heading bg-background/80 text-base font-medium text-foreground hover:bg-muted/60"
+            className={cn(
+              'h-14 w-full rounded-xl border border-neutral-300 bg-neutral-100 text-base font-semibold text-neutral-950',
+              'hover:bg-neutral-200 hover:text-neutral-950',
+              'dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-50 dark:hover:bg-neutral-700',
+              'focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2',
+            )}
             onClick={() => void runMockPayment('other')}
           >
             {simulatingOther ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 {t('pay.payingOther')}
               </>
             ) : (
               <>
-                <Wallet className="mr-2 h-4 w-4 shrink-0" />
+                <Wallet className="mr-2 h-5 w-5 shrink-0" />
                 {t('pay.payOther')}
               </>
             )}
