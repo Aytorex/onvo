@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
+import { InvoiceStatusBadge } from '@/components/invoice/invoice-status-badge';
 import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
 import {
   formatWorldIdNullifierForDisplay,
@@ -10,7 +10,7 @@ import {
   readInvoice,
   type CommissionConfig,
 } from '@/lib/invoice-contract';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import { invoiceMetaToFormValues } from '@/lib/invoice-meta-to-form';
 import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import {
@@ -19,6 +19,7 @@ import {
   getInvoicePdfBase64,
 } from '@/lib/invoice-storage';
 import { useWorldID } from '@/lib/worldid';
+import { Copy } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -26,14 +27,18 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { usePublicClient } from 'wagmi';
 
-function statusLabel(s: 0 | 1 | 2, t: (key: string) => string) {
-  if (s === 0) return t('invoice.status.pending');
-  if (s === 1) return t('invoice.status.paid');
-  return t('invoice.status.cancelled');
+/** Affichage court : N premiers + … + N derniers caractères (ID décimal on-chain). */
+function cropDecimalIdMiddle(
+  decimalId: string,
+  headLen = 5,
+  tailLen = 5,
+): string {
+  if (decimalId.length <= headLen + tailLen) return decimalId;
+  return `${decimalId.slice(0, headLen)}…${decimalId.slice(-tailLen)}`;
 }
 
 export function InvoiceDetailClient() {
-  const { t } = useTranslation('common'); 
+  const { t } = useTranslation('common');
   const router = useRouter();
   const params = useParams();
   const idStr = typeof params.id === 'string' ? params.id : '';
@@ -127,60 +132,115 @@ export function InvoiceDetailClient() {
       ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
       : '');
 
+  const invoiceLabelFull = formatOnvoInvoiceLabel(invoiceId);
+
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="p-4 space-y-8">
       <div className="flex justify-between gap-2 w-full">
+        <Button asChild variant="secondary">
+          <Link href="/dashboard/invoices">{t('invoice.detail.back')}</Link>
+        </Button>
         <div className="flex gap-4">
-          <Button asChild variant="secondary">
-            <Link href="/dashboard/invoices">{t('invoice.detail.back')}</Link>
-          </Button>
-          <Button asChild variant="secondary">
+          <Button variant="default" asChild>
             <Link href={`/pay/${invoiceId.toString()}`}>
               {t('invoice.detail.payPage')}
             </Link>
           </Button>
+          {pdf ? (
+            <Button
+              variant="outline"
+              disabled={pdfDownloadPending}
+              onClick={() => {
+                void (async () => {
+                  setPdfDownloadPending(true);
+                  try {
+                    const stamped =
+                      await applyDuplicataWatermarkToPdfBase64(pdf);
+                    downloadBase64Pdf(
+                      stamped,
+                      `invoice-${invoiceId.toString()}-duplicata.pdf`,
+                    );
+                    toast.success(t('invoice.detail.downloadStarted'));
+                  } catch (e) {
+                    console.error(e);
+                    toast.error(t('invoice.detail.downloadWatermarkFailed'));
+                  } finally {
+                    setPdfDownloadPending(false);
+                  }
+                })();
+              }}
+            >
+              {t('invoice.detail.downloadPdf')}
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {t('invoice.detail.pdfUnavailable')}
+            </p>
+          )}
         </div>
-        {pdf ? (
-          <Button
-            variant="outline"
-            disabled={pdfDownloadPending}
-            onClick={() => {
-              void (async () => {
-                setPdfDownloadPending(true);
-                try {
-                  const stamped = await applyDuplicataWatermarkToPdfBase64(pdf);
-                  downloadBase64Pdf(
-                    stamped,
-                    `invoice-${invoiceId.toString()}-duplicata.pdf`,
-                  );
-                  toast.success(t('invoice.detail.downloadStarted'));
-                } catch (e) {
-                  console.error(e);
-                  toast.error(t('invoice.detail.downloadWatermarkFailed'));
-                } finally {
-                  setPdfDownloadPending(false);
-                }
-              })();
-            }}
-          >
-            {t('invoice.detail.downloadPdf')}
-          </Button>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {t('invoice.detail.pdfUnavailable')}
-          </p>
-        )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold">
-            {formatOnvoInvoiceLabel(invoiceId)}
-          </h2>
-          <p className="mt-1 font-mono text-xs text-muted-foreground break-all">
-            {invoiceId.toString()}
-          </p>
+          <div className="inline-flex min-w-0 max-w-full items-center gap-2">
+            <h2
+              className="inline-block max-w-[min(100%,calc(100vw-2.5rem))] truncate text-2xl font-semibold tracking-tight sm:max-w-[min(36rem,calc(100vw-4rem))]"
+              title={invoiceLabelFull}
+            >
+              {cropOnvoLabelMiddle(invoiceLabelFull)}
+            </h2>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label={t('invoice.detail.copyInvoiceLabelAria')}
+              title={t('invoice.detail.copyInvoiceLabel')}
+              onClick={() => {
+                void navigator.clipboard.writeText(invoiceLabelFull).then(
+                  () => {
+                    toast.success(t('invoice.detail.copyInvoiceLabelSuccess'));
+                  },
+                  () => {
+                    toast.error(t('invoice.detail.copyInvoiceLabelError'));
+                  },
+                );
+              }}
+            >
+              <Copy className="size-4" aria-hidden />
+            </Button>
+          </div>
+          <div className="mt-1 inline-flex min-w-0 max-w-full items-center gap-1.5">
+            <span
+              className="inline-block max-w-[min(100%,calc(100vw-3rem))] truncate font-mono text-xs text-muted-foreground"
+              title={invoiceId.toString()}
+            >
+              {cropDecimalIdMiddle(invoiceId.toString())}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label={t('invoice.detail.copyInvoiceIdDecimalAria')}
+              title={t('invoice.detail.copyInvoiceIdDecimal')}
+              onClick={() => {
+                void navigator.clipboard.writeText(invoiceId.toString()).then(
+                  () => {
+                    toast.success(
+                      t('invoice.detail.copyInvoiceIdDecimalSuccess'),
+                    );
+                  },
+                  () => {
+                    toast.error(t('invoice.detail.copyInvoiceIdDecimalError'));
+                  },
+                );
+              }}
+            >
+              <Copy className="size-3.5" aria-hidden />
+            </Button>
+          </div>
         </div>
-        <Badge variant="outline">{statusLabel(data.status, t)}</Badge>
+        <InvoiceStatusBadge status={data.status} t={t} />
       </div>
 
       {previewValues ? (

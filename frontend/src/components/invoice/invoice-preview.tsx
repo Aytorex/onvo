@@ -299,7 +299,7 @@ export function InvoicePreviewDocument({
                       {fmtMoney(tvaAmount, values.currency, localeTag)}
                     </span>
                   </div>
-                  <div className="flex justify-between border-t border-border pt-2 text-base font-semibold text-foreground">
+                  <div className="flex justify-between border-t gap-4 border-border pt-2 text-base font-semibold text-foreground">
                     <span>{t('invoice.preview.totalTtc')}</span>
                     <span>
                       {fmtMoney(totalTtc, values.currency, localeTag)}

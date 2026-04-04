@@ -18,11 +18,12 @@ import {
 } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import { useWorldID } from '@/lib/worldid';
 import {
   ChevronLeft,
   ChevronRight,
+  Copy,
   FilePlus2,
   LayoutDashboard,
   List,
@@ -31,8 +32,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 const SIDEBAR_COLLAPSED_KEY = 'onvo_emitter_sidebar_collapsed';
 
@@ -93,22 +95,37 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const invoiceDetailHeader = useMemo(() => {
+    const m = pathname?.match(/^\/invoice\/(\d+)$/);
+    if (!m) return null;
+    try {
+      const id = BigInt(m[1]);
+      const full = formatOnvoInvoiceLabel(id);
+      return { full, short: cropOnvoLabelMiddle(full) };
+    } catch {
+      return null;
+    }
+  }, [pathname]);
+
   const pageTitle = useMemo(() => {
     if (pathname === '/dashboard') return t('invoice.dashboard.title');
     if (pathname === '/dashboard/invoices')
       return t('invoice.dashboard.invoiceListPageTitle');
     if (pathname?.startsWith('/invoice/new')) return t('invoice.form.title');
-    const detailMatch = pathname?.match(/^\/invoice\/(\d+)$/);
-    if (detailMatch) {
-      try {
-        const id = BigInt(detailMatch[1]);
-        return `${t('invoice.detail.invoiceLabel')} · ${formatOnvoInvoiceLabel(id)}`;
-      } catch {
-        return t('invoice.detail.invoiceLabel');
-      }
-    }
     return t('meta.title');
   }, [pathname, t]);
+
+  const copyInvoiceLabelRef = useCallback(() => {
+    if (!invoiceDetailHeader) return;
+    void navigator.clipboard.writeText(invoiceDetailHeader.full).then(
+      () => {
+        toast.success(t('invoice.detail.copyInvoiceLabelSuccess'));
+      },
+      () => {
+        toast.error(t('invoice.detail.copyInvoiceLabelError'));
+      },
+    );
+  }, [invoiceDetailHeader, t]);
 
   const renderNavLinks = (mobile: boolean) =>
     navItems.map((item) => {
@@ -117,10 +134,10 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         ? cn(
             'flex items-center gap-4 rounded-xl px-3 py-2 transition-colors',
             active
-              ? 'bg-muted text-heading hover:bg-muted'
+              ? 'bg-muted text-primary hover:bg-muted hover:text-primary'
               : 'text-foreground hover:bg-accent hover:text-accent-foreground',
           )
-        : `${active ? 'bg-muted text-heading' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
+        : `${active ? 'bg-muted text-primary' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
       return (
         <Link key={item.href} href={item.href} className={base}>
           <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
@@ -138,7 +155,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         collapsed
           ? 'mx-auto size-10 shrink-0 justify-center p-0'
           : 'h-10 min-h-10 gap-3 px-3 py-0',
-        active ? 'bg-muted text-heading' : 'text-muted-foreground',
+        active ? 'bg-muted text-primary' : 'text-muted-foreground',
       );
 
       const link = (
@@ -340,6 +357,10 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
                   </Link>
                   {renderNavLinks(true)}
                 </nav>
+                <div className="flex shrink-0 items-center gap-2 border-t border-border pt-4 md:hidden">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
                 <div className="shrink-0 border-t border-border pt-4">
                   <Button
                     variant="ghost"
@@ -362,13 +383,38 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
                   <OnvoLogo />
                 </Link>
               ) : null}
-              <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-heading">
-                {pageTitle}
-              </h1>
+              {invoiceDetailHeader ? (
+                <div className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+                  <h1
+                    className="inline-block max-w-[min(100%,calc(100vw-11rem))] truncate text-lg font-bold tracking-tight text-heading sm:max-w-[min(42rem,calc(100vw-13rem))]"
+                    title={`${t('invoice.detail.invoiceLabel')} · ${invoiceDetailHeader.full}`}
+                  >
+                    {t('invoice.detail.invoiceLabel')} ·{' '}
+                    {invoiceDetailHeader.short}
+                  </h1>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label={t('invoice.detail.copyInvoiceLabelAria')}
+                    title={t('invoice.detail.copyInvoiceLabel')}
+                    onClick={copyInvoiceLabelRef}
+                  >
+                    <Copy className="size-4" aria-hidden />
+                  </Button>
+                </div>
+              ) : (
+                <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-heading">
+                  {pageTitle}
+                </h1>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <LanguageToggle />
-              <ThemeToggle />
+              <div className="hidden items-center gap-2 md:flex">
+                <LanguageToggle />
+                <ThemeToggle />
+              </div>
               <WalletButton />
             </div>
           </header>
