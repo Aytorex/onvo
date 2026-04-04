@@ -1,6 +1,6 @@
 {
   "InvoiceRegistryProdModule": {
-    "trustedVerifier": "0x0000000000000000000000000000000000000001",
+    "trustedVerifier": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "initialOwner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "allowedTokens": [
       "0x3600000000000000000000000000000000000000",
