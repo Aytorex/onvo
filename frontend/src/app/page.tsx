@@ -80,7 +80,7 @@ const LANDING_FEATURES = [
   {
     id: 'arc',
     gradient: 'from-onvo-purple/15 to-onvo-cyan/15',
-    lightLogo: '/logos/arc.svg',
+    lightLogo: '/logos/arc-light.svg',
     darkLogo: '/logos/arc.svg',
     logoWidth: 80,
     logoHeight: 32,
@@ -105,7 +105,7 @@ const LANDING_SPONSORS = [
   {
     id: 'arc',
     name: 'Arc',
-    lightLogo: '/logos/arc.svg',
+    lightLogo: '/logos/arc-light.svg',
     darkLogo: '/logos/arc.svg',
     width: 100,
     height: 34,
