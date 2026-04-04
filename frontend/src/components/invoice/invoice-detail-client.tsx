@@ -13,8 +13,6 @@ import {
 import {
   formatOnvoInvoiceLabel,
   shortenOnvoInvoiceLabelString,
-  cropOnvoLabelMiddle,
-  formatOnvoInvoiceLabel,
   invoiceIdToUrlSegment,
   parseInvoiceIdRouteParam,
 } from '@/lib/invoice-id';
