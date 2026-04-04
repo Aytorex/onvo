@@ -1,6 +1,6 @@
 'use client';
 
-import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
+import { BindWorldIdWidget } from '@/components/invoice/bind-world-id-widget';
 import { Button } from '@/components/ui/button';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { cn } from '@/lib/utils';
@@ -76,12 +76,12 @@ function StepMarker({ state, step }: { state: StepState; step: number }) {
 export function EmitterSetupCard({ onRegistered }: Props) {
   const { t } = useTranslation('common');
   const { isConnected } = useAccount();
-  const { emitterVerified } = useEmitterOnChainReady();
+  const { worldIdAuthorizedOnChain } = useEmitterOnChainReady();
 
   const step1State: StepState = isConnected ? 'complete' : 'current';
   const step2State: StepState = !isConnected
     ? 'upcoming'
-    : emitterVerified === true
+    : worldIdAuthorizedOnChain === true
       ? 'complete'
       : 'current';
 
@@ -221,10 +221,7 @@ export function EmitterSetupCard({ onRegistered }: Props) {
                         </div>
                       ) : (
                         <div className="[&_button]:h-11 [&_button]:rounded-full [&_button]:px-8 [&_button]:text-base [&_button]:shadow-md [&_button]:shadow-primary/15">
-                          <RegisterEmitterWidget
-                            unstyled
-                            onRegistered={onRegistered}
-                          />
+                          <BindWorldIdWidget unstyled onBound={onRegistered} />
                         </div>
                       )}
                       {isConnected ? (

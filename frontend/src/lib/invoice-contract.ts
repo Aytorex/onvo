@@ -1,14 +1,17 @@
 import { invoiceRegistryContract } from '@/lib/contract';
 import {
+  getAddress,
+  isAddressEqual,
   parseEventLogs,
+  zeroAddress,
   type PublicClient,
   type TransactionReceipt,
 } from 'viem';
 
-/** Decimal string for display (matches typical World IDKit nullifier formatting). */
-export function formatWorldIdNullifierForDisplay(value: bigint): string {
-  if (value === 0n) return '';
-  return value.toString(10);
+/** Checksummed `address` for UI; empty when unset (`0x…0`). Matches on-chain `worldIdAddress`. */
+export function formatWorldIdAddressForDisplay(value: `0x${string}`): string {
+  if (isAddressEqual(value, zeroAddress)) return '';
+  return getAddress(value);
 }
 
 export type CommissionConfig = {
@@ -21,7 +24,7 @@ export async function readCommissionConfig(
   client: PublicClient,
 ): Promise<CommissionConfig> {
   const [commissionBps, commissionBpsDenominator, commissionRecipient] =
-    await Promise.all([
+    (await Promise.all([
       client.readContract({
         address: invoiceRegistryContract.address,
         abi: invoiceRegistryContract.abi,
@@ -37,7 +40,7 @@ export async function readCommissionConfig(
         abi: invoiceRegistryContract.abi,
         functionName: 'commissionRecipient',
       }),
-    ]);
+    ])) as [bigint, bigint, `0x${string}`];
   return {
     commissionBps,
     commissionBpsDenominator,
@@ -55,7 +58,7 @@ export async function readInvoice(
   amount: bigint;
   token: `0x${string}`;
   vatNumber: string;
-  worldIdNullifierHash: bigint;
+  worldIdAddress: `0x${string}`;
   status: 0 | 1 | 2;
 }> {
   const [
@@ -65,14 +68,23 @@ export async function readInvoice(
     amount,
     token,
     vatNumber,
-    worldIdNullifierHash,
+    worldIdAddress,
     status,
-  ] = await client.readContract({
+  ] = (await client.readContract({
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
     functionName: 'getInvoice',
     args: [invoiceId],
-  });
+  })) as [
+    `0x${string}`,
+    `0x${string}`,
+    `0x${string}`,
+    bigint,
+    `0x${string}`,
+    string,
+    `0x${string}`,
+    number,
+  ];
   return {
     invoiceHash,
     emitter,
@@ -80,21 +92,52 @@ export async function readInvoice(
     amount,
     token,
     vatNumber,
-    worldIdNullifierHash,
+    worldIdAddress,
     status: status as 0 | 1 | 2,
   };
 }
 
-export async function readEmitterVerified(
+/** Nombre de factures on-chain pour cet émetteur (séquences 1..n). */
+export async function readInvoiceCountForEmitter(
   client: PublicClient,
   emitter: `0x${string}`,
-): Promise<boolean> {
-  return client.readContract({
+): Promise<bigint> {
+  return (await client.readContract({
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
-    functionName: 'isEmitterVerified',
+    functionName: 'getInvoiceCountForEmitter',
     args: [emitter],
-  });
+  })) as bigint;
+}
+
+/** Dernier `invoiceId` créé pour cet émetteur, ou `0n` si aucune facture. Pour les précédents : `packInvoiceId` avec `seq - 1` (voir `@/lib/invoice-id`) ou multicall `getInvoice`. */
+export async function readLastInvoiceIdForEmitter(
+  client: PublicClient,
+  emitter: `0x${string}`,
+): Promise<bigint> {
+  return (await client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'getLastInvoiceIdForEmitter',
+    args: [emitter],
+  })) as bigint;
+}
+
+/**
+ * On-chain registration: nullifier IDKit (`uint256`) enregistré via `bindWorldId`;
+ * le contrat stocke l’identité sous forme d’`address` dérivée (`worldIdAddressFromNullifier`).
+ */
+export async function readWorldIdAuthorizedForEmitter(
+  client: PublicClient,
+  emitter: `0x${string}`,
+  worldIdNullifier: bigint,
+): Promise<boolean> {
+  return (await client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'isWorldIdAuthorizedForEmitter',
+    args: [emitter, worldIdNullifier],
+  })) as boolean;
 }
 
 export function parseInvoiceCreatedInvoiceId(
@@ -104,8 +147,8 @@ export function parseInvoiceCreatedInvoiceId(
     abi: invoiceRegistryContract.abi,
     eventName: 'InvoiceCreated',
     logs: receipt.logs,
-  });
+  }) as { args: { invoiceId?: bigint } }[];
   const first = parsed[0];
   if (!first || first.args.invoiceId === undefined) return undefined;
-  return first.args.invoiceId as bigint;
+  return first.args.invoiceId;
 }

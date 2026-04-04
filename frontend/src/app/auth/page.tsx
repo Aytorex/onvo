@@ -56,7 +56,6 @@ export default function LoginPage() {
     <div className="flex flex-col items-center gap-6">
       <div className="w-full rounded-2xl border border-border/40 bg-card/80 p-8 shadow-xl backdrop-blur-md sm:p-10">
         <div className="flex flex-col items-center gap-6">
-          {/* Logo + tagline */}
           <div className="flex flex-col items-center gap-3">
             <OnvoLogo className="text-3xl sm:text-4xl" />
             <p className="max-w-xs text-center text-sm text-muted-foreground">
@@ -64,10 +63,8 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Divider */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
 
-          {/* Verify section */}
           <div className="flex w-full flex-col items-center gap-4">
             <p className="text-center text-sm text-muted-foreground">
               {t('auth.verifyIntro')}
@@ -107,7 +104,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Powered by World */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
         <span>Powered by</span>
         <Image
@@ -126,7 +122,7 @@ export default function LoginPage() {
         />
       </div>
 
-      {rpContext && (
+      {rpContext ? (
         <IDKitRequestWidget
           open={isWidgetOpen}
           onOpenChange={setIsWidgetOpen}
@@ -143,7 +139,7 @@ export default function LoginPage() {
             setIsWidgetOpen(false);
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 }

@@ -50,13 +50,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { authReady, isVerified, logout } = useWorldID();
-  const {
-    address,
-    isConnected,
-    emitterReady,
-    emitterVerified,
-    emitterVerifyPending,
-  } = useEmitterOnChainReady();
+  const { address, isConnected, emitterReady } = useEmitterOnChainReady();
   const { t } = useTranslation('common');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHydrated, setSidebarHydrated] = useState(false);
@@ -71,7 +65,8 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     setSidebarHydrated(true);
   }, []);
 
-  const needsEmitterSetupGate = useMemo(() => {
+  /** Wallet required on invoice routes; on-chain World ID bind is shown inline (EmitterSetupCard), not via redirect/blocker. */
+  const needsWalletOnEmitterRoutes = useMemo(() => {
     if (pathname == null) return false;
     if (pathname === '/dashboard') return false;
     return (
@@ -80,34 +75,18 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!authReady || !isVerified || !needsEmitterSetupGate) return;
+    if (!authReady || !isVerified || !needsWalletOnEmitterRoutes) return;
     if (!isConnected || !address) {
-      router.replace('/dashboard');
-      return;
-    }
-    if (emitterVerifyPending) return;
-    if (emitterVerified !== true) {
       router.replace('/dashboard');
     }
   }, [
     address,
     authReady,
-    emitterVerifyPending,
-    emitterVerified,
     isConnected,
     isVerified,
-    needsEmitterSetupGate,
+    needsWalletOnEmitterRoutes,
     router,
   ]);
-
-  const showEmitterRouteBlocker =
-    authReady &&
-    isVerified &&
-    needsEmitterSetupGate &&
-    (!isConnected ||
-      !address ||
-      emitterVerifyPending ||
-      emitterVerified !== true);
 
   const setCollapsed = (next: boolean) => {
     setSidebarCollapsed(next);
@@ -512,17 +491,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               <WalletButton />
             </div>
           </header>
-          <main className={shellMainClass}>
-            {showEmitterRouteBlocker ? (
-              <div
-                className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30 p-4"
-                aria-busy
-                aria-label={t('invoice.dashboard.loading')}
-              />
-            ) : (
-              children
-            )}
-          </main>
+          <main className={shellMainClass}>{children}</main>
         </div>
       </div>
     </TooltipProvider>

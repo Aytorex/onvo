@@ -13,14 +13,17 @@ import {
 import { PayInvoiceCopyableText } from '@/components/pay/pay-invoice-copyable-text';
 import { PayInvoicePaymentActions } from '@/components/pay/pay-invoice-payment-actions';
 import { PayInvoiceWorldIdCard } from '@/components/pay/pay-invoice-world-id-card';
+import { WalletButton } from '@/components/shared/wallet-button';
 import { cn } from '@/lib/utils';
 
 export function PayInvoicePaymentColumn({
   invoice,
   chainId,
+  onPaymentConfirmed,
 }: Readonly<{
   invoice: InvoiceView;
   chainId: number;
+  onPaymentConfirmed: () => void;
 }>) {
   const { t } = useTranslation('common');
 
@@ -36,7 +39,13 @@ export function PayInvoicePaymentColumn({
           'lg:sticky lg:top-24 lg:z-10',
         )}
       >
-        <PayInvoicePaymentActions invoice={invoice} />
+        <div className="flex justify-end">
+          <WalletButton />
+        </div>
+        <PayInvoicePaymentActions
+          invoice={invoice}
+          onPaymentConfirmed={onPaymentConfirmed}
+        />
 
         <PayInvoiceWorldIdCard issuerWorldId={invoice.issuerWorldId} compact />
       </div>

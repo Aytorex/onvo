@@ -6,7 +6,21 @@ export {
   invoiceStatusI18nKey,
 } from './types';
 
-export { isInvoiceRegistryConfigured, parseInvoiceIdParam } from './registry';
+export {
+  INVOICE_REGISTRY_UNCONFIGURED_ERROR,
+  INVOICE_ID_NOT_FOUND_ERROR,
+  INVOICE_LOAD_FAILED_ERROR,
+  isInvoiceRegistryConfigured,
+  normalizeGetInvoiceReadError,
+  parseInvoiceIdParam,
+} from './registry';
+
+export {
+  GET_INVOICE_OUTPUT_ABI,
+  decodeGetInvoiceTuple,
+  serializeGetInvoiceTuple,
+  type SerializedGetInvoiceTuple,
+} from './get-invoice-tuple-serialized';
 
 export { shortAddress, getTokenMeta, formatInvoiceAmount } from './format';
 
@@ -14,8 +28,6 @@ export {
   normalizeInvoiceStatus,
   parseGetInvoiceResult,
 } from './parse-get-invoice';
-
-export { getMockInvoice, generateMockTxHash } from './mock';
 
 export {
   explorerTxUrl,

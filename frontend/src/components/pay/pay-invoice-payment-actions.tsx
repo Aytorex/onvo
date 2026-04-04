@@ -3,41 +3,74 @@
 import { ExternalLink, Loader2, Usb, Wallet } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useChainId } from 'wagmi';
-
+import { toast } from 'sonner';
+import { useAccount, useChainId } from 'wagmi';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
-  explorerTxUrl,
-  generateMockTxHash,
-  INVOICE_STATUS,
-  type InvoiceView,
-} from '@/lib/pay-invoice';
+  useInvoicePayment,
+  type WalletPaymentStep,
+} from '@/hooks/use-invoice-payment';
+import { explorerTxUrl, INVOICE_STATUS, type InvoiceView } from '@/lib/pay-invoice';
 import { cn } from '@/lib/utils';
 
 import { PayInvoiceCopyHashButton } from '@/components/pay/pay-invoice-copy-hash-button';
 
-type PayChannel = 'ledger' | 'other';
-type Phase = 'idle' | 'simulating' | 'success';
+/** Distinguishes which CTA was used (same wagmi path; Ledger is typically via Rabby + device). */
+type PayUiChannel = 'ledger' | 'other';
+
+type BusyState = { channel: PayUiChannel; step: WalletPaymentStep };
+
+function busyLabel(busy: BusyState, t: (key: string) => string): string {
+  if (busy.step === 'approving') return t('pay.walletApproving');
+  if (busy.step === 'paying') return t('pay.walletPaying');
+  return t('pay.paying');
+}
 
 export function PayInvoicePaymentActions({
   invoice,
-}: Readonly<{ invoice: InvoiceView }>) {
+  onPaymentConfirmed,
+}: Readonly<{
+  invoice: InvoiceView;
+  onPaymentConfirmed: () => void;
+}>) {
   const { t } = useTranslation('common');
   const chainId = useChainId();
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [channel, setChannel] = useState<PayChannel | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const { isConnected } = useAccount();
+  const { payWithInjectedWallet } = useInvoicePayment();
 
-  const runMockPayment = useCallback(async (nextChannel: PayChannel) => {
-    setChannel(nextChannel);
-    setPhase('simulating');
-    setTxHash(null);
-    await new Promise((r) => setTimeout(r, 1600));
-    setTxHash(generateMockTxHash());
-    setPhase('success');
-  }, []);
+  const [busy, setBusy] = useState<BusyState | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const payOnChain = useCallback(
+    async (channel: PayUiChannel) => {
+      setErrorMessage(null);
+      if (!isConnected) {
+        toast.error(t('pay.connectWalletFirst'));
+        return;
+      }
+      try {
+        const hash = await payWithInjectedWallet(invoice, (step) => {
+          setBusy({ channel, step });
+        });
+        setTxHash(hash);
+        setBusy(null);
+        onPaymentConfirmed();
+        toast.success(t('pay.paySuccessToast'));
+      } catch (e) {
+        setBusy(null);
+        const msg =
+          e instanceof Error ? e.message : t('pay.paymentFailedGeneric');
+        setErrorMessage(msg);
+        toast.error(msg);
+      }
+    },
+    [isConnected, invoice, onPaymentConfirmed, payWithInjectedWallet, t],
+  );
+
+  const loadingLabel = busy ? busyLabel(busy, t) : null;
 
   if (invoice.status !== INVOICE_STATUS.Pending) {
     return null;
@@ -45,16 +78,16 @@ export function PayInvoicePaymentActions({
 
   const explorerLink = txHash ? explorerTxUrl(txHash, chainId) : null;
 
-  if (phase === 'success' && txHash) {
+  if (txHash && !busy) {
     return (
       <div className="space-y-5">
         <Alert className="border-border bg-muted/40">
-          <AlertTitle>{t('pay.mockSuccessTitle')}</AlertTitle>
-          <AlertDescription>{t('pay.mockSuccessBody')}</AlertDescription>
+          <AlertTitle>{t('pay.paySuccessTitle')}</AlertTitle>
+          <AlertDescription>{t('pay.paySuccessBody')}</AlertDescription>
         </Alert>
         <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t('pay.mockTxHash')}
+            {t('pay.onChainTxHash')}
           </p>
           <code className="mt-2 block break-all font-mono text-sm leading-relaxed text-foreground">
             {txHash}
@@ -85,13 +118,22 @@ export function PayInvoicePaymentActions({
     );
   }
 
-  const simulatingLedger = phase === 'simulating' && channel === 'ledger';
-  const simulatingOther = phase === 'simulating' && channel === 'other';
+  const simulatingLedger = busy?.channel === 'ledger';
+  const simulatingOther = busy?.channel === 'other';
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-card via-card to-muted/30 p-6 shadow-lg shadow-primary/5 sm:p-8">
       <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/10 blur-3xl" />
       <div className="relative space-y-4">
+        {errorMessage ? (
+          <Alert variant="destructive">
+            <AlertTitle>{t('pay.paymentErrorTitle')}</AlertTitle>
+            <AlertDescription className="break-words">
+              {errorMessage}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <div className="space-y-1.5 text-center">
           <p className="text-xs leading-relaxed text-muted-foreground">
             {t('pay.payPathIntro')}
@@ -109,18 +151,18 @@ export function PayInvoicePaymentActions({
               type="button"
               variant="outline"
               size="lg"
-              disabled={phase === 'simulating'}
+              disabled={!!busy}
               className={cn(
                 'h-14 w-full rounded-xl border-0 bg-[#000000] text-base font-semibold text-white shadow-md',
                 'hover:bg-neutral-900 hover:text-white',
                 'focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2',
               )}
-              onClick={() => void runMockPayment('ledger')}
+              onClick={() => void payOnChain('ledger')}
             >
               {simulatingLedger ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  {t('pay.payingLedger')}
+                  {loadingLabel}
                 </>
               ) : (
                 <>
@@ -134,19 +176,19 @@ export function PayInvoicePaymentActions({
             type="button"
             variant="outline"
             size="lg"
-            disabled={phase === 'simulating'}
+            disabled={!!busy}
             className={cn(
               'h-14 w-full rounded-xl border border-neutral-300 bg-neutral-100 text-base font-semibold text-neutral-950',
               'hover:bg-neutral-200 hover:text-neutral-950',
               'dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-50 dark:hover:bg-neutral-700',
               'focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2',
             )}
-            onClick={() => void runMockPayment('other')}
+            onClick={() => void payOnChain('other')}
           >
             {simulatingOther ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t('pay.payingOther')}
+                {loadingLabel}
               </>
             ) : (
               <>

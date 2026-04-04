@@ -4,39 +4,42 @@ import {
   isAddressEqual,
   isHex,
   zeroAddress,
+  type Hex,
 } from 'viem';
 
 import { INVOICE_STATUS, type InvoiceStatus, type InvoiceView } from './types';
 
-function formatUnknown(value: unknown): string {
-  if (typeof value === 'bigint') {
-    return value.toString();
+/** Matches `InvoiceRegistry.getInvoice` return tuple order (see `contract.ts` ABI). */
+const GET_INVOICE_FIELD_COUNT = 8;
+
+function requireTuple(data: unknown): unknown[] {
+  if (!Array.isArray(data) || data.length !== GET_INVOICE_FIELD_COUNT) {
+    throw new TypeError(
+      `getInvoice: expected ${GET_INVOICE_FIELD_COUNT} fields`,
+    );
   }
-  if (value === null) {
-    return 'null';
-  }
-  if (value === undefined) {
-    return 'undefined';
-  }
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '[object]';
-    }
-  }
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'symbol'
-  ) {
-    return String(value);
-  }
-  return '[unknown]';
+  return data;
 }
 
-function toBigIntStrict(value: unknown): bigint {
+function assertBytes32InvoiceHash(value: unknown): Hex {
+  if (
+    typeof value !== 'string' ||
+    !isHex(value, { strict: true }) ||
+    value.length !== 66
+  ) {
+    throw new TypeError('getInvoice: invalid invoiceHash');
+  }
+  return value;
+}
+
+function assertAddress(value: unknown, label: string): `0x${string}` {
+  if (typeof value !== 'string' || !isAddress(value)) {
+    throw new TypeError(`getInvoice: invalid ${label}`);
+  }
+  return getAddress(value);
+}
+
+function coerceUint256(value: unknown): bigint {
   if (typeof value === 'bigint') {
     return value;
   }
@@ -46,7 +49,15 @@ function toBigIntStrict(value: unknown): bigint {
   if (typeof value === 'string' && /^-?\d+$/.test(value)) {
     return BigInt(value);
   }
-  throw new TypeError('getInvoice: invalid amount type');
+  throw new TypeError('getInvoice: invalid amount');
+}
+
+function worldIdAddressToIssuerDisplay(raw: unknown): string {
+  if (typeof raw === 'string' && isAddress(raw)) {
+    const a = getAddress(raw);
+    return isAddressEqual(a, zeroAddress) ? '' : a;
+  }
+  throw new TypeError('getInvoice: invalid worldIdAddress');
 }
 
 export function normalizeInvoiceStatus(value: unknown): InvoiceStatus {
@@ -58,9 +69,11 @@ export function normalizeInvoiceStatus(value: unknown): InvoiceStatus {
   } else {
     n = Number(value);
   }
-  if (!Number.isFinite(n)) {
-    throw new TypeError(`getInvoice: invalid status ${formatUnknown(value)}`);
+
+  if (!Number.isInteger(n)) {
+    throw new TypeError('getInvoice: invalid status');
   }
+
   if (n === INVOICE_STATUS.Pending) {
     return INVOICE_STATUS.Pending;
   }
@@ -70,68 +83,38 @@ export function normalizeInvoiceStatus(value: unknown): InvoiceStatus {
   if (n === INVOICE_STATUS.Cancelled) {
     return INVOICE_STATUS.Cancelled;
   }
-  throw new TypeError(`getInvoice: invalid status ${formatUnknown(value)}`);
+  throw new TypeError('getInvoice: invalid status');
 }
 
 export function parseGetInvoiceResult(
   invoiceId: bigint,
   data: unknown,
 ): InvoiceView {
-  if (!Array.isArray(data) || data.length !== 8) {
-    throw new TypeError('getInvoice: expected tuple of length 8');
-  }
+  const row = requireTuple(data);
 
-  const [
-    invoiceHashRaw,
-    emitterRaw,
-    recipientRaw,
-    amountRaw,
-    tokenRaw,
-    vatNumberRaw,
-    issuerWorldIdRaw,
-    statusRaw,
-  ] = data;
+  const invoiceHash = assertBytes32InvoiceHash(row[0]);
+  const emitter = assertAddress(row[1], 'emitter');
+  const recipient = assertAddress(row[2], 'recipient');
+  const amount = coerceUint256(row[3]);
+  const token = assertAddress(row[4], 'token');
+  const vatNumber = row[5];
 
-  if (
-    typeof invoiceHashRaw !== 'string' ||
-    !isHex(invoiceHashRaw, { strict: true }) ||
-    invoiceHashRaw.length !== 66
-  ) {
-    throw new TypeError('getInvoice: invalid invoiceHash');
-  }
-
-  if (
-    !isAddress(emitterRaw) ||
-    !isAddress(recipientRaw) ||
-    !isAddress(tokenRaw)
-  ) {
-    throw new TypeError('getInvoice: invalid address field');
-  }
-
-  if (typeof vatNumberRaw !== 'string') {
+  if (typeof vatNumber !== 'string') {
     throw new TypeError('getInvoice: invalid vatNumber');
   }
 
-  if (!isAddress(issuerWorldIdRaw)) {
-    throw new TypeError('getInvoice: invalid issuerWorldId');
-  }
-
-  const amount = toBigIntStrict(amountRaw);
-  const status = normalizeInvoiceStatus(statusRaw);
-  const issuerAddr = issuerWorldIdRaw as `0x${string}`;
-  const issuerWorldId = isAddressEqual(issuerAddr, zeroAddress)
-    ? ''
-    : getAddress(issuerAddr);
+  const issuerWorldId = worldIdAddressToIssuerDisplay(row[6]);
+  const status = normalizeInvoiceStatus(row[7]);
 
   return {
     invoiceId,
-    invoiceHash: invoiceHashRaw,
-    emitter: getAddress(emitterRaw),
-    recipient: getAddress(recipientRaw),
+    invoiceHash,
+    emitter,
+    recipient,
     amount,
-    token: getAddress(tokenRaw),
+    token,
     status,
-    vatNumber: vatNumberRaw,
+    vatNumber,
     issuerWorldId,
   };
 }

@@ -5,7 +5,7 @@ import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-
 import { InvoiceStatusBadge } from '@/components/invoice/invoice-status-badge';
 import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
 import {
-  formatWorldIdNullifierForDisplay,
+  formatWorldIdAddressForDisplay,
   readCommissionConfig,
   readInvoice,
   type CommissionConfig,
@@ -25,6 +25,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { isAddressEqual, zeroAddress } from 'viem';
 import { usePublicClient } from 'wagmi';
 
 /** Affichage court : N premiers + … + N derniers caractères (ID décimal on-chain). */
@@ -122,14 +123,14 @@ export function InvoiceDetailClient() {
   const pdf = getInvoicePdfBase64(invoiceId);
 
   const worldIdDisplay =
-    data.worldIdNullifierHash !== 0n
-      ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
+    !isAddressEqual(data.worldIdAddress, zeroAddress)
+      ? formatWorldIdAddressForDisplay(data.worldIdAddress)
       : (meta?.emitterWorldIdNullifier?.trim() ?? '');
 
   const worldIdForPreview =
     meta?.emitterWorldIdNullifier?.trim() ||
-    (data.worldIdNullifierHash !== 0n
-      ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
+    (!isAddressEqual(data.worldIdAddress, zeroAddress)
+      ? formatWorldIdAddressForDisplay(data.worldIdAddress)
       : '');
 
   const invoiceLabelFull = formatOnvoInvoiceLabel(invoiceId);

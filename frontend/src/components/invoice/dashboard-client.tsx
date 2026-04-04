@@ -6,17 +6,17 @@ import { EmitterSetupCard } from '@/components/invoice/emitter-setup-card';
 import { Button } from '@/components/ui/button';
 import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
+import { getMergedEmitterInvoiceIds } from '@/lib/emitter-invoice-ids';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
-import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
-import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
-import type { InvoiceRowView } from '@/lib/invoice-types';
+import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import {
   downloadBase64Pdf,
   getInvoiceMeta,
   getInvoicePdfBase64,
-  getStoredInvoiceIds,
 } from '@/lib/invoice-storage';
+import type { InvoiceRowView } from '@/lib/invoice-types';
+import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import { useWorldID } from '@/lib/worldid';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -45,13 +45,12 @@ export function DashboardClient({
     isVerified,
     nullifier: sessionWorldIdNullifier,
   } = useWorldID();
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const { emitterReady, refetchEmitterVerified } = useEmitterOnChainReady();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
-
-  const { refetchEmitterVerified, emitterReady } = useEmitterOnChainReady();
 
   const [rows, setRows] = useState<InvoiceRowView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +62,12 @@ export function DashboardClient({
       setLoading(false);
       return;
     }
-    const ids = getStoredInvoiceIds(address, sessionWorldIdNullifier);
+    const ids = await getMergedEmitterInvoiceIds(
+      publicClientArc,
+      address,
+      address,
+      sessionWorldIdNullifier,
+    );
     const next: InvoiceRowView[] = [];
     for (const id of ids) {
       try {
@@ -178,11 +182,11 @@ export function DashboardClient({
 
   if (!isVerified) {
     return (
-      <div
-        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30 p-4"
-        aria-busy
-        aria-label={t('invoice.dashboard.loadingSessionAria')}
-      />
+      <p className="p-4 text-center text-muted-foreground">
+        <Link href="/" className="text-primary underline">
+          {t('invoice.dashboard.connectWorldIdLink')}
+        </Link>
+      </p>
     );
   }
 
@@ -207,6 +211,17 @@ export function DashboardClient({
   if (variant === 'invoices') {
     return (
       <div className="space-y-8 p-4">
+        {!emitterReady ? (
+          <EmitterSetupCard
+            onRegistered={() => void refetchEmitterVerified()}
+          />
+        ) : null}
+        {!isConnected ? (
+          <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+            {t('invoice.dashboard.connectWalletHint')}
+          </p>
+        ) : null}
+
         <DashboardInvoiceList
           rows={rows}
           loading={loading}
@@ -219,19 +234,23 @@ export function DashboardClient({
     );
   }
 
-  if (!emitterReady) {
-    return (
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-start md:justify-center">
-        <EmitterSetupCard onRegistered={() => void refetchEmitterVerified()} />
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4">
+    <div className="space-y-8 p-4">
+      {!emitterReady ? (
+        <EmitterSetupCard
+          onRegistered={() => void refetchEmitterVerified()}
+        />
+      ) : null}
       <DashboardHomeView
         rows={rows}
         loading={loading}
+        alertsSlot={
+          !isConnected ? (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+              {t('invoice.dashboard.connectWalletHint')}
+            </p>
+          ) : null
+        }
         onExportAllCsv={() => exportInvoicesCSV(rows)}
         exportDisabled={rows.length === 0}
         onCancel={(invoiceId) => void onCancel(invoiceId)}

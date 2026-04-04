@@ -1,36 +1,37 @@
-import { encodePacked, keccak256 } from 'viem';
+/** Low 96 bits: per-emitter sequence (matches `InvoiceRegistry` packing). */
+const SEQ_MASK = (1n << 96n) - 1n;
+const EMITTER_MASK = (1n << 160n) - 1n;
 
-const SEQ_MASK = (1n << 40n) - 1n;
-const PACKED160_MASK = (1n << 160n) - 1n;
-
-/** Lower 160 bits of keccak256(abi.encodePacked(nullifier)) — matches `InvoiceRegistry.worldIdNullifierToPacked160`. */
-export function worldIdNullifierToPacked160(nullifier: bigint): bigint {
-  const h = keccak256(encodePacked(['uint256'], [nullifier]));
-  return BigInt(h) & PACKED160_MASK;
+/** Build invoice id on-chain layout: `(uint160(emitter) << 96) | seq` (same as `InvoiceRegistry.packInvoiceId`). */
+export function packInvoiceId(emitter: `0x${string}`, seq: bigint): bigint {
+  if (seq <= 0n || seq > (1n << 96n) - 1n) {
+    throw new Error('packInvoiceId: invalid seq');
+  }
+  const addr = BigInt(emitter);
+  return (addr << 96n) | seq;
 }
 
-/** Unpack on-chain `uint256` invoice id (matches `InvoiceRegistry` layout). */
+/** Decode on-chain `uint256` invoice id: high 160 bits = emitter, low 96 bits = sequence. */
 export function unpackPackedInvoiceId(invoiceId: bigint): {
-  worldIdPacked: bigint;
-  year: number;
-  month: number;
-  sequence: number;
+  emitter: `0x${string}`;
+  seq: bigint;
 } {
-  const worldIdPacked = (invoiceId >> 96n) & PACKED160_MASK;
-  const year = Number((invoiceId >> 80n) & 0xffffn);
-  const month = Number((invoiceId >> 72n) & 0xffn);
-  const sequence = Number(invoiceId & SEQ_MASK);
-  return { worldIdPacked, year, month, sequence };
+  const emitterUint = (invoiceId >> 96n) & EMITTER_MASK;
+  const seq = invoiceId & SEQ_MASK;
+  const padded = emitterUint.toString(16).padStart(40, '0');
+  return { emitter: `0x${padded}` as `0x${string}`, seq };
 }
 
-/** Human label `F-0x<wid160>-<yyyy>-<mm>-<seq>` (wid160 = 40 hex chars, lower keccak limb). */
+function shortHexAddress(addr: string): string {
+  const hex = addr.startsWith('0x') ? addr.slice(2) : addr;
+  if (hex.length < 10) return addr;
+  return `${hex.slice(0, 4)}…${hex.slice(-4)}`;
+}
+
+/** Human label `F-0x<short>-<seq>` (emitter address truncated + sequence). */
 export function formatOnvoInvoiceLabel(invoiceId: bigint): string {
-  const { worldIdPacked, year, month, sequence } =
-    unpackPackedInvoiceId(invoiceId);
-  const mo = month.toString().padStart(2, '0');
-  const seq = sequence.toString().padStart(4, '0');
-  const hex = worldIdPacked.toString(16).padStart(40, '0');
-  return `F-0x${hex}-${year}-${mo}-${seq}`;
+  const { emitter, seq } = unpackPackedInvoiceId(invoiceId);
+  return `F-0x${shortHexAddress(emitter)}-${seq.toString()}`;
 }
 
 /**

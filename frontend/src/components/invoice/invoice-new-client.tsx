@@ -5,6 +5,7 @@ import {
   InvoicePreviewDocument,
   type InvoiceDraftDocumentNo,
 } from '@/components/invoice/invoice-preview';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,10 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { EmitterSetupCard } from '@/components/invoice/emitter-setup-card';
 import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
+import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
@@ -35,9 +38,19 @@ import {
   generateInvoicePdf,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
-import { useWorldID } from '@/lib/worldid';
+import {
+  extractNullifierFromIdKitResult,
+  fetchRpContext,
+  parseWorldIdNullifierToBigInt,
+  useWorldID,
+  verifyProof,
+  WORLD_ID_CONFIG,
+} from '@/lib/worldid';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { IDKitResult, RpContext } from '@worldcoin/idkit';
+import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
 import { addDays, format } from 'date-fns';
+import { Info } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -48,6 +61,7 @@ import {
   useState,
   type FormEvent,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -55,24 +69,12 @@ import { toast } from 'sonner';
 import { parseUnits, zeroAddress } from 'viem';
 import {
   useAccount,
+  useChainId,
   usePublicClient,
   useReadContract,
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
-
-function parseWorldIdNullifierToBigInt(
-  s: string | null | undefined,
-): bigint | null {
-  const t = s?.trim();
-  if (!t) return null;
-  try {
-    if (t.startsWith('0x') || t.startsWith('0X')) return BigInt(t);
-    return BigInt(t);
-  } catch {
-    return null;
-  }
-}
 
 function defaultForm(): InvoiceFormValues {
   return {
@@ -203,6 +205,8 @@ export function InvoiceNewClient() {
     nullifier: sessionWorldIdNullifier,
   } = useWorldID();
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { emitterReady, refetchEmitterVerified } = useEmitterOnChainReady();
   const { switchChainAsync } = useSwitchChain();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
@@ -212,11 +216,25 @@ export function InvoiceNewClient() {
     useState<InvoiceFormValues>(defaultForm);
   const [successId, setSuccessId] = useState<bigint | null>(null);
   const [stepSubmitting, setStepSubmitting] = useState(false);
+  const [rpContext, setRpContext] = useState<RpContext | null>(null);
+  const [idKitOpen, setIdKitOpen] = useState(false);
+  const [loadingRpForSubmit, setLoadingRpForSubmit] = useState(false);
+  const [idKitWorldIdNullifier, setIdKitWorldIdNullifier] = useState<
+    string | null
+  >(null);
+  const [firstInvoiceHintDismissed, setFirstInvoiceHintDismissed] =
+    useState(false);
+  const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
+  const idKitSubmitInFlightRef = useRef(false);
 
   const [stepIndex, setStepIndex] = useState(0);
   const stepIndexRef = useRef(0);
   stepIndexRef.current = stepIndex;
   const activeTab = INVOICE_TABS[stepIndex] ?? INVOICE_TABS[0];
+
+  useEffect(() => {
+    setFirstInvoiceHintDismissed(false);
+  }, [address]);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -232,30 +250,19 @@ export function InvoiceNewClient() {
   });
 
   const watched = useWatch({ control: form.control });
-  const issueDateWatched = useWatch({
-    control: form.control,
-    name: 'issueDate',
-  });
-
   const registryDeployed =
     invoiceRegistryContract.address.toLowerCase() !== zeroAddress.toLowerCase();
 
   const worldIdNullifierBn = useMemo(() => {
-    const s = sessionWorldIdNullifier?.trim() || null;
+    const s =
+      idKitWorldIdNullifier?.trim() || sessionWorldIdNullifier?.trim() || null;
     return parseWorldIdNullifierToBigInt(s);
-  }, [sessionWorldIdNullifier]);
+  }, [idKitWorldIdNullifier, sessionWorldIdNullifier]);
 
   const nextIdArgs = useMemo(() => {
-    if (worldIdNullifierBn === null || !issueDateWatched?.trim())
-      return undefined;
-    const d = new Date(issueDateWatched);
-    if (Number.isNaN(d.getTime())) return undefined;
-    return [
-      worldIdNullifierBn,
-      BigInt(d.getFullYear()),
-      BigInt(d.getMonth() + 1),
-    ] as const;
-  }, [worldIdNullifierBn, issueDateWatched]);
+    if (!address) return undefined;
+    return [address] as const;
+  }, [address]);
 
   const {
     data: nextPackedInvoiceId,
@@ -269,11 +276,7 @@ export function InvoiceNewClient() {
     args: nextIdArgs,
     query: {
       enabled: Boolean(
-        registryDeployed &&
-        nextIdArgs &&
-        isConnected &&
-        publicClientArc &&
-        worldIdNullifierBn !== null,
+        registryDeployed && nextIdArgs && isConnected && publicClientArc,
       ),
     },
   });
@@ -327,31 +330,13 @@ export function InvoiceNewClient() {
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
 
-  const { data: emitterVerified, error: emitterVerifiedError } =
-    useReadContract({
-      chainId: invoiceRegistryContract.chainId,
-      address: invoiceRegistryContract.address,
-      abi: invoiceRegistryContract.abi,
-      functionName: 'isEmitterVerified',
-      args: address ? [address] : undefined,
-      query: { enabled: !!address },
-    });
-
-  useEffect(() => {
-    if (emitterVerifiedError) {
-      console.error(
-        '[InvoiceNew] isEmitterVerified read failed:',
-        emitterVerifiedError,
-      );
-    }
-  }, [emitterVerifiedError]);
-
   const totals = useMemo(
     () => computeTotalsFromLines(debouncedPreview.lines),
     [debouncedPreview.lines],
   );
 
-  const previewWorldIdNullifier = sessionWorldIdNullifier?.trim() || null;
+  const previewWorldIdNullifier =
+    idKitWorldIdNullifier?.trim() || sessionWorldIdNullifier?.trim() || null;
 
   const createInvoiceFromVerifiedForm = useCallback(
     async (
@@ -362,11 +347,13 @@ export function InvoiceNewClient() {
         toast.error(t('invoice.toast.walletIssuerRequired'));
         return;
       }
-      try {
-        await switchChainAsync({ chainId: registryChainId });
-      } catch {
-        toast.error(t('invoice.toast.arcNetworkRequired'));
-        return;
+      if (chainId !== registryChainId) {
+        try {
+          await switchChainAsync({ chainId: registryChainId });
+        } catch {
+          toast.error(t('invoice.toast.arcNetworkRequired'));
+          return;
+        }
       }
       const emitterWorldIdForDoc =
         worldIdNullifierOverride?.trim() ||
@@ -385,16 +372,12 @@ export function InvoiceNewClient() {
 
       setStepSubmitting(true);
       try {
-        const issue = new Date(data.issueDate);
-        const invYear = BigInt(issue.getFullYear());
-        const invMonth = BigInt(issue.getMonth() + 1);
-
-        const nextInvoiceId = await publicClientArc!.readContract({
+        const nextInvoiceId = (await publicClientArc!.readContract({
           address: invoiceRegistryContract.address,
           abi: invoiceRegistryContract.abi,
           functionName: 'getNextInvoiceId',
-          args: [nullifierBn, invYear, invMonth],
-        });
+          args: [address],
+        })) as bigint;
         const documentLabel = formatOnvoInvoiceLabel(nextInvoiceId);
 
         const pdfBlob = await generateInvoicePdf(
@@ -432,8 +415,7 @@ export function InvoiceNewClient() {
             amount,
             token,
             vatNumberOnChain,
-            invYear,
-            invMonth,
+            nullifierBn,
           ],
           chainId: registryChainId,
         });
@@ -512,12 +494,64 @@ export function InvoiceNewClient() {
     },
     [
       address,
+      chainId,
       publicClientArc,
+      registryChainId,
       sessionWorldIdNullifier,
       switchChainAsync,
       t,
       writeContractAsync,
     ],
+  );
+
+  const handleVerifyForInvoice = useCallback(
+    async (result: IDKitResult) => {
+      const ok = await verifyProof(result);
+      if (!ok) throw new Error(t('invoice.toast.worldIdRejected'));
+    },
+    [t],
+  );
+
+  const handleIdKitSuccessFromSubmit = useCallback(
+    async (result: IDKitResult) => {
+      if (!address) {
+        toast.error(t('invoice.toast.walletRequiredShort'));
+        pendingFormDataRef.current = null;
+        setIdKitOpen(false);
+        return;
+      }
+      const data = pendingFormDataRef.current;
+      if (!data) {
+        setIdKitOpen(false);
+        return;
+      }
+      if (idKitSubmitInFlightRef.current) return;
+      idKitSubmitInFlightRef.current = true;
+      try {
+        const kitNullifier = extractNullifierFromIdKitResult(result).trim();
+        flushSync(() => {
+          setIdKitWorldIdNullifier(kitNullifier || null);
+        });
+        pendingFormDataRef.current = null;
+        setIdKitOpen(false);
+        await createInvoiceFromVerifiedForm(
+          data,
+          kitNullifier || sessionWorldIdNullifier,
+        );
+      } catch (e) {
+        console.error(e);
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : t('invoice.toast.emitterOrInvoiceFailed'),
+        );
+        pendingFormDataRef.current = null;
+        setIdKitOpen(false);
+      } finally {
+        idKitSubmitInFlightRef.current = false;
+      }
+    },
+    [address, createInvoiceFromVerifiedForm, sessionWorldIdNullifier, t],
   );
 
   const submitInvoice = form.handleSubmit(
@@ -527,9 +561,19 @@ export function InvoiceNewClient() {
         return;
       }
 
-      if (emitterVerified !== true) {
-        toast.error(t('invoice.toast.emitterSetupIncomplete'));
-        router.push('/dashboard');
+      if (worldIdNullifierBn === null) {
+        pendingFormDataRef.current = data;
+        setLoadingRpForSubmit(true);
+        try {
+          const ctx = await fetchRpContext();
+          setRpContext(ctx);
+          setIdKitOpen(true);
+        } catch {
+          toast.error(t('invoice.toast.worldIdInitRp'));
+          pendingFormDataRef.current = null;
+        } finally {
+          setLoadingRpForSubmit(false);
+        }
         return;
       }
 
@@ -649,33 +693,52 @@ export function InvoiceNewClient() {
         inert={stepSubmitting ? true : undefined}
       >
         <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
+          {!emitterReady ? (
+            <EmitterSetupCard
+              onRegistered={() => void refetchEmitterVerified()}
+            />
+          ) : null}
+          {isConnected &&
+          worldIdNullifierBn === null &&
+          !firstInvoiceHintDismissed ? (
+            <Alert
+              className="shrink-0 border-primary/25 bg-primary/5 py-3 text-muted-foreground"
+              onDismiss={() => setFirstInvoiceHintDismissed(true)}
+              dismissLabel={t('invoice.form.dismissAlert')}
+            >
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs leading-relaxed sm:text-sm">
+                {t('invoice.form.firstInvoiceHint')}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <div className="flex min-h-0 min-w-0 flex-1 flex-row gap-4">
             {/* ── Left panel: tabbed form (40% ≥ lg) ── */}
             <div className="flex min-h-0 w-full min-w-0 flex-col lg:flex-[2]">
+              {!isConnected ? (
+                <p className="mx-5 mt-4 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  {t('invoice.form.walletConnectHint')}
+                </p>
+              ) : null}
+
+              {isConnected && worldIdNullifierBn === null ? (
+                <p className="mx-5 mt-4 shrink-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                  {t('invoice.form.firstInvoiceHint')}
+                </p>
+              ) : null}
+
               <form
                 onSubmit={handleFormSubmit}
                 className="flex min-h-0 flex-1 flex-col"
               >
                 <Tabs
                   value={activeTab}
-                  onValueChange={(v) => {
-                    const i = INVOICE_TABS.indexOf(v as InvoiceTab);
-                    if (i >= 0) setStepIndex(i);
-                  }}
+                  onValueChange={(v) =>
+                    setStepIndex(INVOICE_TABS.indexOf(v as InvoiceTab))
+                  }
                   className="flex min-h-0 flex-1 flex-col"
                 >
-                  <TabsList className="flex h-10 w-full shrink-0">
-                    <TabsTrigger className="flex-1" value="issuer">
-                      {t('invoice.form.sectionEmitter')}
-                    </TabsTrigger>
-                    <TabsTrigger className="flex-1" value="client">
-                      {t('invoice.form.sectionClient')}
-                    </TabsTrigger>
-                    <TabsTrigger className="flex-1" value="items">
-                      {t('invoice.form.sectionLines')}
-                    </TabsTrigger>
-                  </TabsList>
-
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
                     {/* ── Tab: Issuer ── */}
                     <TabsContent value="issuer" className="mt-4 space-y-4">
@@ -1103,56 +1166,60 @@ export function InvoiceNewClient() {
                     </TabsContent>
                   </div>
                 </Tabs>
-              </form>
 
-              <div className="flex shrink-0 items-center justify-between border-t border-border/60 py-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={stepIndex === 0}
-                  onClick={() => setStepIndex((s) => s - 1)}
-                >
-                  {t('invoice.form.tabPrev')}
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  {stepIndex + 1} / {INVOICE_TABS.length}
-                </span>
-                <div className="flex shrink-0 items-center gap-2">
-                  {IS_DEV ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
-                      onClick={fillDevData}
-                    >
-                      Dev: Autofill
-                    </Button>
-                  ) : null}
-                  {stepIndex === INVOICE_TAB_LAST ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={stepSubmitting || isWritePending}
-                      onClick={() => void submitInvoice()}
-                    >
-                      {stepSubmitting || isWritePending
-                        ? t('invoice.form.submitTransaction')
-                        : t('invoice.form.tabValidate')}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStepIndex((s) => s + 1)}
-                    >
-                      {t('invoice.form.tabNext')}
-                    </Button>
-                  )}
+                <div className="flex shrink-0 items-center justify-between border-t border-border/60 py-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={stepIndex === 0}
+                    onClick={() => setStepIndex((s) => s - 1)}
+                  >
+                    {t('invoice.form.tabPrev')}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {stepIndex + 1} / {INVOICE_TABS.length}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {IS_DEV ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
+                        onClick={fillDevData}
+                      >
+                        Dev: Autofill
+                      </Button>
+                    ) : null}
+                    {stepIndex === INVOICE_TAB_LAST ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          stepSubmitting || isWritePending || loadingRpForSubmit
+                        }
+                        onClick={() => void submitInvoice()}
+                      >
+                        {loadingRpForSubmit
+                          ? t('invoice.form.submitPreparingWorldId')
+                          : stepSubmitting || isWritePending
+                            ? t('invoice.form.submitTransaction')
+                            : t('invoice.form.tabValidate')}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStepIndex((s) => s + 1)}
+                      >
+                        {t('invoice.form.tabNext')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </form>
             </div>
 
             {/* ── Right panel: invoice preview (60% ≥ lg) ── */}
