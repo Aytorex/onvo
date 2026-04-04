@@ -65,12 +65,16 @@ function fmtMoney(n: number, currency: string): string {
   }).format(n);
 }
 
-function buildFacturXml(data: InvoiceFormValues, totalTtc: number): string {
+function buildFacturXml(
+  data: InvoiceFormValues,
+  totalTtc: number,
+  documentNo: string,
+): string {
   const iso = data.currency === 'EURC' ? 'EUR' : 'USD';
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100">
   <rsm:ExchangedDocument>
-    <ram:ID>${escapeXml(data.invoiceNumber)}</ram:ID>
+    <ram:ID>${escapeXml(documentNo.trim() || '—')}</ram:ID>
     <ram:TypeCode>380</ram:TypeCode>
   </rsm:ExchangedDocument>
   <rsm:SupplyChainTradeTransaction>
@@ -99,7 +103,9 @@ function escapeXml(s: string): string {
 export async function generateInvoicePdf(
   data: InvoiceFormValues,
   emitterWorldIdNullifier?: string | null,
+  documentNo?: string,
 ): Promise<Blob> {
+  const docNo = documentNo?.trim() || '—';
   const pdfDoc = await PDFDocument.create();
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -155,7 +161,7 @@ export async function generateInvoicePdf(
   }
 
   function drawSlimHeader() {
-    page.drawText(data.invoiceNumber || 'INVOICE', {
+    page.drawText(docNo, {
       x: MARGIN,
       y: y,
       size: 9,
@@ -184,7 +190,6 @@ export async function generateInvoicePdf(
     color: COLOR_BLACK,
   });
 
-  const docNo = data.invoiceNumber?.trim() || '—';
   page.drawText(`Document no.: ${docNo}`, {
     x: MARGIN,
     y: y - 18,
@@ -484,7 +489,7 @@ export async function generateInvoicePdf(
 
   // ── 7. Attach Factur-X XML ──
 
-  const xml = buildFacturXml(data, totalTtc);
+  const xml = buildFacturXml(data, totalTtc, docNo);
   const xmlBytes = new TextEncoder().encode(xml);
   await pdfDoc.attach(xmlBytes, 'factur-x.xml', {
     mimeType: 'text/xml',

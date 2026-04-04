@@ -29,7 +29,6 @@ export function invoiceMetaToFormValues(
     clientCountry: meta.clientCountry ?? '',
     clientEmail: meta.clientEmail,
     lines,
-    invoiceNumber: meta.invoiceNumber,
     issueDate: meta.issueDate,
     dueDate: meta.dueDate,
     currency: meta.currency,

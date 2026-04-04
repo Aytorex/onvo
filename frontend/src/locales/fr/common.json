@@ -10,9 +10,11 @@
     "connect": "Connecter",
     "disconnect": "Déconnecter",
     "connecting": "Connexion…",
-    "stableBalancesOnArc": "Soldes USDC et EURC sur Arc Testnet",
+    "stableBalancesOnArc": "Soldes sur Arc Testnet",
     "tokenBalanceLoading": "…",
-    "tokenBalanceUnavailable": "—"
+    "tokenBalanceUnavailable": "—",
+    "copyAddress": "Cliquer pour copier l'adresse",
+    "addressCopied": "Copié !"
   },
   "brand": {
     "logoAria": "ONVO"
@@ -125,10 +127,12 @@
     "light": "Clair",
     "dark": "Sombre",
     "system": "Appareil",
-    "toggleAria": "Thème"
+    "toggleAria": "Thème",
+    "tooltip": "Apparence"
   },
   "language": {
     "label": "Langue",
+    "tooltip": "Langue",
     "device": "Appareil",
     "en": "English",
     "fr": "Français"
@@ -277,6 +281,7 @@
       "subtitle": "Remplissez le formulaire — l'aperçu se met à jour (300 ms).",
       "walletConnectHint": "Connectez un wallet (émetteur) pour signer la transaction.",
       "firstInvoiceHint": "Première facture avec ce wallet : au clic sur « Générer la facture », l'orb World ID s'ouvre pour enregistrer votre adresse on-chain, puis le PDF et la transaction suivent dans la foulée.",
+      "dismissAlert": "Fermer",
       "sectionEmitter": "Émetteur",
       "sectionClient": "Client",
       "sectionLines": "Lignes",
@@ -304,10 +309,6 @@
       "clientCountryPlaceholder": "ex. France",
       "clientEmail": "Email",
       "currency": "Devise (stablecoin)",
-      "invoiceNumber": "N° facture",
-      "invoiceNumberPlaceholder": "F-0x…-2026-04-0001",
-      "invoiceNumberLoading": "Lecture du prochain numéro on-chain…",
-      "invoiceNumberChainError": "Lecture impossible : vérifiez le réseau Arc et l'adresse du contrat, ou saisissez un numéro manuellement.",
       "issueDate": "Date d'émission",
       "dueDate": "Échéance",
       "notes": "Notes",
@@ -332,6 +333,10 @@
       "brand": "Onvo",
       "invoiceTitle": "Facture",
       "documentNo": "N° de document",
+      "documentNoPending": "Attribué à l'émission (on-chain)",
+      "documentNoLoading": "Lecture du prochain numéro sur la chaîne…",
+      "documentNoChainError": "Lecture impossible — vérifiez le réseau Arc et l'adresse du contrat.",
+      "documentNoChainUnavailable": "Indiquez la date d'émission et assurez-vous que la session World ID est active pour afficher le prochain numéro.",
       "issuedOn": "Émis le",
       "dueOn": "Échéance",
       "emitter": "Émetteur",
@@ -381,7 +386,6 @@
       "clientPostalCodeRequired": "Code postal (client) requis",
       "clientCityRequired": "Ville (client) requise",
       "minOneLine": "Au moins une ligne",
-      "invoiceNumberRequired": "N° de facture requis",
       "issueDateRequired": "Date d'émission requise",
       "dueDateRequired": "Échéance requise",
       "emitterVatNumberMax": "64 caractères maximum"

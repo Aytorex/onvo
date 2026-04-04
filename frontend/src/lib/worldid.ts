@@ -13,7 +13,9 @@ export const WORLD_ID_CONFIG = {
   app_id: (process.env.NEXT_PUBLIC_WORLD_APP_ID ?? '') as `app_${string}`,
   rp_id: (process.env.NEXT_PUBLIC_WORLD_RP_ID ?? '') as `rp_${string}`,
   action: 'onvo-create-invoice',
-  environment: 'staging' as const,
+  environment: (process.env.NEXT_PUBLIC_WORLD_ID_ENV === 'production'
+    ? 'production'
+    : 'staging') as 'production' | 'staging',
 } as const;
 
 export interface WorldIDProof {

@@ -5,8 +5,6 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { hardhat, arcTestnet } from 'viem/chains';
 import type { IDKitResult } from '@worldcoin/idkit';
 
-const WORLD_RP_ID = process.env.NEXT_PUBLIC_WORLD_RP_ID ?? '';
-
 const VERIFIER_PRIVATE_KEY = process.env.TRUSTED_VERIFIER_PRIVATE_KEY as
   | `0x${string}`
   | undefined;
@@ -32,6 +30,11 @@ function extractNullifier(result: IDKitResult): string {
   return '';
 }
 
+/**
+ * The World ID proof is already verified by `handleVerify` → `POST /api/verify-worldid`
+ * before IDKit calls `onSuccess`. This route only needs the nullifier to register on-chain.
+ * Re-verifying would fail because the proof is single-use.
+ */
 export async function POST(request: Request): Promise<Response> {
   const body = (await request.json()) as {
     emitterAddress?: string;
@@ -49,31 +52,6 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json(
       { message: 'Server misconfigured: TRUSTED_VERIFIER_PRIVATE_KEY not set' },
       { status: 500 },
-    );
-  }
-
-  if (!WORLD_RP_ID) {
-    return NextResponse.json(
-      { message: 'Server misconfigured: NEXT_PUBLIC_WORLD_RP_ID not set' },
-      { status: 500 },
-    );
-  }
-
-  const verifyRes = await fetch(
-    `https://developer.world.org/api/v4/verify/${WORLD_RP_ID}`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body.idkitResult),
-    },
-  );
-
-  if (!verifyRes.ok) {
-    const err = await verifyRes.text();
-    console.error('[register-emitter] World ID verification failed:', err);
-    return NextResponse.json(
-      { message: 'World ID verification failed', details: err },
-      { status: 400 },
     );
   }
 

@@ -231,7 +231,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             'hidden h-[100dvh] max-h-[100dvh] shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 ease-out md:sticky md:top-0 md:z-30 md:flex',
-            collapsed ? 'w-[4.5rem]' : 'w-[220px] lg:w-[280px]',
+            collapsed ? 'w-[4.5rem]' : 'w-[192px] lg:w-[228px]',
           )}
           id="emitter-sidebar"
         >

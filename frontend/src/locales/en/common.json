@@ -10,9 +10,11 @@
     "connect": "Connect",
     "disconnect": "Disconnect",
     "connecting": "Connecting…",
-    "stableBalancesOnArc": "USDC and EURC balances on Arc Testnet",
+    "stableBalancesOnArc": "Balances on Arc Testnet",
     "tokenBalanceLoading": "…",
-    "tokenBalanceUnavailable": "—"
+    "tokenBalanceUnavailable": "—",
+    "copyAddress": "Click to copy address",
+    "addressCopied": "Copied!"
   },
   "brand": {
     "logoAria": "ONVO"
@@ -125,10 +127,12 @@
     "light": "Light",
     "dark": "Dark",
     "system": "Device",
-    "toggleAria": "Theme"
+    "toggleAria": "Theme",
+    "tooltip": "Appearance"
   },
   "language": {
     "label": "Language",
+    "tooltip": "Language",
     "device": "Device",
     "en": "English",
     "fr": "Français"
@@ -277,6 +281,7 @@
       "subtitle": "Fill in the form — the preview updates (300 ms).",
       "walletConnectHint": "Connect an issuer wallet to sign the transaction.",
       "firstInvoiceHint": "First invoice with this wallet: when you click “Generate invoice”, the World ID orb opens to register your address on-chain, then the PDF and transaction follow.",
+      "dismissAlert": "Dismiss",
       "sectionEmitter": "Issuer",
       "sectionClient": "Client",
       "sectionLines": "Line items",
@@ -304,10 +309,6 @@
       "clientCountryPlaceholder": "e.g. France",
       "clientEmail": "Email",
       "currency": "Currency (stablecoin)",
-      "invoiceNumber": "Invoice no.",
-      "invoiceNumberPlaceholder": "F-0x…-2026-04-0001",
-      "invoiceNumberLoading": "Fetching next on-chain invoice number…",
-      "invoiceNumberChainError": "Could not read the next ID — check Arc network and registry address, or enter a number manually.",
       "issueDate": "Issue date",
       "dueDate": "Due date",
       "notes": "Notes",
@@ -332,6 +333,10 @@
       "brand": "Onvo",
       "invoiceTitle": "Invoice",
       "documentNo": "Document no.",
+      "documentNoPending": "Assigned at issuance (on-chain)",
+      "documentNoLoading": "Reading next invoice number from chain…",
+      "documentNoChainError": "Could not read the next invoice number — check Arc network and registry address.",
+      "documentNoChainUnavailable": "Set the issue date and ensure your World ID session is active to load the next number.",
       "issuedOn": "Issued on",
       "dueOn": "Due",
       "emitter": "Issuer",
@@ -381,7 +386,6 @@
       "clientPostalCodeRequired": "Client postal code is required",
       "clientCityRequired": "Client city is required",
       "minOneLine": "At least one line",
-      "invoiceNumberRequired": "Invoice number is required",
       "issueDateRequired": "Issue date is required",
       "dueDateRequired": "Due date is required",
       "emitterVatNumberMax": "At most 64 characters"

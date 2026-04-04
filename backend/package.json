@@ -18,7 +18,7 @@
     "slither": "poetry run slither .",
     "deploy:invoice:local": "hardhat ignition deploy ./ignition/modules/InvoiceRegistry.local.ts --network hardhat",
     "deploy:invoice:localhost": "hardhat ignition deploy ./ignition/modules/InvoiceRegistry.local.ts --network localhost",
-    "deploy:invoice:arc": "hardhat ignition deploy ./ignition/modules/InvoiceRegistry.prod.ts --network arcTestnet --parameters ignition/parameters/invoice-registry.arc.json",
+    "deploy:invoice:arc": "hardhat ignition deploy ./ignition/modules/InvoiceRegistry.prod.ts --network arcTestnet --parameters ignition/parameters/invoice-registry.arc.json --verify",
     "verify:invoice:arc": "hardhat verify etherscan --network arcTestnet --constructor-args-path scripts/verify/invoice-registry.constructor-args.ts --contract contracts/InvoiceRegistry.sol:InvoiceRegistry",
     "erc7730:bindings": "node scripts/erc7730-bindings.mjs",
     "erc7730:sync": "node scripts/sync-erc7730-from-artifact.mjs",
