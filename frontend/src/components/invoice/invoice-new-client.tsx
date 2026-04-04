@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
+import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
@@ -29,7 +29,7 @@ import { getTokenAddress, tokenDecimals } from '@/lib/invoice-tokens';
 import type { InvoiceFormValues, InvoiceMetaRecord } from '@/lib/invoice-types';
 import {
   blobToBase64,
-  generatePdfBlobFromElement,
+  generateInvoicePdf,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
 import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
@@ -98,6 +98,61 @@ function defaultForm(): InvoiceFormValues {
   };
 }
 
+const IS_DEV = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+
+function devSampleForm(): InvoiceFormValues {
+  const uid = () =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`;
+  return {
+    emitterName: 'Onvo Labs SAS',
+    emitterStreet: '42 Rue de la Croisette',
+    emitterStreetLine2: 'Batiment B, 3e etage',
+    emitterPostalCode: '06400',
+    emitterCity: 'Cannes',
+    emitterCountry: 'France',
+    emitterSiret: '123 456 789 00012',
+    emitterVatNumber: 'FR85939527636',
+    emitterEmail: 'billing@onvo.dev',
+    clientName: 'Client Digital SAS',
+    clientStreet: '15 Avenue des Champs-Elysees',
+    clientStreetLine2: '',
+    clientPostalCode: '75008',
+    clientCity: 'Paris',
+    clientCountry: 'France',
+    clientEmail: 'finance@client-digital.fr',
+    lines: [
+      {
+        id: uid(),
+        description: 'Smart contract audit',
+        quantity: 3,
+        unitPrice: 450,
+        vatPercent: 20,
+      },
+      {
+        id: uid(),
+        description: 'Frontend integration',
+        quantity: 5,
+        unitPrice: 380,
+        vatPercent: 20,
+      },
+      {
+        id: uid(),
+        description: 'Deployment & DevOps',
+        quantity: 1,
+        unitPrice: 600,
+        vatPercent: 20,
+      },
+    ],
+    invoiceNumber: `INV-${new Date().getFullYear()}-0042`,
+    issueDate: format(new Date(), 'yyyy-MM-dd'),
+    dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    currency: 'EURC',
+    notes: 'Payment due within 30 days. Thank you for your business.',
+  };
+}
+
 export function InvoiceNewClient() {
   const { t } = useTranslation('common');
   const router = useRouter();
@@ -109,7 +164,8 @@ export function InvoiceNewClient() {
   } = useWorldID();
   const { address, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
-  const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
+  const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
+  const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
 
   const [debouncedPreview, setDebouncedPreview] =
@@ -165,8 +221,9 @@ export function InvoiceNewClient() {
     isPending: isNextInvoiceIdPending,
     isFetching: isNextInvoiceIdFetching,
     isError: isNextInvoiceIdError,
+    error: nextInvoiceIdError,
   } = useReadContract({
-    chainId: arcTestnet.id,
+    chainId: invoiceRegistryContract.chainId,
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
     functionName: 'getNextInvoiceId',
@@ -177,6 +234,15 @@ export function InvoiceNewClient() {
       ),
     },
   });
+
+  useEffect(() => {
+    if (nextInvoiceIdError) {
+      console.error(
+        '[InvoiceNew] getNextInvoiceId read failed:',
+        nextInvoiceIdError,
+      );
+    }
+  }, [nextInvoiceIdError]);
 
   const nextInvoiceFromChainLoading =
     registryDeployed &&
@@ -217,14 +283,39 @@ export function InvoiceNewClient() {
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
 
-  const { data: emitterVerified, refetch: refetchEmitterVerified } =
-    useReadContract({
-      address: invoiceRegistryContract.address,
-      abi: invoiceRegistryContract.abi,
-      functionName: 'isEmitterVerified',
-      args: address ? [address] : undefined,
-      query: { enabled: !!address },
+  const {
+    data: emitterVerified,
+    refetch: refetchEmitterVerified,
+    error: emitterVerifiedError,
+    status: emitterVerifiedStatus,
+  } = useReadContract({
+    chainId: invoiceRegistryContract.chainId,
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'isEmitterVerified',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  useEffect(() => {
+    if (emitterVerifiedError) {
+      console.error(
+        '[InvoiceNew] isEmitterVerified read failed:',
+        emitterVerifiedError,
+      );
+    }
+    console.debug('[InvoiceNew] emitterVerified:', {
+      status: emitterVerifiedStatus,
+      data: emitterVerified,
+      address,
+      contract: invoiceRegistryContract.address,
     });
+  }, [
+    emitterVerifiedError,
+    emitterVerifiedStatus,
+    emitterVerified,
+    address,
+  ]);
 
   const totals = useMemo(
     () => computeTotalsFromLines(debouncedPreview.lines),
@@ -244,17 +335,11 @@ export function InvoiceNewClient() {
         return;
       }
       try {
-        await switchWalletToArcTestnet(switchChainAsync);
+        await switchChainAsync({ chainId: registryChainId });
       } catch {
         toast.error(t('invoice.toast.arcNetworkRequired'));
         return;
       }
-      const el = previewRef.current;
-      if (!el) {
-        toast.error(t('invoice.toast.previewUnavailable'));
-        return;
-      }
-
       const emitterWorldIdForDoc =
         worldIdNullifierOverride?.trim() ||
         sessionWorldIdNullifier?.trim() ||
@@ -264,7 +349,7 @@ export function InvoiceNewClient() {
 
       setStepSubmitting(true);
       try {
-        const pdfBlob = await generatePdfBlobFromElement(el);
+        const pdfBlob = await generateInvoicePdf(data, emitterWorldIdForDoc);
         const invoiceHash = await pdfBlobToBytes32(pdfBlob);
         const base64 = await blobToBase64(pdfBlob);
 
@@ -309,8 +394,7 @@ export function InvoiceNewClient() {
             invYear,
             invMonth,
           ],
-          chainId: arcTestnet.id,
-          chain: arcTestnet,
+          chainId: registryChainId,
         });
 
         const receipt = await publicClientArc!.waitForTransactionReceipt({
@@ -362,6 +446,17 @@ export function InvoiceNewClient() {
         setInvoiceMeta(newId, meta);
 
         setSuccessId(newId);
+
+        const label = formatOnvoInvoiceLabel(newId);
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${label}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
         toast.success(t('invoice.toast.invoiceCreated'));
       } catch (e) {
         console.error(e);
@@ -410,6 +505,7 @@ export function InvoiceNewClient() {
           switchChainAsync,
           writeContractAsync,
           publicClientArc,
+          registryChainId,
         });
         await refetchEmitterVerified();
         const kitNullifier = extractNullifierFromIdKitResult(result).trim();
@@ -445,35 +541,76 @@ export function InvoiceNewClient() {
     ],
   );
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (!address) {
-      toast.error(t('invoice.toast.walletIssuerRequired'));
-      return;
-    }
+  const FIELD_TO_TAB: Record<string, (typeof TAB_ORDER)[number]> = {
+    emitterName: 'issuer',
+    emitterStreet: 'issuer',
+    emitterStreetLine2: 'issuer',
+    emitterPostalCode: 'issuer',
+    emitterCity: 'issuer',
+    emitterCountry: 'issuer',
+    emitterSiret: 'issuer',
+    emitterVatNumber: 'issuer',
+    emitterEmail: 'issuer',
+    clientName: 'client',
+    clientStreet: 'client',
+    clientStreetLine2: 'client',
+    clientPostalCode: 'client',
+    clientCity: 'client',
+    clientCountry: 'client',
+    clientEmail: 'client',
+    lines: 'items',
+    invoiceNumber: 'items',
+    issueDate: 'items',
+    dueDate: 'items',
+    currency: 'items',
+    notes: 'items',
+  };
 
-    if (address && emitterVerified === undefined) {
-      toast.error(t('invoice.toast.verifyingOnChain'));
-      return;
-    }
-
-    if (emitterVerified === false) {
-      pendingFormDataRef.current = data;
-      setLoadingRpForSubmit(true);
-      try {
-        const ctx = await fetchRpContext();
-        setRpContext(ctx);
-        setIdKitOpen(true);
-      } catch {
-        toast.error(t('invoice.toast.worldIdInitRp'));
-        pendingFormDataRef.current = null;
-      } finally {
-        setLoadingRpForSubmit(false);
+  const onSubmit = form.handleSubmit(
+    async (data) => {
+      if (!address) {
+        toast.error(t('invoice.toast.walletIssuerRequired'));
+        return;
       }
-      return;
-    }
 
-    await createInvoiceFromVerifiedForm(data);
-  });
+      if (address && emitterVerified === undefined) {
+        toast.error(t('invoice.toast.verifyingOnChain'));
+        return;
+      }
+
+      if (emitterVerified === false) {
+        pendingFormDataRef.current = data;
+        setLoadingRpForSubmit(true);
+        try {
+          const ctx = await fetchRpContext();
+          setRpContext(ctx);
+          setIdKitOpen(true);
+        } catch {
+          toast.error(t('invoice.toast.worldIdInitRp'));
+          pendingFormDataRef.current = null;
+        } finally {
+          setLoadingRpForSubmit(false);
+        }
+        return;
+      }
+
+      await createInvoiceFromVerifiedForm(data);
+    },
+    (errors) => {
+      const firstField = Object.keys(errors)[0];
+      if (firstField) {
+        const tab = FIELD_TO_TAB[firstField];
+        if (tab) setActiveTab(tab);
+      }
+      toast.error(t('invoice.toast.formValidationError'));
+    },
+  );
+
+  const fillDevData = useCallback(() => {
+    const sample = devSampleForm();
+    form.reset(sample);
+    toast.success('Dev: form filled with sample data');
+  }, [form]);
 
   const addLine = useCallback(() => {
     append({
@@ -546,10 +683,21 @@ export function InvoiceNewClient() {
       <form onSubmit={onSubmit} className="flex h-[calc(100vh-3.5rem)]">
         {/* ── Left panel: tabbed form ── */}
         <div className="flex w-full flex-col border-r border-border/60 lg:w-1/3">
-          <div className="border-b border-border/60 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
             <h1 className="text-lg font-semibold tracking-tight">
               {t('invoice.form.title')}
             </h1>
+            {IS_DEV ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs text-amber-500 border-amber-500/40 hover:bg-amber-500/10"
+                onClick={fillDevData}
+              >
+                Dev: Fill
+              </Button>
+            ) : null}
           </div>
 
           {!isConnected ? (
@@ -1041,12 +1189,7 @@ export function InvoiceNewClient() {
                 type="submit"
                 size="sm"
                 disabled={
-                  stepSubmitting ||
-                  isWritePending ||
-                  loadingRpForSubmit ||
-                  !isConnected ||
-                  (address !== undefined && emitterVerified === undefined) ||
-                  nextInvoiceFromChainLoading
+                  stepSubmitting || isWritePending || loadingRpForSubmit
                 }
               >
                 {loadingRpForSubmit

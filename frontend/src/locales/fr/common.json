@@ -456,7 +456,8 @@
       "worldIdCancelled": "World ID annulé ou erreur.",
       "registerSuccess": "Adresse enregistrée comme émetteur vérifié.",
       "registerTxFailed": "Transaction registerWithWorldId échouée.",
-      "connectWalletFirst": "Connectez d'abord votre wallet (même adresse que pour les factures)."
+      "connectWalletFirst": "Connectez d'abord votre wallet (même adresse que pour les factures).",
+      "formValidationError": "Veuillez remplir tous les champs obligatoires."
     }
   },
   "landing": {
