@@ -7,11 +7,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Languages } from 'lucide-react';
+import { useLocalePreference } from '@/contexts/i18n-provider';
+import { Check, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export function LanguageToggle() {
-  const { i18n, t } = useTranslation('common');
+  const { t } = useTranslation('common');
+  const { localeMode, setLocaleMode } = useLocalePreference();
 
   return (
     <DropdownMenu>
@@ -21,11 +23,32 @@ export function LanguageToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => void i18n.changeLanguage('en')}>
-          {t('language.en')}
+        <DropdownMenuItem
+          className="justify-between gap-4"
+          onClick={() => setLocaleMode('device')}
+        >
+          {t('language.device')}
+          {localeMode === 'device' ? (
+            <Check className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+          ) : null}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => void i18n.changeLanguage('fr')}>
+        <DropdownMenuItem
+          className="justify-between gap-4"
+          onClick={() => setLocaleMode('en')}
+        >
+          {t('language.en')}
+          {localeMode === 'en' ? (
+            <Check className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+          ) : null}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="justify-between gap-4"
+          onClick={() => setLocaleMode('fr')}
+        >
           {t('language.fr')}
+          {localeMode === 'fr' ? (
+            <Check className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+          ) : null}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

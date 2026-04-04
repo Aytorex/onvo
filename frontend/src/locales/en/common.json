@@ -147,6 +147,7 @@
   },
   "language": {
     "label": "Language",
+    "device": "Device",
     "en": "English",
     "fr": "Français"
   },
