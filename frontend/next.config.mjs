@@ -28,6 +28,8 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_TOKEN_EURC ?? ARC_TESTNET_EURC,
     NEXT_PUBLIC_WORLD_ID_GROUP_ID:
       process.env.NEXT_PUBLIC_WORLD_ID_GROUP_ID ?? '1',
+    NEXT_PUBLIC_WORLD_ID_ENV:
+      process.env.NEXT_PUBLIC_WORLD_ID_ENV ?? 'staging',
   },
   reactStrictMode: true,
   serverExternalPackages: ['pino-pretty', 'encoding'],

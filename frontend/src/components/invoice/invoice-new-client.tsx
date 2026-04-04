@@ -24,19 +24,6 @@ import { invoiceRegistryContract } from '@/lib/contract';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
-
-function parseWorldIdNullifierToBigInt(
-  s: string | null | undefined,
-): bigint | null {
-  const t = s?.trim();
-  if (!t) return null;
-  try {
-    if (t.startsWith('0x') || t.startsWith('0X')) return BigInt(t);
-    return BigInt(t);
-  } catch {
-    return null;
-  }
-}
 import {
   appendInvoiceId,
   setInvoiceMeta,
@@ -84,6 +71,19 @@ import {
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
+
+function parseWorldIdNullifierToBigInt(
+  s: string | null | undefined,
+): bigint | null {
+  const t = s?.trim();
+  if (!t) return null;
+  try {
+    if (t.startsWith('0x') || t.startsWith('0X')) return BigInt(t);
+    return BigInt(t);
+  } catch {
+    return null;
+  }
+}
 
 function defaultForm(): InvoiceFormValues {
   return {
