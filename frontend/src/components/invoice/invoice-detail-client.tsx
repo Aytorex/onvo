@@ -130,7 +130,7 @@ export function InvoiceDetailClient() {
       <div className="flex justify-between gap-2 w-full">
         <div className="flex gap-4">
           <Button asChild variant="secondary">
-            <Link href={`/pay/${invoiceId.toString()}`}>
+            <Link href="/dashboard/invoices">
               {t('invoice.detail.back')}
             </Link>
           </Button>
