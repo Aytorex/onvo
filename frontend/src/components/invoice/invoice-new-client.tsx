@@ -25,7 +25,10 @@ import { invoiceRegistryContract } from '@/lib/contract';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  invoiceIdToUrlSegment,
+} from '@/lib/invoice-id';
 import {
   appendInvoiceId,
   setInvoiceMeta,
@@ -423,10 +426,21 @@ export function InvoiceNewClient() {
         const receipt = await publicClientArc!.waitForTransactionReceipt({
           hash,
         });
-        const newId = parseInvoiceCreatedInvoiceId(receipt);
-        if (newId === undefined) {
-          toast.error(t('invoice.toast.receiptNoId'));
-          return;
+        const parsedFromReceipt = parseInvoiceCreatedInvoiceId(receipt);
+        const newId = parsedFromReceipt ?? nextInvoiceId;
+        if (parsedFromReceipt === undefined) {
+          console.warn(
+            '[onvo] InvoiceCreated not parsed from receipt; using nextInvoiceId from chain',
+            { nextInvoiceId: nextInvoiceId.toString() },
+          );
+        } else if (parsedFromReceipt !== nextInvoiceId) {
+          console.warn(
+            '[onvo] InvoiceCreated id differs from pre-tx nextInvoiceId',
+            {
+              parsedFromReceipt: parsedFromReceipt.toString(),
+              nextInvoiceId: nextInvoiceId.toString(),
+            },
+          );
         }
 
         setInvoicePdfBase64(newId, base64);
@@ -651,15 +665,15 @@ export function InvoiceNewClient() {
         </p>
         <div className="rounded-lg bg-muted/50 p-4 font-mono text-sm break-all">
           {typeof window !== 'undefined'
-            ? `${window.location.origin}/pay/${successId.toString()}`
-            : `/pay/${successId.toString()}`}
+            ? `${window.location.origin}/pay/${invoiceIdToUrlSegment(successId)}`
+            : `/pay/${invoiceIdToUrlSegment(successId)}`}
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           <Button asChild variant="secondary">
             <Link href="/dashboard">{t('invoice.form.backDashboard')}</Link>
           </Button>
           <Button asChild>
-            <Link href={`/pay/${successId.toString()}`}>
+            <Link href={`/pay/${invoiceIdToUrlSegment(successId)}`}>
               {t('invoice.form.openPayPage')}
             </Link>
           </Button>

@@ -10,7 +10,12 @@ import {
   readInvoice,
   type CommissionConfig,
 } from '@/lib/invoice-contract';
-import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  cropOnvoLabelMiddle,
+  formatOnvoInvoiceLabel,
+  invoiceIdToUrlSegment,
+  parseInvoiceIdRouteParam,
+} from '@/lib/invoice-id';
 import { invoiceMetaToFormValues } from '@/lib/invoice-meta-to-form';
 import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import {
@@ -43,7 +48,8 @@ export function InvoiceDetailClient() {
   const router = useRouter();
   const params = useParams();
   const idStr = typeof params.id === 'string' ? params.id : '';
-  const invoiceId = idStr ? BigInt(idStr) : undefined;
+  const parsedRoute = idStr ? parseInvoiceIdRouteParam(idStr) : null;
+  const invoiceId = parsedRoute ?? undefined;
   const previewRef = useRef<HTMLDivElement>(null);
 
   const { authReady, isVerified } = useWorldID();
@@ -143,7 +149,7 @@ export function InvoiceDetailClient() {
         </Button>
         <div className="flex gap-4">
           <Button variant="default" asChild>
-            <Link href={`/pay/${invoiceId.toString()}`}>
+            <Link href={`/pay/${invoiceIdToUrlSegment(invoiceId)}`}>
               {t('invoice.detail.payPage')}
             </Link>
           </Button>

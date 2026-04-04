@@ -2,7 +2,10 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  invoiceIdToUrlSegment,
+} from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
   formatInvoiceTokenAmount,
@@ -330,7 +333,7 @@ export function DashboardHomeView({
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
                         <Button variant="secondary" size="sm" asChild>
-                          <Link href={`/invoice/${r.invoiceId.toString()}`}>
+                          <Link href={`/invoice/${invoiceIdToUrlSegment(r.invoiceId)}`}>
                             {t('invoice.dashboard.view')}
                           </Link>
                         </Button>

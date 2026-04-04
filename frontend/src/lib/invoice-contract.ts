@@ -1,5 +1,6 @@
 import { invoiceRegistryContract } from '@/lib/contract';
 import {
+  decodeEventLog,
   getAddress,
   isAddressEqual,
   parseEventLogs,
@@ -143,12 +144,39 @@ export async function readWorldIdAuthorizedForEmitter(
 export function parseInvoiceCreatedInvoiceId(
   receipt: TransactionReceipt,
 ): bigint | undefined {
-  const parsed = parseEventLogs({
-    abi: invoiceRegistryContract.abi,
-    eventName: 'InvoiceCreated',
-    logs: receipt.logs,
-  }) as { args: { invoiceId?: bigint } }[];
-  const first = parsed[0];
-  if (!first || first.args.invoiceId === undefined) return undefined;
-  return first.args.invoiceId;
+  const addr = invoiceRegistryContract.address.toLowerCase();
+  const registryLogs = receipt.logs.filter(
+    (l) => l.address.toLowerCase() === addr,
+  );
+  for (const log of registryLogs) {
+    try {
+      const decoded = decodeEventLog({
+        abi: invoiceRegistryContract.abi,
+        data: log.data,
+        topics: log.topics,
+      });
+      if (
+        decoded.eventName === 'InvoiceCreated' &&
+        decoded.args &&
+        typeof decoded.args === 'object' &&
+        'invoiceId' in decoded.args
+      ) {
+        return (decoded.args as { invoiceId: bigint }).invoiceId;
+      }
+    } catch {
+      /* not this event */
+    }
+  }
+  try {
+    const parsed = parseEventLogs({
+      abi: invoiceRegistryContract.abi,
+      eventName: 'InvoiceCreated',
+      logs: registryLogs,
+    }) as { args: { invoiceId?: bigint } }[];
+    const first = parsed[0];
+    if (first?.args?.invoiceId !== undefined) return first.args.invoiceId;
+  } catch {
+    /* */
+  }
+  return undefined;
 }

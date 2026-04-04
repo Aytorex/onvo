@@ -2,6 +2,39 @@
 const SEQ_MASK = (1n << 96n) - 1n;
 const EMITTER_MASK = (1n << 160n) - 1n;
 
+/** Decimal segment: positive base-10, no leading zeros (canonical share links). */
+const DECIMAL_ID_SEGMENT = /^[1-9]\d*$/;
+
+/**
+ * Parse packed `invoiceId` from a URL segment (`/pay/…`, `/invoice/…`):
+ * - **Hex** `0x` + up to 64 hex digits (compact, preferred for 256-bit packed ids)
+ * - **Decimal** string (legacy / copy-paste from block explorers)
+ */
+export function parseInvoiceIdRouteParam(param: string): bigint | null {
+  const t = param.trim();
+  if (!t) return null;
+  try {
+    if (/^0x[0-9a-f]{1,64}$/i.test(t)) {
+      return BigInt(t);
+    }
+    if (DECIMAL_ID_SEGMENT.test(t)) {
+      return BigInt(t);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Canonical **compact** path segment for routes (hex, 32-byte padded).
+ * Packed on-chain ids are ~77 decimal digits; hex is fixed 66 chars (`0x` + 64 hex).
+ */
+export function invoiceIdToUrlSegment(invoiceId: bigint): string {
+  const hex = invoiceId.toString(16);
+  return `0x${hex.padStart(64, '0')}`;
+}
+
 /** Build invoice id on-chain layout: `(uint160(emitter) << 96) | seq` (same as `InvoiceRegistry.packInvoiceId`). */
 export function packInvoiceId(emitter: `0x${string}`, seq: bigint): bigint {
   if (seq <= 0n || seq > (1n << 96n) - 1n) {
@@ -19,7 +52,7 @@ export function unpackPackedInvoiceId(invoiceId: bigint): {
   const emitterUint = (invoiceId >> 96n) & EMITTER_MASK;
   const seq = invoiceId & SEQ_MASK;
   const padded = emitterUint.toString(16).padStart(40, '0');
-  return { emitter: `0x${padded}` as `0x${string}`, seq };
+  return { emitter: `0x${padded}`, seq };
 }
 
 function shortHexAddress(addr: string): string {

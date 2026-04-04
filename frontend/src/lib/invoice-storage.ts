@@ -61,14 +61,25 @@ export function appendInvoiceId(
   invoiceId: bigint,
   worldIdNullifier?: string | null,
 ): void {
-  const key = invoiceIdsStorageKey(worldAddress, worldIdNullifier);
-  const existing = readIdsFromKey(key);
-  const set = new Set(existing.map((x) => x.toString()));
-  set.add(invoiceId.toString());
-  const sorted = [...set]
-    .map((x) => BigInt(x))
-    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  localStorage.setItem(key, JSON.stringify(sorted.map((x) => x.toString())));
+  const mergeIntoKey = (storageKey: string) => {
+    const existing = readIdsFromKey(storageKey);
+    const set = new Set(existing.map((x) => x.toString()));
+    set.add(invoiceId.toString());
+    const sorted = [...set]
+      .map((x) => BigInt(x))
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify(sorted.map((x) => x.toString())),
+    );
+  };
+  mergeIntoKey(invoiceIdsStorageKey(worldAddress, worldIdNullifier));
+  if (worldIdNullifier?.trim()) {
+    const legacy = invoiceIdsKey(worldAddress);
+    if (legacy !== invoiceIdsStorageKey(worldAddress, worldIdNullifier)) {
+      mergeIntoKey(legacy);
+    }
+  }
 }
 
 export function setInvoicePdfBase64(invoiceId: bigint, base64: string): void {
