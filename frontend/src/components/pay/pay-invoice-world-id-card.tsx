@@ -1,8 +1,8 @@
 'use client';
 
+import { ExternalLink, Fingerprint } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Fingerprint } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -45,6 +45,9 @@ export function PayInvoiceWorldIdCard({
         <p className="text-xs leading-snug text-amber-900/90 dark:text-amber-200/95">
           {t('pay.worldIdComparePdf')}
         </p>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          {t('pay.worldIdFootnote')}
+        </p>
 
         {hasId ? (
           <div>
@@ -79,6 +82,27 @@ export function PayInvoiceWorldIdCard({
             {t('pay.worldIdUnavailable')}
           </p>
         )}
+
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-border/50 pt-3">
+          <a
+            href="https://docs.world.org/world-id"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary underline-offset-4 hover:underline"
+          >
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+            {t('pay.worldIdLinkDocs')}
+          </a>
+          <a
+            href="https://world.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+            {t('pay.worldIdLinkWorldOrg')}
+          </a>
+        </div>
       </div>
     </section>
   );

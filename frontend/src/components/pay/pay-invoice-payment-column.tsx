@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { PayInvoiceCopyableText } from '@/components/pay/pay-invoice-copyable-text';
 import { PayInvoicePaymentActions } from '@/components/pay/pay-invoice-payment-actions';
 import { PayInvoiceWorldIdCard } from '@/components/pay/pay-invoice-world-id-card';
+import { PayWorldAppHint } from '@/components/pay/pay-world-app-hint';
 
 export function PayInvoicePaymentColumn({
   invoice,
@@ -46,6 +47,8 @@ export function PayInvoicePaymentColumn({
       <PayInvoicePaymentActions invoice={invoice} />
 
       <PayInvoiceWorldIdCard issuerWorldId={invoice.issuerWorldId} compact />
+
+      <PayWorldAppHint />
 
       <section className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-7">
         <h2 className="text-base font-bold text-heading">

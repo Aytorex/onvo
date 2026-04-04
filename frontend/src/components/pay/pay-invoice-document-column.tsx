@@ -22,7 +22,7 @@ export function PayInvoiceDocumentColumn({
   const sk = invoiceStatusI18nKey(invoice.status);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <section
         className="rounded-3xl border border-border/80 bg-card p-6 shadow-md sm:p-8"
         aria-labelledby="pay-invoice-heading"

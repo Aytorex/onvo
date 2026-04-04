@@ -9,8 +9,8 @@ import { usePayInvoice } from '@/hooks/use-pay-invoice';
 import { PayInvoiceDocumentColumn } from '@/components/pay/pay-invoice-document-column';
 import { PayInvoiceLoadError } from '@/components/pay/pay-invoice-load-error';
 import { PayInvoiceLoading } from '@/components/pay/pay-invoice-loading';
-import { PayInvoiceStatusAlerts } from '@/components/pay/pay-invoice-status-alerts';
 import { PayInvoicePaymentColumn } from '@/components/pay/pay-invoice-payment-column';
+import { PayInvoiceStatusAlerts } from '@/components/pay/pay-invoice-status-alerts';
 
 export function PayInvoiceContent({
   invoiceId,
@@ -29,7 +29,7 @@ export function PayInvoiceContent({
   const invoice = result.invoice;
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-5 sm:space-y-6 lg:space-y-8">
       {result.isMock && (
         <Alert>
           <Info className="h-4 w-4" />
@@ -39,7 +39,7 @@ export function PayInvoiceContent({
 
       <PayInvoiceStatusAlerts invoice={invoice} />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-10">
         <div className="lg:col-span-7">
           <PayInvoiceDocumentColumn invoice={invoice} />
         </div>
