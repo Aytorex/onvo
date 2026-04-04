@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { LanguageToggle } from '@/components/shared/language-toggle';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { MagicRings } from '@/components/shared/magic-rings';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { ArrowRight, Fingerprint, FileCheck2, Send } from 'lucide-react';
@@ -151,14 +153,18 @@ export default function LandingPage() {
     <div className="relative min-h-screen overflow-x-hidden bg-background">
       {/* ─── Header ─── */}
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-6">
           <OnvoLogo className="text-xl sm:text-2xl" />
-          <Link href="/auth">
-            <Button size="sm">
-              Create my invoice
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+            <Link href="/auth" className="ml-1">
+              <Button size="sm">
+                Create my invoice
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
