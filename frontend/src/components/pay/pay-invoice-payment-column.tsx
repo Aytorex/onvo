@@ -13,7 +13,6 @@ import {
 import { PayInvoiceCopyableText } from '@/components/pay/pay-invoice-copyable-text';
 import { PayInvoicePaymentActions } from '@/components/pay/pay-invoice-payment-actions';
 import { PayInvoiceWorldIdCard } from '@/components/pay/pay-invoice-world-id-card';
-import { WalletButton } from '@/components/shared/wallet-button';
 import { cn } from '@/lib/utils';
 
 export function PayInvoicePaymentColumn({
@@ -39,9 +38,6 @@ export function PayInvoicePaymentColumn({
           'lg:sticky lg:top-24 lg:z-10',
         )}
       >
-        <div className="flex justify-end">
-          <WalletButton />
-        </div>
         <PayInvoicePaymentActions
           invoice={invoice}
           onPaymentConfirmed={onPaymentConfirmed}
