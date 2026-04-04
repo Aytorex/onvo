@@ -8,7 +8,9 @@ export const ARC_TESTNET_EURC_DEFAULT =
 
 /** Adresses stables Arc Testnet (alignées `InvoiceRegistry` / `allowedTokens`). */
 export function getTokenAddress(currency: StableCurrency): `0x${string}` {
-  return currency === 'USDC' ? ARC_TESTNET_USDC_DEFAULT : ARC_TESTNET_EURC_DEFAULT;
+  return currency === 'USDC'
+    ? ARC_TESTNET_USDC_DEFAULT
+    : ARC_TESTNET_EURC_DEFAULT;
 }
 
 export function tokenDecimals(): 6 {
