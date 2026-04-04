@@ -324,7 +324,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
                     href="/dashboard"
                     className="flex items-center gap-2 rounded-xl px-3 py-2 text-lg font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    <OnvoLogo className="text-lg" />
+                    <OnvoLogo className="text-3xl leading-none sm:text-4xl" />
                   </Link>
                   {renderNavLinks(true)}
                 </nav>
