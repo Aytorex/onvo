@@ -34,15 +34,24 @@ export async function generatePdfBlobFromElement(
   element: HTMLElement,
 ): Promise<Blob> {
   const html2pdf = (await import('html2pdf.js')).default;
+
+  const options = {
+    margin: [12, 12, 12, 12],
+    filename: 'invoice.pdf',
+    image: { type: 'jpeg' as const, quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait' as const,
+    },
+    pagebreak: { mode: ['css', 'legacy'], before: '.invoice-page-break' },
+  };
+
   const blob = await html2pdf()
     .from(element)
-    .set({
-      margin: [12, 12, 12, 12],
-      filename: 'invoice.pdf',
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- html2pdf.js types miss `pagebreak`
+    .set(options as any)
     .outputPdf('blob');
   return blob as Blob;
 }
