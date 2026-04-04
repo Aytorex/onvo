@@ -185,6 +185,16 @@ export function InvoiceDetailClient() {
                 </dd>
               </div>
             ) : null}
+            {meta.emitterWorldIdNullifier?.trim() ? (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.emitterWorldId')}
+                </dt>
+                <dd className="mt-1 break-all font-mono text-xs">
+                  {meta.emitterWorldIdNullifier.trim()}
+                </dd>
+              </div>
+            ) : null}
           </>
         ) : null}
       </dl>

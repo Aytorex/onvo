@@ -26,9 +26,12 @@ function fmtMoney(n: number, currency: string, localeTag: string) {
 export function InvoicePreviewDocument({
   values,
   previewRef,
+  emitterWorldIdNullifier,
 }: {
   values: InvoiceFormValues;
   previewRef: React.RefObject<HTMLDivElement | null>;
+  /** Identifiant World ID (nullifier) affiché sur le document PDF. */
+  emitterWorldIdNullifier?: string | null;
 }) {
   const { t, i18n } = useTranslation('common');
   const localeTag = i18n.language.startsWith('fr') ? 'fr-FR' : 'en-US';
@@ -100,6 +103,17 @@ export function InvoicePreviewDocument({
           ) : null}
           {values.emitterEmail ? (
             <p className="text-sm text-zinc-500">{values.emitterEmail}</p>
+          ) : null}
+          {emitterWorldIdNullifier?.trim() ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              <span className="font-medium uppercase tracking-wide text-zinc-600">
+                {t('invoice.preview.worldIdNumber')}
+              </span>
+              <br />
+              <span className="break-all font-mono text-[11px] text-zinc-400">
+                {emitterWorldIdNullifier.trim()}
+              </span>
+            </p>
           ) : null}
         </div>
         <div>

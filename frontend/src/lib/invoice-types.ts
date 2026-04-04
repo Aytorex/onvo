@@ -48,6 +48,8 @@ export interface InvoiceMetaRecord {
   emitterCountry?: string;
   emitterSiret: string;
   emitterEmail: string;
+  /** Nullifier World ID de l'émetteur (identifiant unique côté app), figé au moment du PDF. */
+  emitterWorldIdNullifier?: string;
   clientName: string;
   /** @deprecated Anciennes factures : adresse client sur une ligne. */
   clientAddress?: string;

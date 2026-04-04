@@ -107,7 +107,7 @@ export async function verifyProof(result: IDKitResult): Promise<boolean> {
   return res.ok;
 }
 
-function extractNullifier(result: IDKitResult): string {
+export function extractNullifierFromIdKitResult(result: IDKitResult): string {
   const firstResponse = result.responses?.[0];
   if (!firstResponse) return '';
   if ('nullifier' in firstResponse) {
@@ -150,7 +150,7 @@ export function useWorldID() {
 
   const handleSuccess = useCallback(
     (result: IDKitResult) => {
-      const nullifier = extractNullifier(result);
+      const nullifier = extractNullifierFromIdKitResult(result);
       const proofData: WorldIDProof = {
         result,
         verifiedAt: Date.now(),

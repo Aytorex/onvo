@@ -33,6 +33,7 @@ import {
 } from '@/lib/pdf-utils';
 import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
 import {
+  extractNullifierFromIdKitResult,
   fetchRpContext,
   useWorldID,
   verifyProof,
@@ -45,6 +46,7 @@ import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -98,7 +100,11 @@ export function InvoiceNewClient() {
   const { t } = useTranslation('common');
   const router = useRouter();
   const previewRef = useRef<HTMLDivElement>(null);
-  const { authReady, isVerified } = useWorldID();
+  const {
+    authReady,
+    isVerified,
+    nullifier: sessionWorldIdNullifier,
+  } = useWorldID();
   const { address, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
@@ -111,6 +117,10 @@ export function InvoiceNewClient() {
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [idKitOpen, setIdKitOpen] = useState(false);
   const [loadingRpForSubmit, setLoadingRpForSubmit] = useState(false);
+  /** Nullifier issu du dernier IDKit (première facture) — appliqué au preview PDF avant capture. */
+  const [idKitWorldIdNullifier, setIdKitWorldIdNullifier] = useState<
+    string | null
+  >(null);
   const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
@@ -217,8 +227,14 @@ export function InvoiceNewClient() {
     [debouncedPreview.lines],
   );
 
+  const previewWorldIdNullifier =
+    idKitWorldIdNullifier?.trim() || sessionWorldIdNullifier?.trim() || null;
+
   const createInvoiceFromVerifiedForm = useCallback(
-    async (data: InvoiceFormValues) => {
+    async (
+      data: InvoiceFormValues,
+      worldIdNullifierOverride?: string | null,
+    ) => {
       if (!address) {
         toast.error(t('invoice.toast.walletIssuerRequired'));
         return;
@@ -234,6 +250,11 @@ export function InvoiceNewClient() {
         toast.error(t('invoice.toast.previewUnavailable'));
         return;
       }
+
+      const emitterWorldIdForDoc =
+        worldIdNullifierOverride?.trim() ||
+        sessionWorldIdNullifier?.trim() ||
+        undefined;
 
       const lineTotals = computeTotalsFromLines(data.lines);
 
@@ -310,6 +331,9 @@ export function InvoiceNewClient() {
           emitterCountry: data.emitterCountry,
           emitterSiret: data.emitterSiret,
           emitterEmail: data.emitterEmail,
+          ...(emitterWorldIdForDoc
+            ? { emitterWorldIdNullifier: emitterWorldIdForDoc }
+            : {}),
           clientName: data.clientName,
           clientStreet: data.clientStreet,
           clientStreetLine2: data.clientStreetLine2,
@@ -341,10 +365,18 @@ export function InvoiceNewClient() {
             : t('invoice.toast.invoiceCreateFailed'),
         );
       } finally {
+        setIdKitWorldIdNullifier(null);
         setStepSubmitting(false);
       }
     },
-    [address, publicClientArc, switchChainAsync, t, writeContractAsync],
+    [
+      address,
+      publicClientArc,
+      sessionWorldIdNullifier,
+      switchChainAsync,
+      t,
+      writeContractAsync,
+    ],
   );
 
   const handleVerifyForInvoice = useCallback(
@@ -375,9 +407,16 @@ export function InvoiceNewClient() {
           publicClientArc,
         });
         await refetchEmitterVerified();
+        const kitNullifier = extractNullifierFromIdKitResult(result).trim();
+        flushSync(() => {
+          setIdKitWorldIdNullifier(kitNullifier || null);
+        });
         pendingFormDataRef.current = null;
         setIdKitOpen(false);
-        await createInvoiceFromVerifiedForm(data);
+        await createInvoiceFromVerifiedForm(
+          data,
+          kitNullifier || sessionWorldIdNullifier,
+        );
       } catch (e) {
         console.error(e);
         toast.error(
@@ -394,6 +433,7 @@ export function InvoiceNewClient() {
       createInvoiceFromVerifiedForm,
       publicClientArc,
       refetchEmitterVerified,
+      sessionWorldIdNullifier,
       switchChainAsync,
       t,
       writeContractAsync,
@@ -894,6 +934,7 @@ export function InvoiceNewClient() {
           <InvoicePreviewDocument
             values={debouncedPreview}
             previewRef={previewRef}
+            emitterWorldIdNullifier={previewWorldIdNullifier}
           />
         </div>
       </div>
