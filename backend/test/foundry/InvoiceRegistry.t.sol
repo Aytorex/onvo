@@ -71,6 +71,12 @@ contract InvoiceRegistryTest is Test {
         return registry.getNextInvoiceId(em);
     }
 
+    function testWorldIdAddressFromNullifierPure() public view {
+        assertEq(registry.worldIdAddressFromNullifier(0), ZERO);
+        uint256 n = 4242;
+        assertEq(registry.worldIdAddressFromNullifier(n), _widAddr(n));
+    }
+
     /* createInvoice */
 
     function testCreateInvoicePendingAndEvent() public {
