@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RequiredFieldMark } from '@/components/ui/required-field-mark';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
@@ -569,8 +570,13 @@ export function InvoiceNewClient() {
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="emitterName">
                   {t('invoice.form.emitterName')}
+                  <RequiredFieldMark />
                 </Label>
-                <Input id="emitterName" {...form.register('emitterName')} />
+                <Input
+                  id="emitterName"
+                  aria-required
+                  {...form.register('emitterName')}
+                />
                 {form.formState.errors.emitterName ? (
                   <p className="text-xs text-destructive">
                     {form.formState.errors.emitterName.message}
@@ -580,9 +586,11 @@ export function InvoiceNewClient() {
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="emitterStreet">
                   {t('invoice.form.emitterStreet')}
+                  <RequiredFieldMark />
                 </Label>
                 <Input
                   id="emitterStreet"
+                  aria-required
                   placeholder={t('invoice.form.emitterStreetPlaceholder')}
                   {...form.register('emitterStreet')}
                 />
@@ -605,9 +613,11 @@ export function InvoiceNewClient() {
               <div className="space-y-2">
                 <Label htmlFor="emitterPostalCode">
                   {t('invoice.form.emitterPostalCode')}
+                  <RequiredFieldMark />
                 </Label>
                 <Input
                   id="emitterPostalCode"
+                  aria-required
                   autoComplete="postal-code"
                   {...form.register('emitterPostalCode')}
                 />
@@ -620,9 +630,11 @@ export function InvoiceNewClient() {
               <div className="space-y-2">
                 <Label htmlFor="emitterCity">
                   {t('invoice.form.emitterCity')}
+                  <RequiredFieldMark />
                 </Label>
                 <Input
                   id="emitterCity"
+                  aria-required
                   autoComplete="address-level2"
                   {...form.register('emitterCity')}
                 />
@@ -645,7 +657,7 @@ export function InvoiceNewClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emitterSiret">
-                  {t('invoice.form.emitterSiretOptional')}
+                  {t('invoice.form.emitterSiret')}
                 </Label>
                 <Input id="emitterSiret" {...form.register('emitterSiret')} />
               </div>
@@ -672,8 +684,13 @@ export function InvoiceNewClient() {
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="clientName">
                   {t('invoice.form.clientName')}
+                  <RequiredFieldMark />
                 </Label>
-                <Input id="clientName" {...form.register('clientName')} />
+                <Input
+                  id="clientName"
+                  aria-required
+                  {...form.register('clientName')}
+                />
                 {form.formState.errors.clientName ? (
                   <p className="text-xs text-destructive">
                     {form.formState.errors.clientName.message}
@@ -683,9 +700,11 @@ export function InvoiceNewClient() {
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="clientStreet">
                   {t('invoice.form.clientStreet')}
+                  <RequiredFieldMark />
                 </Label>
                 <Input
                   id="clientStreet"
+                  aria-required
                   placeholder={t('invoice.form.clientStreetPlaceholder')}
                   {...form.register('clientStreet')}
                 />
@@ -708,9 +727,11 @@ export function InvoiceNewClient() {
               <div className="space-y-2">
                 <Label htmlFor="clientPostalCode">
                   {t('invoice.form.clientPostalCode')}
+                  <RequiredFieldMark />
                 </Label>
                 <Input
                   id="clientPostalCode"
+                  aria-required
                   autoComplete="postal-code"
                   {...form.register('clientPostalCode')}
                 />
@@ -723,9 +744,11 @@ export function InvoiceNewClient() {
               <div className="space-y-2">
                 <Label htmlFor="clientCity">
                   {t('invoice.form.clientCity')}
+                  <RequiredFieldMark />
                 </Label>
                 <Input
                   id="clientCity"
+                  aria-required
                   autoComplete="address-level2"
                   {...form.register('clientCity')}
                 />
@@ -748,7 +771,7 @@ export function InvoiceNewClient() {
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="clientEmail">
-                  {t('invoice.form.clientEmailOptional')}
+                  {t('invoice.form.clientEmail')}
                 </Label>
                 <Input
                   id="clientEmail"
@@ -782,34 +805,50 @@ export function InvoiceNewClient() {
                   className="grid gap-3 rounded-lg border border-border/80 p-4 sm:grid-cols-12"
                 >
                   <div className="sm:col-span-4">
-                    <Label>{t('invoice.form.description')}</Label>
+                    <Label>
+                      {t('invoice.form.description')}
+                      <RequiredFieldMark />
+                    </Label>
                     <Input
+                      aria-required
                       {...form.register(`lines.${index}.description` as const)}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>{t('invoice.form.qty')}</Label>
+                    <Label>
+                      {t('invoice.form.qty')}
+                      <RequiredFieldMark />
+                    </Label>
                     <Input
                       type="number"
                       step={1}
+                      aria-required
                       {...form.register(`lines.${index}.quantity` as const)}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>{t('invoice.form.unitPriceHt')}</Label>
+                    <Label>
+                      {t('invoice.form.unitPriceHt')}
+                      <RequiredFieldMark />
+                    </Label>
                     <Input
                       type="number"
                       step="0.01"
+                      aria-required
                       {...form.register(`lines.${index}.unitPrice` as const)}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>{t('invoice.form.vatPercent')}</Label>
+                    <Label>
+                      {t('invoice.form.vatPercent')}
+                      <RequiredFieldMark />
+                    </Label>
                     <Input
                       type="number"
                       step="0.1"
                       min={0}
                       max={100}
+                      aria-required
                       {...form.register(`lines.${index}.vatPercent`, {
                         valueAsNumber: true,
                       })}
@@ -835,14 +874,17 @@ export function InvoiceNewClient() {
 
           <section className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>{t('invoice.form.currency')}</Label>
+              <Label>
+                {t('invoice.form.currency')}
+                <RequiredFieldMark />
+              </Label>
               <Select
                 value={form.watch('currency')}
                 onValueChange={(v) =>
                   form.setValue('currency', v as InvoiceFormValues['currency'])
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-required>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -854,9 +896,11 @@ export function InvoiceNewClient() {
             <div className="space-y-2">
               <Label htmlFor="invoiceNumber">
                 {t('invoice.form.invoiceNumber')}
+                <RequiredFieldMark />
               </Label>
               <Input
                 id="invoiceNumber"
+                aria-required
                 placeholder={t('invoice.form.invoiceNumberPlaceholder')}
                 readOnly={nextInvoiceFromChainLoading}
                 aria-busy={nextInvoiceFromChainLoading}
@@ -877,21 +921,33 @@ export function InvoiceNewClient() {
               ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="issueDate">{t('invoice.form.issueDate')}</Label>
+              <Label htmlFor="issueDate">
+                {t('invoice.form.issueDate')}
+                <RequiredFieldMark />
+              </Label>
               <Input
                 id="issueDate"
                 type="date"
+                aria-required
                 {...form.register('issueDate')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dueDate">{t('invoice.form.dueDate')}</Label>
-              <Input id="dueDate" type="date" {...form.register('dueDate')} />
+              <Label htmlFor="dueDate">
+                {t('invoice.form.dueDate')}
+                <RequiredFieldMark />
+              </Label>
+              <Input
+                id="dueDate"
+                type="date"
+                aria-required
+                {...form.register('dueDate')}
+              />
             </div>
           </section>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">{t('invoice.form.notesOptional')}</Label>
+            <Label htmlFor="notes">{t('invoice.form.notes')}</Label>
             <Textarea id="notes" rows={3} {...form.register('notes')} />
           </div>
 
