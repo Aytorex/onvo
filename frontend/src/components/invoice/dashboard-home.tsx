@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   formatOnvoInvoiceLabel,
+  formatOnvoInvoiceLabelDisplay,
   invoiceIdToUrlSegment,
 } from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
@@ -316,8 +317,11 @@ export function DashboardHomeView({
                     >
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-muted-foreground text-xs">
-                            {formatOnvoInvoiceLabel(r.invoiceId)}
+                          <span
+                            className="font-mono text-muted-foreground text-xs"
+                            title={formatOnvoInvoiceLabel(r.invoiceId)}
+                          >
+                            {formatOnvoInvoiceLabelDisplay(r.invoiceId)}
                           </span>
                           {statusBadge(r.status, t, true)}
                         </div>
@@ -333,7 +337,9 @@ export function DashboardHomeView({
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
                         <Button variant="secondary" size="sm" asChild>
-                          <Link href={`/invoice/${invoiceIdToUrlSegment(r.invoiceId)}`}>
+                          <Link
+                            href={`/invoice/${invoiceIdToUrlSegment(r.invoiceId)}`}
+                          >
                             {t('invoice.dashboard.view')}
                           </Link>
                         </Button>

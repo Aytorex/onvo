@@ -52,7 +52,13 @@ export function usePayInvoice(
   const activeSerialized = latestSerialized ?? initialSerialized;
   const readOnClient = registryOk && initialSerialized === undefined;
 
-  const { data, isPending, isError, error, refetch: wagmiRefetch } = useReadContract({
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    refetch: wagmiRefetch,
+  } = useReadContract({
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
     functionName: 'getInvoice',

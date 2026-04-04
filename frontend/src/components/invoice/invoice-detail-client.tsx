@@ -11,8 +11,8 @@ import {
   type CommissionConfig,
 } from '@/lib/invoice-contract';
 import {
-  cropOnvoLabelMiddle,
   formatOnvoInvoiceLabel,
+  shortenOnvoInvoiceLabelString,
   invoiceIdToUrlSegment,
   parseInvoiceIdRouteParam,
 } from '@/lib/invoice-id';
@@ -128,10 +128,9 @@ export function InvoiceDetailClient() {
 
   const pdf = getInvoicePdfBase64(invoiceId);
 
-  const worldIdDisplay =
-    !isAddressEqual(data.worldIdAddress, zeroAddress)
-      ? formatWorldIdAddressForDisplay(data.worldIdAddress)
-      : (meta?.emitterWorldIdNullifier?.trim() ?? '');
+  const worldIdDisplay = !isAddressEqual(data.worldIdAddress, zeroAddress)
+    ? formatWorldIdAddressForDisplay(data.worldIdAddress)
+    : (meta?.emitterWorldIdNullifier?.trim() ?? '');
 
   const worldIdForPreview =
     meta?.emitterWorldIdNullifier?.trim() ||
@@ -193,7 +192,7 @@ export function InvoiceDetailClient() {
               className="inline-block max-w-[min(100%,calc(100vw-2.5rem))] truncate text-2xl font-semibold tracking-tight sm:max-w-[min(36rem,calc(100vw-4rem))]"
               title={invoiceLabelFull}
             >
-              {cropOnvoLabelMiddle(invoiceLabelFull)}
+              {shortenOnvoInvoiceLabelString(invoiceLabelFull)}
             </h2>
             <Button
               type="button"

@@ -4,9 +4,7 @@ pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {
-    IERC20Errors
-} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 import {InvoiceRegistry} from "@/contracts/InvoiceRegistry.sol";
 import {MockERC20} from "@/contracts/mocks/MockERC20.sol";
@@ -65,7 +63,8 @@ contract InvoiceRegistryTest is Test {
     }
 
     function _widAddr(uint256 nullifier) internal pure returns (address) {
-        return address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))));
+        return
+            address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))));
     }
 
     function _nextInvoiceId(address em) internal view returns (uint256) {
@@ -237,8 +236,8 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCreateInvoiceVatNumberTooLong() public {
         bytes32 hash = keccak256("h-vat");
         uint256 id = _nextInvoiceId(emitter);
-        string
-            memory tooLong = "012345678901234567890123456789012345678901234567890123456789012345";
+        string memory tooLong =
+            "012345678901234567890123456789012345678901234567890123456789012345";
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: vat number too long");
         registry.createInvoice(
@@ -317,8 +316,9 @@ contract InvoiceRegistryTest is Test {
             0
         );
 
-        uint256 fee = (amount * registry.commissionBps()) /
-            registry.COMMISSION_BPS_DENOMINATOR();
+        uint256 fee =
+            (amount * registry.commissionBps()) /
+                registry.COMMISSION_BPS_DENOMINATOR();
         uint256 net = amount - fee;
         uint256 emitterBefore = token.balanceOf(emitter);
         uint256 treasuryBefore = token.balanceOf(treasury);

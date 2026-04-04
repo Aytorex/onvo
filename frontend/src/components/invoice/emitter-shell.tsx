@@ -18,7 +18,10 @@ import {
 } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
-import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  formatOnvoInvoiceLabelDisplay,
+} from '@/lib/invoice-id';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { useWorldID } from '@/lib/worldid';
 import {
@@ -127,7 +130,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     try {
       const id = BigInt(m[1]);
       const full = formatOnvoInvoiceLabel(id);
-      return { full, short: cropOnvoLabelMiddle(full) };
+      return { full, short: formatOnvoInvoiceLabelDisplay(id) };
     } catch {
       return null;
     }
@@ -269,11 +272,19 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
 
   const isNewInvoicePage = pathname?.startsWith('/invoice/new');
 
-  const shellMainClass = cn(
-    'mx-auto flex min-w-0 w-full flex-1 flex-col min-h-0',
+  /** Scroll on full-width <main> so the scrollbar sits at the viewport edge (beside sidebar), not inside the max-width column. */
+  const shellMainOuterClass = cn(
+    'flex min-h-0 min-w-0 w-full flex-1 flex-col',
     isNewInvoicePage
-      ? 'max-w-[min(100%,100rem)] gap-4 overflow-hidden p-4 lg:gap-6 lg:p-6'
-      : 'max-w-6xl gap-4 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 lg:gap-6 lg:p-6',
+      ? 'overflow-hidden'
+      : 'overflow-x-hidden overflow-y-auto overscroll-y-contain',
+  );
+
+  const shellMainInnerClass = cn(
+    'mx-auto flex min-h-0 min-w-0 w-full flex-1 flex-col',
+    isNewInvoicePage
+      ? 'max-w-[min(100%,100rem)] gap-4 p-4 lg:gap-6 lg:p-6'
+      : 'max-w-6xl gap-4 p-4 lg:gap-6 lg:p-6',
   );
 
   const emitterContentColumnClass = cn(
@@ -491,7 +502,9 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               <WalletButton />
             </div>
           </header>
-          <main className={shellMainClass}>{children}</main>
+          <main className={shellMainOuterClass}>
+            <div className={shellMainInnerClass}>{children}</div>
+          </main>
         </div>
       </div>
     </TooltipProvider>
