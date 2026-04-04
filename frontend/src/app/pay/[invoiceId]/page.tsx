@@ -1,39 +1,44 @@
-'use client';
-
-import { use } from 'react';
-import { useTranslation } from 'react-i18next';
+import { notFound } from 'next/navigation';
 
 import { PayInvoiceContent } from '@/components/pay/pay-invoice-content';
-import { parseInvoiceIdParam } from '@/lib/pay-invoice';
+import { PayInvoiceLoadError } from '@/components/pay/pay-invoice-load-error';
+import { fetchGetInvoiceServer } from '@/lib/pay-invoice/fetch-get-invoice.server';
+import {
+  INVOICE_LOAD_FAILED_ERROR,
+  INVOICE_REGISTRY_UNCONFIGURED_ERROR,
+  isInvoiceRegistryConfigured,
+  parseInvoiceIdParam,
+} from '@/lib/pay-invoice';
 
-export default function PayInvoicePage({
+export default async function PayInvoicePage({
   params,
 }: Readonly<{
   params: Promise<{ invoiceId: string }>;
 }>) {
-  const { invoiceId: invoiceIdParam } = use(params);
-  const { t } = useTranslation('common');
-
+  const { invoiceId: invoiceIdParam } = await params;
   const invoiceId = parseInvoiceIdParam(invoiceIdParam);
-
   if (invoiceId === null) {
+    notFound();
+  }
+
+  if (!isInvoiceRegistryConfigured()) {
     return (
-      <section
-        className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8"
-        aria-labelledby="pay-heading"
-      >
-        <h1
-          id="pay-heading"
-          className="text-xl font-bold tracking-tight text-heading sm:text-2xl"
-        >
-          {t('pay.title')}
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {t('pay.invalidInvoiceId')}
-        </p>
-      </section>
+      <PayInvoiceLoadError message={INVOICE_REGISTRY_UNCONFIGURED_ERROR} />
     );
   }
 
-  return <PayInvoiceContent invoiceId={invoiceId} />;
+  const fetched = await fetchGetInvoiceServer(invoiceId);
+  if (!fetched.ok) {
+    if (fetched.kind === 'not-found') {
+      notFound();
+    }
+    return <PayInvoiceLoadError message={INVOICE_LOAD_FAILED_ERROR} />;
+  }
+
+  return (
+    <PayInvoiceContent
+      invoiceIdString={invoiceId.toString(10)}
+      serializedInvoice={fetched.serializedInvoice}
+    />
+  );
 }
