@@ -200,12 +200,14 @@ export function DashboardClient({
 
   const actionsRow = (
     <div className="flex flex-wrap gap-2 shrink-0">
-      <Button variant="default" className="gap-2" asChild>
-        <Link href="/invoice/new">
-          <Plus className="size-4 shrink-0" aria-hidden />
-          {t('invoice.dashboard.newInvoice')}
-        </Link>
-      </Button>
+      {rows.length > 0 ? (
+        <Button variant="default" className="gap-2" asChild>
+          <Link href="/invoice/new">
+            <Plus className="size-4 shrink-0" aria-hidden />
+            {t('invoice.dashboard.newInvoice')}
+          </Link>
+        </Button>
+      ) : null}
       <Button
         variant="outline"
         disabled={rows.length === 0}

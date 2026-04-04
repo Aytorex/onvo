@@ -177,12 +177,14 @@ export function DashboardHomeView({
                 {t('invoice.dashboard.subtitle')}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button size="lg" className="gap-2" asChild>
-                  <Link href="/invoice/new">
-                    <Plus className="size-4 shrink-0" aria-hidden />
-                    {t('invoice.dashboard.newInvoice')}
-                  </Link>
-                </Button>
+                {!loading && rows.length > 0 ? (
+                  <Button size="lg" className="gap-2" asChild>
+                    <Link href="/invoice/new">
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                      {t('invoice.dashboard.newInvoice')}
+                    </Link>
+                  </Button>
+                ) : null}
                 <Button
                   size="lg"
                   variant="outline"
