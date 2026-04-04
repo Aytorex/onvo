@@ -265,6 +265,7 @@
       "subtitle": "Remplissez le formulaire — l'aperçu se met à jour (300 ms).",
       "walletConnectHint": "Connectez un wallet (émetteur) pour signer la transaction.",
       "firstInvoiceHint": "Première facture avec ce wallet : au clic sur « Générer la facture », l'orb World ID s'ouvre pour enregistrer votre adresse on-chain, puis le PDF et la transaction suivent dans la foulée.",
+      "dismissAlert": "Fermer",
       "sectionEmitter": "Émetteur",
       "sectionClient": "Client",
       "sectionLines": "Lignes",

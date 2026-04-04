@@ -2,6 +2,7 @@
 
 import { createInvoiceFormSchema } from '@/components/invoice/invoice-form-schema';
 import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,6 +58,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
 import { addDays, format } from 'date-fns';
+import { Info } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -191,10 +193,16 @@ export function InvoiceNewClient() {
   const [idKitWorldIdNullifier, setIdKitWorldIdNullifier] = useState<
     string | null
   >(null);
+  const [firstInvoiceHintDismissed, setFirstInvoiceHintDismissed] =
+    useState(false);
   const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
 
   const TAB_ORDER = ['issuer', 'client', 'items'] as const;
   const [activeTab, setActiveTab] = useState<string>(TAB_ORDER[0]);
+
+  useEffect(() => {
+    setFirstInvoiceHintDismissed(false);
+  }, [address]);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -631,7 +639,7 @@ export function InvoiceNewClient() {
   const fillDevData = useCallback(() => {
     const sample = devSampleForm();
     form.reset(sample);
-    toast.success('Dev: form filled with sample data');
+    toast.success('Dev: form autofilled with sample data');
   }, [form]);
 
   const addLine = useCallback(() => {
@@ -705,559 +713,579 @@ export function InvoiceNewClient() {
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
         <form
           onSubmit={onSubmit}
-          className="flex min-h-0 w-full min-w-0 flex-1 flex-row gap-4"
+          className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4"
         >
-          {/* ── Left panel: tabbed form (40% ≥ lg) ── */}
-          <div className="flex min-h-0 w-full min-w-0 flex-col lg:flex-[2]">
-            {IS_DEV ? (
-              <div className="flex shrink-0 items-center justify-end border-b border-border/60 py-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs text-amber-500 border-amber-500/40 hover:bg-amber-500/10"
-                  onClick={fillDevData}
-                >
-                  Dev: Fill
-                </Button>
-              </div>
-            ) : null}
-
-            {!isConnected ? (
-              <p className="mx-5 mt-4 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                {t('invoice.form.walletConnectHint')}
-              </p>
-            ) : null}
-
-            {isConnected && emitterVerified === false ? (
-              <p className="mx-5 mt-4 shrink-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-                {t('invoice.form.firstInvoiceHint')}
-              </p>
-            ) : null}
-
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="flex min-h-0 flex-1 flex-col"
+          {isConnected &&
+          emitterVerified === false &&
+          !firstInvoiceHintDismissed ? (
+            <Alert
+              className="shrink-0 border-primary/25 bg-primary/5 py-3 text-muted-foreground"
+              onDismiss={() => setFirstInvoiceHintDismissed(true)}
+              dismissLabel={t('invoice.form.dismissAlert')}
             >
-              <TabsList className="flex h-10 w-full shrink-0">
-                <TabsTrigger className="flex-1" value="issuer">
-                  {t('invoice.form.sectionEmitter')}
-                </TabsTrigger>
-                <TabsTrigger className="flex-1" value="client">
-                  {t('invoice.form.sectionClient')}
-                </TabsTrigger>
-                <TabsTrigger className="flex-1" value="items">
-                  {t('invoice.form.sectionLines')}
-                </TabsTrigger>
-              </TabsList>
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs leading-relaxed sm:text-sm">
+                {t('invoice.form.firstInvoiceHint')}
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
-                {/* ── Tab: Issuer ── */}
-                <TabsContent value="issuer" className="mt-4 space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="emitterName">
-                        {t('invoice.form.emitterName')}
-                        <RequiredFieldMark />
-                      </Label>
-                      <Input
-                        id="emitterName"
-                        aria-required
-                        {...form.register('emitterName')}
-                      />
-                      {form.formState.errors.emitterName ? (
-                        <p className="text-xs text-destructive">
-                          {form.formState.errors.emitterName.message}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="emitterStreet">
-                        {t('invoice.form.emitterStreet')}
-                        <RequiredFieldMark />
-                      </Label>
-                      <Input
-                        id="emitterStreet"
-                        aria-required
-                        placeholder={t('invoice.form.emitterStreetPlaceholder')}
-                        {...form.register('emitterStreet')}
-                      />
-                      {form.formState.errors.emitterStreet ? (
-                        <p className="text-xs text-destructive">
-                          {form.formState.errors.emitterStreet.message}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="emitterStreetLine2">
-                        {t('invoice.form.emitterStreetLine2')}
-                      </Label>
-                      <Input
-                        id="emitterStreetLine2"
-                        placeholder={t(
-                          'invoice.form.emitterStreetLine2Placeholder',
-                        )}
-                        {...form.register('emitterStreetLine2')}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-row gap-4">
+            {/* ── Left panel: tabbed form (40% ≥ lg) ── */}
+            <div className="flex min-h-0 w-full min-w-0 flex-col lg:flex-[2]">
+              {!isConnected ? (
+                <p className="mx-5 mt-4 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  {t('invoice.form.walletConnectHint')}
+                </p>
+              ) : null}
+
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex min-h-0 flex-1 flex-col"
+              >
+                <TabsList className="flex h-10 w-full shrink-0">
+                  <TabsTrigger className="flex-1" value="issuer">
+                    {t('invoice.form.sectionEmitter')}
+                  </TabsTrigger>
+                  <TabsTrigger className="flex-1" value="client">
+                    {t('invoice.form.sectionClient')}
+                  </TabsTrigger>
+                  <TabsTrigger className="flex-1" value="items">
+                    {t('invoice.form.sectionLines')}
+                  </TabsTrigger>
+                </TabsList>
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
+                  {/* ── Tab: Issuer ── */}
+                  <TabsContent value="issuer" className="mt-4 space-y-4">
+                    <div className="grid gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="emitterPostalCode">
-                          {t('invoice.form.emitterPostalCode')}
+                        <Label htmlFor="emitterName">
+                          {t('invoice.form.emitterName')}
                           <RequiredFieldMark />
                         </Label>
                         <Input
-                          id="emitterPostalCode"
+                          id="emitterName"
                           aria-required
-                          autoComplete="postal-code"
-                          {...form.register('emitterPostalCode')}
+                          {...form.register('emitterName')}
                         />
-                        {form.formState.errors.emitterPostalCode ? (
+                        {form.formState.errors.emitterName ? (
                           <p className="text-xs text-destructive">
-                            {form.formState.errors.emitterPostalCode.message}
+                            {form.formState.errors.emitterName.message}
                           </p>
                         ) : null}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="emitterCity">
-                          {t('invoice.form.emitterCity')}
+                        <Label htmlFor="emitterStreet">
+                          {t('invoice.form.emitterStreet')}
                           <RequiredFieldMark />
                         </Label>
                         <Input
-                          id="emitterCity"
-                          aria-required
-                          autoComplete="address-level2"
-                          {...form.register('emitterCity')}
-                        />
-                        {form.formState.errors.emitterCity ? (
-                          <p className="text-xs text-destructive">
-                            {form.formState.errors.emitterCity.message}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="emitterCountry">
-                        {t('invoice.form.emitterCountry')}
-                      </Label>
-                      <Input
-                        id="emitterCountry"
-                        autoComplete="country-name"
-                        placeholder={t(
-                          'invoice.form.emitterCountryPlaceholder',
-                        )}
-                        {...form.register('emitterCountry')}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="emitterSiret">
-                          {t('invoice.form.emitterSiret')}
-                        </Label>
-                        <Input
-                          id="emitterSiret"
-                          {...form.register('emitterSiret')}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="emitterEmail">
-                          {t('invoice.form.emitterEmail')}
-                        </Label>
-                        <Input
-                          id="emitterEmail"
-                          type="email"
-                          {...form.register('emitterEmail')}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="emitterVatNumber">
-                        {t('invoice.form.emitterVatNumber')}
-                      </Label>
-                      <Input
-                        id="emitterVatNumber"
-                        placeholder={t(
-                          'invoice.form.emitterVatNumberPlaceholder',
-                        )}
-                        {...form.register('emitterVatNumber')}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* ── Tab: Client ── */}
-                <TabsContent value="client" className="mt-4 space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="clientName">
-                        {t('invoice.form.clientName')}
-                        <RequiredFieldMark />
-                      </Label>
-                      <Input
-                        id="clientName"
-                        aria-required
-                        {...form.register('clientName')}
-                      />
-                      {form.formState.errors.clientName ? (
-                        <p className="text-xs text-destructive">
-                          {form.formState.errors.clientName.message}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clientStreet">
-                        {t('invoice.form.clientStreet')}
-                        <RequiredFieldMark />
-                      </Label>
-                      <Input
-                        id="clientStreet"
-                        aria-required
-                        placeholder={t('invoice.form.clientStreetPlaceholder')}
-                        {...form.register('clientStreet')}
-                      />
-                      {form.formState.errors.clientStreet ? (
-                        <p className="text-xs text-destructive">
-                          {form.formState.errors.clientStreet.message}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clientStreetLine2">
-                        {t('invoice.form.clientStreetLine2')}
-                      </Label>
-                      <Input
-                        id="clientStreetLine2"
-                        placeholder={t(
-                          'invoice.form.clientStreetLine2Placeholder',
-                        )}
-                        {...form.register('clientStreetLine2')}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="clientPostalCode">
-                          {t('invoice.form.clientPostalCode')}
-                          <RequiredFieldMark />
-                        </Label>
-                        <Input
-                          id="clientPostalCode"
-                          aria-required
-                          autoComplete="postal-code"
-                          {...form.register('clientPostalCode')}
-                        />
-                        {form.formState.errors.clientPostalCode ? (
-                          <p className="text-xs text-destructive">
-                            {form.formState.errors.clientPostalCode.message}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="clientCity">
-                          {t('invoice.form.clientCity')}
-                          <RequiredFieldMark />
-                        </Label>
-                        <Input
-                          id="clientCity"
-                          aria-required
-                          autoComplete="address-level2"
-                          {...form.register('clientCity')}
-                        />
-                        {form.formState.errors.clientCity ? (
-                          <p className="text-xs text-destructive">
-                            {form.formState.errors.clientCity.message}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clientCountry">
-                        {t('invoice.form.clientCountry')}
-                      </Label>
-                      <Input
-                        id="clientCountry"
-                        autoComplete="country-name"
-                        placeholder={t('invoice.form.clientCountryPlaceholder')}
-                        {...form.register('clientCountry')}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clientEmail">
-                        {t('invoice.form.clientEmail')}
-                      </Label>
-                      <Input
-                        id="clientEmail"
-                        type="email"
-                        {...form.register('clientEmail')}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* ── Tab: Items ── */}
-                <TabsContent value="items" className="mt-4 space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-muted-foreground">
-                        {t('invoice.form.sectionLines')}
-                      </h2>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addLine}
-                      >
-                        {t('invoice.form.addLine')}
-                      </Button>
-                    </div>
-                    <div className="space-y-3">
-                      {fields.map((field, index) => (
-                        <div
-                          key={field.id}
-                          className="space-y-3 rounded-lg border border-border/80 p-3"
-                        >
-                          <div className="space-y-2">
-                            <Label>
-                              {t('invoice.form.description')}
-                              <RequiredFieldMark />
-                            </Label>
-                            <Input
-                              aria-required
-                              {...form.register(
-                                `lines.${index}.description` as const,
-                              )}
-                            />
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-2">
-                              <Label>
-                                {t('invoice.form.qty')}
-                                <RequiredFieldMark />
-                              </Label>
-                              <Input
-                                type="number"
-                                step={1}
-                                aria-required
-                                {...form.register(
-                                  `lines.${index}.quantity` as const,
-                                )}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>
-                                {t('invoice.form.unitPriceHt')}
-                                <RequiredFieldMark />
-                              </Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                aria-required
-                                {...form.register(
-                                  `lines.${index}.unitPrice` as const,
-                                )}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>
-                                {t('invoice.form.vatPercent')}
-                                <RequiredFieldMark />
-                              </Label>
-                              <Input
-                                type="number"
-                                step="0.1"
-                                min={0}
-                                max={100}
-                                aria-required
-                                {...form.register(`lines.${index}.vatPercent`, {
-                                  valueAsNumber: true,
-                                })}
-                              />
-                            </div>
-                          </div>
-                          {fields.length > 1 ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive"
-                              onClick={() => remove(index)}
-                            >
-                              {t('invoice.form.removeLine')}
-                            </Button>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 border-t border-border/60 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>
-                          {t('invoice.form.currency')}
-                          <RequiredFieldMark />
-                        </Label>
-                        <Select
-                          value={form.watch('currency')}
-                          onValueChange={(v) =>
-                            form.setValue(
-                              'currency',
-                              v as InvoiceFormValues['currency'],
-                            )
-                          }
-                        >
-                          <SelectTrigger aria-required>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="USDC">USDC</SelectItem>
-                            <SelectItem value="EURC">EURC</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="invoiceNumber">
-                          {t('invoice.form.invoiceNumber')}
-                          <RequiredFieldMark />
-                        </Label>
-                        <Input
-                          id="invoiceNumber"
+                          id="emitterStreet"
                           aria-required
                           placeholder={t(
-                            'invoice.form.invoiceNumberPlaceholder',
+                            'invoice.form.emitterStreetPlaceholder',
                           )}
-                          readOnly={nextInvoiceFromChainLoading}
-                          aria-busy={nextInvoiceFromChainLoading}
-                          {...form.register('invoiceNumber')}
+                          {...form.register('emitterStreet')}
                         />
-                        {nextInvoiceFromChainLoading ? (
-                          <p className="text-xs text-muted-foreground">
-                            {t('invoice.form.invoiceNumberLoading')}
-                          </p>
-                        ) : null}
-                        {registryDeployed &&
-                        nextIdArgs &&
-                        !nextInvoiceFromChainLoading &&
-                        isNextInvoiceIdError ? (
-                          <p className="text-xs text-amber-600 dark:text-amber-500">
-                            {t('invoice.form.invoiceNumberChainError')}
+                        {form.formState.errors.emitterStreet ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.emitterStreet.message}
                           </p>
                         ) : null}
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="issueDate">
-                          {t('invoice.form.issueDate')}
+                        <Label htmlFor="emitterStreetLine2">
+                          {t('invoice.form.emitterStreetLine2')}
+                        </Label>
+                        <Input
+                          id="emitterStreetLine2"
+                          placeholder={t(
+                            'invoice.form.emitterStreetLine2Placeholder',
+                          )}
+                          {...form.register('emitterStreetLine2')}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="emitterPostalCode">
+                            {t('invoice.form.emitterPostalCode')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="emitterPostalCode"
+                            aria-required
+                            autoComplete="postal-code"
+                            {...form.register('emitterPostalCode')}
+                          />
+                          {form.formState.errors.emitterPostalCode ? (
+                            <p className="text-xs text-destructive">
+                              {form.formState.errors.emitterPostalCode.message}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="emitterCity">
+                            {t('invoice.form.emitterCity')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="emitterCity"
+                            aria-required
+                            autoComplete="address-level2"
+                            {...form.register('emitterCity')}
+                          />
+                          {form.formState.errors.emitterCity ? (
+                            <p className="text-xs text-destructive">
+                              {form.formState.errors.emitterCity.message}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="emitterCountry">
+                          {t('invoice.form.emitterCountry')}
+                        </Label>
+                        <Input
+                          id="emitterCountry"
+                          autoComplete="country-name"
+                          placeholder={t(
+                            'invoice.form.emitterCountryPlaceholder',
+                          )}
+                          {...form.register('emitterCountry')}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="emitterSiret">
+                            {t('invoice.form.emitterSiret')}
+                          </Label>
+                          <Input
+                            id="emitterSiret"
+                            {...form.register('emitterSiret')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="emitterEmail">
+                            {t('invoice.form.emitterEmail')}
+                          </Label>
+                          <Input
+                            id="emitterEmail"
+                            type="email"
+                            {...form.register('emitterEmail')}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="emitterVatNumber">
+                          {t('invoice.form.emitterVatNumber')}
+                        </Label>
+                        <Input
+                          id="emitterVatNumber"
+                          placeholder={t(
+                            'invoice.form.emitterVatNumberPlaceholder',
+                          )}
+                          {...form.register('emitterVatNumber')}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* ── Tab: Client ── */}
+                  <TabsContent value="client" className="mt-4 space-y-4">
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="clientName">
+                          {t('invoice.form.clientName')}
                           <RequiredFieldMark />
                         </Label>
                         <Input
-                          id="issueDate"
-                          type="date"
+                          id="clientName"
                           aria-required
-                          {...form.register('issueDate')}
+                          {...form.register('clientName')}
                         />
+                        {form.formState.errors.clientName ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.clientName.message}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="dueDate">
-                          {t('invoice.form.dueDate')}
+                        <Label htmlFor="clientStreet">
+                          {t('invoice.form.clientStreet')}
                           <RequiredFieldMark />
                         </Label>
                         <Input
-                          id="dueDate"
-                          type="date"
+                          id="clientStreet"
                           aria-required
-                          {...form.register('dueDate')}
+                          placeholder={t(
+                            'invoice.form.clientStreetPlaceholder',
+                          )}
+                          {...form.register('clientStreet')}
+                        />
+                        {form.formState.errors.clientStreet ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.clientStreet.message}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientStreetLine2">
+                          {t('invoice.form.clientStreetLine2')}
+                        </Label>
+                        <Input
+                          id="clientStreetLine2"
+                          placeholder={t(
+                            'invoice.form.clientStreetLine2Placeholder',
+                          )}
+                          {...form.register('clientStreetLine2')}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="clientPostalCode">
+                            {t('invoice.form.clientPostalCode')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="clientPostalCode"
+                            aria-required
+                            autoComplete="postal-code"
+                            {...form.register('clientPostalCode')}
+                          />
+                          {form.formState.errors.clientPostalCode ? (
+                            <p className="text-xs text-destructive">
+                              {form.formState.errors.clientPostalCode.message}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="clientCity">
+                            {t('invoice.form.clientCity')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="clientCity"
+                            aria-required
+                            autoComplete="address-level2"
+                            {...form.register('clientCity')}
+                          />
+                          {form.formState.errors.clientCity ? (
+                            <p className="text-xs text-destructive">
+                              {form.formState.errors.clientCity.message}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientCountry">
+                          {t('invoice.form.clientCountry')}
+                        </Label>
+                        <Input
+                          id="clientCountry"
+                          autoComplete="country-name"
+                          placeholder={t(
+                            'invoice.form.clientCountryPlaceholder',
+                          )}
+                          {...form.register('clientCountry')}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientEmail">
+                          {t('invoice.form.clientEmail')}
+                        </Label>
+                        <Input
+                          id="clientEmail"
+                          type="email"
+                          {...form.register('clientEmail')}
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">{t('invoice.form.notes')}</Label>
-                      <Textarea
-                        id="notes"
-                        rows={3}
-                        {...form.register('notes')}
-                      />
+                  </TabsContent>
+
+                  {/* ── Tab: Items ── */}
+                  <TabsContent value="items" className="mt-4 space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-medium text-muted-foreground">
+                          {t('invoice.form.sectionLines')}
+                        </h2>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addLine}
+                        >
+                          {t('invoice.form.addLine')}
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {fields.map((field, index) => (
+                          <div
+                            key={field.id}
+                            className="space-y-3 rounded-lg border border-border/80 p-3"
+                          >
+                            <div className="space-y-2">
+                              <Label>
+                                {t('invoice.form.description')}
+                                <RequiredFieldMark />
+                              </Label>
+                              <Input
+                                aria-required
+                                {...form.register(
+                                  `lines.${index}.description` as const,
+                                )}
+                              />
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-2">
+                                <Label>
+                                  {t('invoice.form.qty')}
+                                  <RequiredFieldMark />
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step={1}
+                                  aria-required
+                                  {...form.register(
+                                    `lines.${index}.quantity` as const,
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>
+                                  {t('invoice.form.unitPriceHt')}
+                                  <RequiredFieldMark />
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  aria-required
+                                  {...form.register(
+                                    `lines.${index}.unitPrice` as const,
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>
+                                  {t('invoice.form.vatPercent')}
+                                  <RequiredFieldMark />
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  min={0}
+                                  max={100}
+                                  aria-required
+                                  {...form.register(
+                                    `lines.${index}.vatPercent`,
+                                    {
+                                      valueAsNumber: true,
+                                    },
+                                  )}
+                                />
+                              </div>
+                            </div>
+                            {fields.length > 1 ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                onClick={() => remove(index)}
+                              >
+                                {t('invoice.form.removeLine')}
+                              </Button>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
-                    <p className="font-medium">{t('invoice.form.summary')}</p>
-                    <p className="mt-2 text-muted-foreground">
-                      {t('invoice.form.summaryLine', {
-                        ht: totals.totalHt.toFixed(2),
-                        vat: totals.tvaAmount.toFixed(2),
-                        ttc: totals.totalTtc.toFixed(2),
-                      })}
-                    </p>
-                  </div>
-                </TabsContent>
-              </div>
-            </Tabs>
+                    <div className="space-y-4 border-t border-border/60 pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>
+                            {t('invoice.form.currency')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Select
+                            value={form.watch('currency')}
+                            onValueChange={(v) =>
+                              form.setValue(
+                                'currency',
+                                v as InvoiceFormValues['currency'],
+                              )
+                            }
+                          >
+                            <SelectTrigger aria-required>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USDC">USDC</SelectItem>
+                              <SelectItem value="EURC">EURC</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="invoiceNumber">
+                            {t('invoice.form.invoiceNumber')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="invoiceNumber"
+                            aria-required
+                            placeholder={t(
+                              'invoice.form.invoiceNumberPlaceholder',
+                            )}
+                            readOnly={nextInvoiceFromChainLoading}
+                            aria-busy={nextInvoiceFromChainLoading}
+                            {...form.register('invoiceNumber')}
+                          />
+                          {nextInvoiceFromChainLoading ? (
+                            <p className="text-xs text-muted-foreground">
+                              {t('invoice.form.invoiceNumberLoading')}
+                            </p>
+                          ) : null}
+                          {registryDeployed &&
+                          nextIdArgs &&
+                          !nextInvoiceFromChainLoading &&
+                          isNextInvoiceIdError ? (
+                            <p className="text-xs text-amber-600 dark:text-amber-500">
+                              {t('invoice.form.invoiceNumberChainError')}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="issueDate">
+                            {t('invoice.form.issueDate')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="issueDate"
+                            type="date"
+                            aria-required
+                            {...form.register('issueDate')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dueDate">
+                            {t('invoice.form.dueDate')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Input
+                            id="dueDate"
+                            type="date"
+                            aria-required
+                            {...form.register('dueDate')}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="notes">{t('invoice.form.notes')}</Label>
+                        <Textarea
+                          id="notes"
+                          rows={3}
+                          {...form.register('notes')}
+                        />
+                      </div>
+                    </div>
 
-            {/* ── Tab navigation: prev / next / validate ── */}
-            <div className="flex shrink-0 items-center justify-between border-t border-border/60 py-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={activeTab === TAB_ORDER[0]}
-                onClick={() => {
-                  const idx = TAB_ORDER.indexOf(
-                    activeTab as (typeof TAB_ORDER)[number],
-                  );
-                  if (idx > 0) setActiveTab(TAB_ORDER[idx - 1]);
-                }}
-              >
-                {t('invoice.form.tabPrev')}
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                {TAB_ORDER.indexOf(activeTab as (typeof TAB_ORDER)[number]) + 1}{' '}
-                / {TAB_ORDER.length}
-              </span>
-              {activeTab === TAB_ORDER[TAB_ORDER.length - 1] ? (
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={
-                    stepSubmitting || isWritePending || loadingRpForSubmit
-                  }
-                >
-                  {loadingRpForSubmit
-                    ? t('invoice.form.submitPreparingWorldId')
-                    : stepSubmitting || isWritePending
-                      ? t('invoice.form.submitTransaction')
-                      : t('invoice.form.tabValidate')}
-                </Button>
-              ) : (
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+                      <p className="font-medium">{t('invoice.form.summary')}</p>
+                      <p className="mt-2 text-muted-foreground">
+                        {t('invoice.form.summaryLine', {
+                          ht: totals.totalHt.toFixed(2),
+                          vat: totals.tvaAmount.toFixed(2),
+                          ttc: totals.totalTtc.toFixed(2),
+                        })}
+                      </p>
+                    </div>
+                  </TabsContent>
+                </div>
+              </Tabs>
+
+              {/* ── Tab navigation: prev / next / validate ── */}
+              <div className="flex shrink-0 items-center justify-between border-t border-border/60 py-3">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
+                  disabled={activeTab === TAB_ORDER[0]}
                   onClick={() => {
                     const idx = TAB_ORDER.indexOf(
                       activeTab as (typeof TAB_ORDER)[number],
                     );
-                    if (idx < TAB_ORDER.length - 1)
-                      setActiveTab(TAB_ORDER[idx + 1]);
+                    if (idx > 0) setActiveTab(TAB_ORDER[idx - 1]);
                   }}
                 >
-                  {t('invoice.form.tabNext')}
+                  {t('invoice.form.tabPrev')}
                 </Button>
-              )}
+                <span className="text-xs text-muted-foreground">
+                  {TAB_ORDER.indexOf(activeTab as (typeof TAB_ORDER)[number]) +
+                    1}{' '}
+                  / {TAB_ORDER.length}
+                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {IS_DEV ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
+                      onClick={fillDevData}
+                    >
+                      Dev: Autofill
+                    </Button>
+                  ) : null}
+                  {activeTab === TAB_ORDER[TAB_ORDER.length - 1] ? (
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={
+                        stepSubmitting || isWritePending || loadingRpForSubmit
+                      }
+                    >
+                      {loadingRpForSubmit
+                        ? t('invoice.form.submitPreparingWorldId')
+                        : stepSubmitting || isWritePending
+                          ? t('invoice.form.submitTransaction')
+                          : t('invoice.form.tabValidate')}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const idx = TAB_ORDER.indexOf(
+                          activeTab as (typeof TAB_ORDER)[number],
+                        );
+                        if (idx < TAB_ORDER.length - 1)
+                          setActiveTab(TAB_ORDER[idx + 1]);
+                      }}
+                    >
+                      {t('invoice.form.tabNext')}
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* ── Right panel: invoice preview (60% ≥ lg) ── */}
-          <div className="hidden min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl bg-muted/20 lg:flex lg:flex-[3]">
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 lg:p-3">
-              <div className="flex min-h-full w-full items-start justify-center">
-                <div className="w-full">
-                  <InvoicePreviewDocument
-                    values={debouncedPreview}
-                    previewRef={previewRef}
-                    emitterWorldIdNullifier={previewWorldIdNullifier}
-                  />
+            {/* ── Right panel: invoice preview (60% ≥ lg) ── */}
+            <div className="hidden min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl bg-muted/20 lg:flex lg:flex-[3]">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 lg:p-3">
+                <div className="flex min-h-full w-full items-start justify-center">
+                  <div className="w-full">
+                    <InvoicePreviewDocument
+                      values={debouncedPreview}
+                      previewRef={previewRef}
+                      emitterWorldIdNullifier={previewWorldIdNullifier}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

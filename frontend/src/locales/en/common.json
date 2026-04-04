@@ -265,6 +265,7 @@
       "subtitle": "Fill in the form — the preview updates (300 ms).",
       "walletConnectHint": "Connect an issuer wallet to sign the transaction.",
       "firstInvoiceHint": "First invoice with this wallet: when you click “Generate invoice”, the World ID orb opens to register your address on-chain, then the PDF and transaction follow.",
+      "dismissAlert": "Dismiss",
       "sectionEmitter": "Issuer",
       "sectionClient": "Client",
       "sectionLines": "Line items",
