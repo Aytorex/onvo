@@ -48,7 +48,9 @@
     "missingToken": "Jeton manquant dans l'URL.",
     "invalidToken": "Cette valeur n'est pas un identifiant de facture valide.",
     "loading": "Chargement de la facture on-chain…",
-    "notFound": "Facture introuvable on-chain (ou mauvais réseau)."
+    "notFound": "Facture introuvable on-chain (ou mauvais réseau).",
+    "emitterWorldId": "World ID de l’émetteur (nullifier)",
+    "emitterWorldIdHint": "Enregistré on-chain à la création de la facture. À comparer avec la preuve présentée par l’émetteur si besoin."
   },
   "notFound": {
     "title": "Page introuvable",

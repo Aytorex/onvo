@@ -5,6 +5,12 @@ import {
 } from 'viem';
 import { invoiceRegistryContract } from '@/lib/contract';
 
+/** Decimal string for display (matches typical World IDKit nullifier formatting). */
+export function formatWorldIdNullifierForDisplay(value: bigint): string {
+  if (value === 0n) return '';
+  return value.toString(10);
+}
+
 export type CommissionConfig = {
   commissionBps: bigint;
   commissionBpsDenominator: bigint;
@@ -49,15 +55,24 @@ export async function readInvoice(
   amount: bigint;
   token: `0x${string}`;
   vatNumber: string;
+  worldIdNullifierHash: bigint;
   status: 0 | 1 | 2;
 }> {
-  const [invoiceHash, emitter, recipient, amount, token, vatNumber, status] =
-    await client.readContract({
-      address: invoiceRegistryContract.address,
-      abi: invoiceRegistryContract.abi,
-      functionName: 'getInvoice',
-      args: [invoiceId],
-    });
+  const [
+    invoiceHash,
+    emitter,
+    recipient,
+    amount,
+    token,
+    vatNumber,
+    worldIdNullifierHash,
+    status,
+  ] = await client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'getInvoice',
+    args: [invoiceId],
+  });
   return {
     invoiceHash,
     emitter,
@@ -65,6 +80,7 @@ export async function readInvoice(
     amount,
     token,
     vatNumber,
+    worldIdNullifierHash,
     status: status as 0 | 1 | 2,
   };
 }

@@ -8,6 +8,7 @@ import {
 } from '@/lib/invoice-address';
 import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
 import {
+  formatWorldIdNullifierForDisplay,
   readCommissionConfig,
   readInvoice,
   type CommissionConfig,
@@ -119,6 +120,11 @@ export function InvoiceDetailClient() {
     ? formatClientPhysicalAddressFromMeta(meta).trim()
     : '';
 
+  const worldIdDisplay =
+    data.worldIdNullifierHash !== 0n
+      ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
+      : (meta?.emitterWorldIdNullifier?.trim() ?? '');
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -177,6 +183,16 @@ export function InvoiceDetailClient() {
             </dd>
           </div>
         ) : null}
+        {worldIdDisplay ? (
+          <div className="sm:col-span-2">
+            <dt className="text-muted-foreground">
+              {t('invoice.detail.emitterWorldId')}
+            </dt>
+            <dd className="mt-1 break-all font-mono text-xs">
+              {worldIdDisplay}
+            </dd>
+          </div>
+        ) : null}
         {meta ? (
           <>
             <div>
@@ -208,16 +224,6 @@ export function InvoiceDetailClient() {
                 </dt>
                 <dd className="mt-1 whitespace-pre-line text-sm">
                   {clientRegisteredOfficeText}
-                </dd>
-              </div>
-            ) : null}
-            {meta.emitterWorldIdNullifier?.trim() ? (
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">
-                  {t('invoice.detail.emitterWorldId')}
-                </dt>
-                <dd className="mt-1 break-all font-mono text-xs">
-                  {meta.emitterWorldIdNullifier.trim()}
                 </dd>
               </div>
             ) : null}

@@ -39,7 +39,8 @@ contract InvoiceRegistryTest is Test {
         address recipient,
         uint256 amount,
         address token_,
-        string vatNumber
+        string vatNumber,
+        uint256 worldIdNullifierHash
     );
     event InvoicePaid(
         uint256 indexed invoiceId,
@@ -98,6 +99,7 @@ contract InvoiceRegistryTest is Test {
         vm.prank(emitter);
         registry.registerWithWorldId(1, 1, 777, dummyProof);
         assertTrue(registry.isEmitterVerified(emitter));
+        assertEq(registry.emitterWorldIdNullifier(emitter), 777);
     }
 
     function testRevertWhenRegisterWithWorldIdRouterReverts() public {
@@ -113,6 +115,33 @@ contract InvoiceRegistryTest is Test {
         vm.expectRevert("InvoiceRegistry: nullifier used");
         registry.registerWithWorldId(2, 1, 999, dummyProof);
         vm.stopPrank();
+    }
+
+    function testSecondRegisterWithWorldIdOverwritesEmitterNullifier() public {
+        vm.startPrank(emitter);
+        registry.registerWithWorldId(1, 1, 111, dummyProof);
+        assertEq(registry.emitterWorldIdNullifier(emitter), 111);
+        registry.registerWithWorldId(2, 1, 222, dummyProof);
+        assertEq(registry.emitterWorldIdNullifier(emitter), 222);
+        vm.stopPrank();
+
+        uint256 id = _nextInvoiceId(emitter);
+        vm.prank(emitter);
+        registry.createInvoice(
+            id,
+            keccak256("snap"),
+            emitter,
+            payer,
+            1,
+            address(token),
+            "",
+            INV_YEAR,
+            INV_MONTH
+        );
+        (, , , , , , uint256 wid, InvoiceRegistry.Status st) = registry
+            .getInvoice(id);
+        assertEq(wid, 222);
+        assertEq(uint256(st), uint256(InvoiceRegistry.Status.Pending));
     }
 
     /* createInvoice */
@@ -131,7 +160,8 @@ contract InvoiceRegistryTest is Test {
             payer,
             amount,
             address(token),
-            SAMPLE_VAT_NUMBER
+            SAMPLE_VAT_NUMBER,
+            777
         );
         registry.createInvoice(
             id,
@@ -152,6 +182,7 @@ contract InvoiceRegistryTest is Test {
             uint256 amt,
             address tok,
             string memory vat_,
+            uint256 worldId_,
             InvoiceRegistry.Status status
         ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
@@ -160,6 +191,7 @@ contract InvoiceRegistryTest is Test {
         assertEq(amt, amount);
         assertEq(tok, address(token));
         assertEq(vat_, SAMPLE_VAT_NUMBER);
+        assertEq(worldId_, 777);
         assertEq(uint256(status), uint256(InvoiceRegistry.Status.Pending));
     }
 
@@ -474,7 +506,7 @@ contract InvoiceRegistryTest is Test {
         emit InvoicePaid(id, payer, amount, address(token), fee);
         registry.payInvoice(id);
 
-        (, , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
+        (, , , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Paid));
         assertEq(token.balanceOf(emitter), emitterBefore + net);
         assertEq(token.balanceOf(treasury), treasuryBefore + fee);
@@ -705,7 +737,7 @@ contract InvoiceRegistryTest is Test {
         emit InvoiceCancelled(id, emitter);
         registry.cancelInvoice(id);
 
-        (, , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
+        (, , , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Cancelled));
     }
 
@@ -877,7 +909,7 @@ contract InvoiceRegistryTest is Test {
             INV_MONTH
         );
 
-        (bytes32 invoiceHash_, , , , , , ) = registry.getInvoice(id);
+        (bytes32 invoiceHash_, , , , , , , ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
     }
 

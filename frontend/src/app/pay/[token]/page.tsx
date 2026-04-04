@@ -2,6 +2,7 @@
 
 import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
 import {
+  formatWorldIdNullifierForDisplay,
   readCommissionConfig,
   readInvoice,
   type CommissionConfig,
@@ -108,6 +109,19 @@ export default function PayPage({
           ) : null}
           {!chainLoading && !invoice ? (
             <p className="text-sm text-muted-foreground">{t('pay.notFound')}</p>
+          ) : null}
+          {!chainLoading && invoice && invoice.worldIdNullifierHash !== 0n ? (
+            <div className="rounded-xl border border-border/80 bg-muted/20 p-4 text-sm">
+              <h2 className="font-semibold text-foreground">
+                {t('pay.emitterWorldId')}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('pay.emitterWorldIdHint')}
+              </p>
+              <p className="mt-2 break-all font-mono text-xs text-foreground">
+                {formatWorldIdNullifierForDisplay(invoice.worldIdNullifierHash)}
+              </p>
+            </div>
           ) : null}
           {!chainLoading &&
           invoice &&

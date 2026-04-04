@@ -48,7 +48,9 @@
     "missingToken": "Missing token in the URL.",
     "invalidToken": "This value is not a valid packed invoice ID.",
     "loading": "Loading on-chain invoice…",
-    "notFound": "Invoice not found on-chain (or wrong network)."
+    "notFound": "Invoice not found on-chain (or wrong network).",
+    "emitterWorldId": "Issuer World ID (nullifier)",
+    "emitterWorldIdHint": "Recorded on-chain when the invoice was created. Compare with the issuer’s proof if needed."
   },
   "notFound": {
     "title": "Page not found",

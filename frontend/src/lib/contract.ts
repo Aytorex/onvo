@@ -143,6 +143,12 @@ export const invoiceRegistryContract = {
           name: 'vatNumber',
           type: 'string',
         },
+        {
+          indexed: false,
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash',
+          type: 'uint256',
+        },
       ],
       name: 'InvoiceCreated',
       type: 'event',
@@ -508,6 +514,25 @@ export const invoiceRegistryContract = {
     {
       inputs: [
         {
+          internalType: 'address',
+          name: '',
+          type: 'address',
+        },
+      ],
+      name: 'emitterWorldIdNullifier',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: '',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
           internalType: 'uint256',
           name: 'invoiceId',
           type: 'uint256',
@@ -544,6 +569,11 @@ export const invoiceRegistryContract = {
           internalType: 'string',
           name: 'vatNumber',
           type: 'string',
+        },
+        {
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash_',
+          type: 'uint256',
         },
         {
           internalType: 'enum InvoiceRegistry.Status',

@@ -75,6 +75,9 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, nullifier, DUMMY_PROOF);
       expect(await registry.isEmitterVerified(emitter.address)).to.equal(true);
+      expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
+        nullifier,
+      );
     });
 
     it('reverts when router is configured to revert', async () => {
@@ -96,6 +99,39 @@ describe('InvoiceRegistry', () => {
           .connect(emitter)
           .registerWithWorldId(2n, 1n, nullifier, DUMMY_PROOF),
       ).to.be.revertedWith('InvoiceRegistry: nullifier used');
+    });
+
+    it('overwrites emitterWorldIdNullifier on a second successful registration', async () => {
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
+      await registry
+        .connect(emitter)
+        .registerWithWorldId(1n, 1n, 111n, DUMMY_PROOF);
+      expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
+        111n,
+      );
+      await registry
+        .connect(emitter)
+        .registerWithWorldId(2n, 1n, 222n, DUMMY_PROOF);
+      expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
+        222n,
+      );
+      const id = await nextInvoiceId(registry, emitter.address);
+      await registry
+        .connect(emitter)
+        .createInvoice(
+          id,
+          ethers.keccak256(ethers.toUtf8Bytes('snap')),
+          emitter.address,
+          payer.address,
+          1n,
+          token,
+          EMPTY_VAT_NUMBER,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      const inv = await registry.getInvoice(id);
+      expect(inv.worldIdNullifierHash_).to.equal(222n);
     });
   });
 
@@ -133,6 +169,7 @@ describe('InvoiceRegistry', () => {
           amount,
           token,
           SAMPLE_VAT_NUMBER,
+          100n,
         );
 
       const inv = await registry.getInvoice(id);
@@ -142,6 +179,7 @@ describe('InvoiceRegistry', () => {
       expect(inv.amount).to.equal(amount);
       expect(inv.token).to.equal(await token.getAddress());
       expect(inv.vatNumber).to.equal(SAMPLE_VAT_NUMBER);
+      expect(inv.worldIdNullifierHash_).to.equal(100n);
       expect(inv.status).to.equal(0n);
     });
 
@@ -564,6 +602,7 @@ describe('InvoiceRegistry', () => {
         );
       const inv = await registry.getInvoice(id);
       expect(inv.invoiceHash_).to.equal(hash);
+      expect(inv.worldIdNullifierHash_).to.equal(800n);
     });
   });
 
