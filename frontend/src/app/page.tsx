@@ -8,8 +8,14 @@ import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { MagicRings } from '@/components/shared/magic-rings';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import Image from 'next/image';
-import { ArrowRight, Fingerprint, FileCheck2, Send } from 'lucide-react';
+import { ArrowRight, Fingerprint, FileCheck2, Menu, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function useInView(threshold = 0.15) {
@@ -131,8 +137,35 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-6">
           <OnvoLogo className="text-xl sm:text-2xl" />
           <div className="flex shrink-0 items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
+            <div className="hidden items-center gap-2 md:flex">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 md:hidden"
+                  aria-label={t('nav.mobileMenu')}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="flex flex-col gap-6"
+                aria-describedby={undefined}
+              >
+                <SheetTitle className="sr-only">
+                  {t('nav.mobileMenu')}
+                </SheetTitle>
+                <div className="flex items-center gap-2 pt-2">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
+              </SheetContent>
+            </Sheet>
             <Link href="/auth" className="ml-1">
               <Button size="sm">
                 {t('landing.createInvoice')}

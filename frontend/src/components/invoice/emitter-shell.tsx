@@ -340,6 +340,10 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
                   </Link>
                   {renderNavLinks(true)}
                 </nav>
+                <div className="flex shrink-0 items-center gap-2 border-t border-border pt-4 md:hidden">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
                 <div className="shrink-0 border-t border-border pt-4">
                   <Button
                     variant="ghost"
@@ -367,8 +371,10 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               </h1>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <LanguageToggle />
-              <ThemeToggle />
+              <div className="hidden items-center gap-2 md:flex">
+                <LanguageToggle />
+                <ThemeToggle />
+              </div>
               <WalletButton />
             </div>
           </header>
