@@ -14,6 +14,15 @@
     "home": "Accueil",
     "notFound": "404"
   },
+  "wallet": {
+    "connect": "Connecter",
+    "disconnect": "Déconnecter"
+  },
+  "pay": {
+    "title": "Paiement",
+    "tokenReceived": "Jeton reçu :",
+    "missingToken": "Jeton manquant dans l’URL."
+  },
   "notFound": {
     "title": "Page introuvable",
     "description": "Cette page n’existe pas ou le lien est incorrect. Utilisez la navigation ou les raccourcis ci-dessous.",
