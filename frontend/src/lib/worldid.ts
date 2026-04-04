@@ -1,5 +1,6 @@
 'use client';
 
+import i18n from '@/lib/i18n/client';
 import { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
@@ -75,7 +76,7 @@ export async function fetchRpContext(): Promise<RpContext> {
     body: JSON.stringify({ action: WORLD_ID_CONFIG.action }),
   });
 
-  if (!res.ok) throw new Error('Failed to fetch RP signature');
+  if (!res.ok) throw new Error(i18n.t('errors.rpSignatureFailed'));
 
   const data = (await res.json()) as {
     sig: string;
@@ -144,7 +145,7 @@ export function useWorldID() {
 
   const handleVerifyResult = useCallback(async (result: IDKitResult) => {
     const valid = await verifyProof(result);
-    if (!valid) throw new Error('Proof verification failed');
+    if (!valid) throw new Error(i18n.t('errors.proofVerificationFailed'));
   }, []);
 
   const handleSuccess = useCallback(

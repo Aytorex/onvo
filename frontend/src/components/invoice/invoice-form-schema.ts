@@ -17,11 +17,18 @@ export function createInvoiceFormSchema(t: TFunction<'common'>) {
     vatPercent: z.coerce.number().min(0).max(100),
   });
 
+  const optionalEmail = z.union([
+    z.literal(''),
+    z.string().email(t('invoice.validation.invalidEmail')),
+  ]);
+
   return z.object({
     emitterName: z.string().min(1, t('invoice.validation.emitterNameRequired')),
-    emitterAddress: z.string().min(1),
+    emitterAddress: z
+      .string()
+      .min(1, t('invoice.validation.emitterAddressRequired')),
     emitterSiret: z.string(),
-    emitterEmail: z.union([z.literal(''), z.string().email()]),
+    emitterEmail: optionalEmail,
     clientName: z.string().min(1, t('invoice.validation.clientRequired')),
     clientWallet: z
       .string()
@@ -29,11 +36,13 @@ export function createInvoiceFormSchema(t: TFunction<'common'>) {
       .refine((v) => isAddress(v), {
         message: t('invoice.validation.invalidEthAddress'),
       }),
-    clientEmail: z.union([z.literal(''), z.string().email()]),
+    clientEmail: optionalEmail,
     lines: z.array(lineSchema).min(1, t('invoice.validation.minOneLine')),
-    invoiceNumber: z.string().min(1),
-    issueDate: z.string().min(1),
-    dueDate: z.string().min(1),
+    invoiceNumber: z
+      .string()
+      .min(1, t('invoice.validation.invoiceNumberRequired')),
+    issueDate: z.string().min(1, t('invoice.validation.issueDateRequired')),
+    dueDate: z.string().min(1, t('invoice.validation.dueDateRequired')),
     currency: z.enum(['USDC', 'EURC']),
     notes: z.string(),
   });

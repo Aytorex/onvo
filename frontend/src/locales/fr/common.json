@@ -16,7 +16,31 @@
   },
   "wallet": {
     "connect": "Connecter",
-    "disconnect": "Déconnecter"
+    "disconnect": "Déconnecter",
+    "connecting": "Connexion…"
+  },
+  "brand": {
+    "logoAria": "ONVO"
+  },
+  "errors": {
+    "rpSignatureFailed": "Impossible de récupérer la signature RP",
+    "proofVerificationFailed": "Échec de la vérification de la preuve"
+  },
+  "ui": {
+    "close": "Fermer",
+    "paginationNav": "Pagination",
+    "goToPreviousPage": "Aller à la page précédente",
+    "goToNextPage": "Aller à la page suivante",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "morePages": "Plus de pages",
+    "breadcrumbNav": "Fil d’Ariane",
+    "breadcrumbMore": "Plus",
+    "carouselRole": "carrousel",
+    "slideRole": "diapositive",
+    "carouselPrevious": "Diapositive précédente",
+    "carouselNext": "Diapositive suivante",
+    "datePickerPick": "Choisir une date"
   },
   "pay": {
     "title": "Paiement",
@@ -113,7 +137,8 @@
   "theme": {
     "light": "Clair",
     "dark": "Sombre",
-    "system": "Système"
+    "system": "Système",
+    "toggleAria": "Thème"
   },
   "language": {
     "label": "Langue",
@@ -231,6 +256,7 @@
       "walletPlaceholder": "0x…"
     },
     "preview": {
+      "brand": "Onvo",
       "invoiceTitle": "Facture",
       "issuedOn": "Émis le",
       "dueOn": "Échéance",
@@ -255,15 +281,27 @@
       "description": "Une transaction <code>registerWithWorldId</code> lie votre wallet à World ID sur Arc. Utilisez le même wallet que pour signer les factures.",
       "button": "Enregistrer mon wallet avec World ID"
     },
+    "errors": {
+      "worldIdV3Expected": "Réponse World ID v3 attendue (Orb legacy).",
+      "worldIdV4Expected": "Réponse World ID v4 attendue.",
+      "worldIdV4IncompleteProof": "Preuve v4 incomplète (au moins 5 éléments attendus).",
+      "worldIdProofDecodeFailed": "Impossible de décoder la preuve World ID.",
+      "worldIdProofFormatUnsupported": "Format de preuve non pris en charge (utilisez Orb legacy ou v4 hors session)."
+    },
     "validation": {
       "lineDescriptionRequired": "Description requise",
       "quantityPositive": "Quantité > 0",
       "priceNonnegative": "Prix ≥ 0",
       "emitterNameRequired": "Nom requis",
+      "emitterAddressRequired": "Adresse requise",
+      "invalidEmail": "Adresse email invalide",
       "clientRequired": "Client requis",
       "walletRequired": "Adresse wallet requise",
       "invalidEthAddress": "Adresse Ethereum invalide",
-      "minOneLine": "Au moins une ligne"
+      "minOneLine": "Au moins une ligne",
+      "invoiceNumberRequired": "N° de facture requis",
+      "issueDateRequired": "Date d’émission requise",
+      "dueDateRequired": "Échéance requise"
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) requis — changez de réseau dans le wallet.",

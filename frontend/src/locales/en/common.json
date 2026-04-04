@@ -16,7 +16,31 @@
   },
   "wallet": {
     "connect": "Connect",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "connecting": "Connecting…"
+  },
+  "brand": {
+    "logoAria": "ONVO"
+  },
+  "errors": {
+    "rpSignatureFailed": "Failed to fetch RP signature",
+    "proofVerificationFailed": "Proof verification failed"
+  },
+  "ui": {
+    "close": "Close",
+    "paginationNav": "Pagination",
+    "goToPreviousPage": "Go to previous page",
+    "goToNextPage": "Go to next page",
+    "previous": "Previous",
+    "next": "Next",
+    "morePages": "More pages",
+    "breadcrumbNav": "Breadcrumb",
+    "breadcrumbMore": "More",
+    "carouselRole": "carousel",
+    "slideRole": "slide",
+    "carouselPrevious": "Previous slide",
+    "carouselNext": "Next slide",
+    "datePickerPick": "Pick a date"
   },
   "pay": {
     "title": "Payment",
@@ -113,7 +137,8 @@
   "theme": {
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "toggleAria": "Theme"
   },
   "language": {
     "label": "Language",
@@ -231,6 +256,7 @@
       "walletPlaceholder": "0x…"
     },
     "preview": {
+      "brand": "Onvo",
       "invoiceTitle": "Invoice",
       "issuedOn": "Issued on",
       "dueOn": "Due",
@@ -255,15 +281,27 @@
       "description": "A <code>registerWithWorldId</code> transaction links your wallet to World ID on Arc. Use the same wallet you use to sign invoices.",
       "button": "Register my wallet with World ID"
     },
+    "errors": {
+      "worldIdV3Expected": "Expected World ID v3 response (Orb legacy).",
+      "worldIdV4Expected": "Expected World ID v4 response.",
+      "worldIdV4IncompleteProof": "Incomplete v4 proof (expected at least 5 elements).",
+      "worldIdProofDecodeFailed": "Could not decode World ID proof.",
+      "worldIdProofFormatUnsupported": "Unsupported proof format (use Orb legacy or v4 without session)."
+    },
     "validation": {
       "lineDescriptionRequired": "Description is required",
       "quantityPositive": "Quantity must be greater than 0",
       "priceNonnegative": "Price must be ≥ 0",
       "emitterNameRequired": "Name is required",
+      "emitterAddressRequired": "Address is required",
+      "invalidEmail": "Invalid email address",
       "clientRequired": "Client is required",
       "walletRequired": "Wallet address is required",
       "invalidEthAddress": "Invalid Ethereum address",
-      "minOneLine": "At least one line"
+      "minOneLine": "At least one line",
+      "invoiceNumberRequired": "Invoice number is required",
+      "issueDateRequired": "Issue date is required",
+      "dueDateRequired": "Due date is required"
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) required — switch network in your wallet.",

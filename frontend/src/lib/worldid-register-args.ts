@@ -1,3 +1,6 @@
+'use client';
+
+import i18n from '@/lib/i18n/client';
 import type { IDKitResult } from '@worldcoin/idkit';
 import { decodeAbiParameters } from 'viem';
 
@@ -49,7 +52,7 @@ export function parseRegisterWithWorldIdArgs(
   if (result.protocol_version === '3.0') {
     const item = result.responses[0];
     if (!item || !('merkle_root' in item)) {
-      throw new Error('Réponse World ID v3 attendue (Orb legacy).');
+      throw new Error(i18n.t('invoice.errors.worldIdV3Expected'));
     }
     const v3 = item as {
       merkle_root: string;
@@ -64,7 +67,9 @@ export function parseRegisterWithWorldIdArgs(
     try {
       const decoded = decodeAbiParameters([{ type: 'uint256[8]' }], proofHex);
       const arr = decoded[0] as readonly bigint[];
-      if (arr.length !== 8) throw new Error('length');
+      if (arr.length !== 8) {
+        throw new Error(i18n.t('invoice.errors.worldIdProofDecodeFailed'));
+      }
       return {
         root,
         groupId,
@@ -84,14 +89,14 @@ export function parseRegisterWithWorldIdArgs(
   if (result.protocol_version === '4.0' && !('session_id' in result)) {
     const item = result.responses[0];
     if (!item || !('proof' in item)) {
-      throw new Error('Réponse World ID v4 attendue.');
+      throw new Error(i18n.t('invoice.errors.worldIdV4Expected'));
     }
     const v4 = item as {
       proof: string[];
       nullifier: string;
     };
     if (v4.proof.length < 5) {
-      throw new Error('Preuve v4 incomplète (attendu ≥ 5 éléments).');
+      throw new Error(i18n.t('invoice.errors.worldIdV4IncompleteProof'));
     }
     const root = BigInt(v4.proof[4]!);
     const nullifierHash = BigInt(v4.nullifier);
@@ -103,7 +108,5 @@ export function parseRegisterWithWorldIdArgs(
     return { root, groupId, nullifierHash, proof };
   }
 
-  throw new Error(
-    'Format de preuve non pris en charge (utilisez Orb legacy ou v4 hors session).',
-  );
+  throw new Error(i18n.t('invoice.errors.worldIdProofFormatUnsupported'));
 }

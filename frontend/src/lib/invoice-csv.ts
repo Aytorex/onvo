@@ -1,3 +1,6 @@
+'use client';
+
+import i18n from '@/lib/i18n/client';
 import type { InvoiceMetaRecord, InvoiceRowView } from '@/lib/invoice-types';
 
 function escapeCsvCell(s: string): string {
@@ -6,9 +9,9 @@ function escapeCsvCell(s: string): string {
 }
 
 function statusLabel(s: InvoiceRowView['status']): string {
-  if (s === 0) return 'PENDING';
-  if (s === 1) return 'PAID';
-  return 'CANCELLED';
+  if (s === 0) return i18n.t('invoice.status.pending');
+  if (s === 1) return i18n.t('invoice.status.paid');
+  return i18n.t('invoice.status.cancelled');
 }
 
 export function exportInvoicesCSV(rows: InvoiceRowView[]): void {

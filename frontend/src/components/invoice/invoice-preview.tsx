@@ -56,7 +56,7 @@ export function InvoicePreviewDocument({
       <div className="flex flex-col justify-between gap-6 border-b border-zinc-700 pb-6 sm:flex-row">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-onvo-cyan">
-            Onvo
+            {t('invoice.preview.brand')}
           </p>
           <h2 className="mt-1 text-2xl font-semibold text-white">
             {t('invoice.preview.invoiceTitle')}
