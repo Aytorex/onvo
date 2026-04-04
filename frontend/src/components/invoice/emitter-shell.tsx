@@ -117,10 +117,10 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         ? cn(
             'flex items-center gap-4 rounded-xl px-3 py-2 transition-colors',
             active
-              ? 'bg-muted text-heading hover:bg-muted'
+              ? 'bg-muted text-primary hover:bg-muted hover:text-primary'
               : 'text-foreground hover:bg-accent hover:text-accent-foreground',
           )
-        : `${active ? 'bg-muted text-heading' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
+        : `${active ? 'bg-muted text-primary' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
       return (
         <Link key={item.href} href={item.href} className={base}>
           <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
@@ -138,7 +138,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         collapsed
           ? 'mx-auto size-10 shrink-0 justify-center p-0'
           : 'h-10 min-h-10 gap-3 px-3 py-0',
-        active ? 'bg-muted text-heading' : 'text-muted-foreground',
+        active ? 'bg-muted text-primary' : 'text-muted-foreground',
       );
 
       const link = (
