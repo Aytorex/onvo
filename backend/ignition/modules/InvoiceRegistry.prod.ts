@@ -11,8 +11,7 @@ const ARC_EURC = '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a';
 export default buildModule('InvoiceRegistryProdModule', (m) => {
   const registry = m.contract('InvoiceRegistry', [
     m.getParameter('initialOwner', m.getAccount(0)),
-    m.getParameter('worldIdRouter'),
-    m.getParameter('externalNullifierHash'),
+    m.getParameter('trustedVerifier'),
     m.getParameter('allowedTokens', [ARC_USDC, ARC_EURC]),
     m.getParameter('commissionRecipient'),
   ]);

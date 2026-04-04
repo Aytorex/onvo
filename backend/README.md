@@ -1,6 +1,6 @@
 # Hardhat
 
-Deploy **InvoiceRegistry** (mock World ID + test ERC-20) on the in-process network:
+Deploy **InvoiceRegistry** (test ERC-20, account[0] as trustedVerifier) on the in-process network:
 
 ```
 $ bun run deploy:invoice:local
@@ -21,7 +21,7 @@ Deploy on **Arc Testnet** (needs `PRIVATE_KEY`, RPC via `ALCHEMY_ENDPOINT_URL_AR
    $ cp ignition/parameters/invoice-registry.arc.example.json ignition/parameters/invoice-registry.arc.json
    ```
 
-2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `worldIdRouter`, `externalNullifierHash` (decimal string), `initialOwner`, and `commissionRecipient` (Onvo treasury wallet). You can drop `allowedTokens` to keep the module default (Arc USDC + EURC).
+2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `trustedVerifier` (backend wallet that calls `registerEmitter` after off-chain World ID v4 verification), `initialOwner`, and `commissionRecipient` (Onvo treasury wallet). You can drop `allowedTokens` to keep the module default (Arc USDC + EURC).
 
 3. Deploy:
 
@@ -66,6 +66,6 @@ Run analysis:
 $ bun run slither
 ```
 
-Configuration: [slither.config.json](slither.config.json) filters vendored OpenZeppelin, `node_modules`, and `contracts/mocks`. Run `bun run slither` with no detector exclusions; `registerWithWorldId` follows checks-effects-interactions (storage updates before `verifyProof`, with full revert on failure).
+Configuration: [slither.config.json](slither.config.json) filters vendored OpenZeppelin, `node_modules`, and `contracts/mocks`. Run `bun run slither` with no detector exclusions.
 
 If Slither reports a false positive on production code, document the reason in this README before adding exclusions.

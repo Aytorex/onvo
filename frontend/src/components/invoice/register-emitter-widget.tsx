@@ -1,9 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { arcTestnet } from '@/lib/arc-chain';
-import { invoiceRegistryContract } from '@/lib/contract';
-import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
+import { registerEmitterViaBackend } from '@/lib/register-emitter-onchain';
 import { fetchRpContext, verifyProof, WORLD_ID_CONFIG } from '@/lib/worldid';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
@@ -11,33 +9,25 @@ import { Loader2, ShieldCheck } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import {
-  useAccount,
-  usePublicClient,
-  useSwitchChain,
-  useWriteContract,
-} from 'wagmi';
+import { useAccount } from 'wagmi';
 
 type Props = {
   onRegistered?: () => void;
 };
 
 /**
- * Enregistre `msg.sender` comme émetteur vérifié via `registerWithWorldId`.
- * La preuve doit être obtenue avec le **même wallet** en `signal` (`orbLegacy({ signal: address })`)
- * pour correspondre au `signalHash` attendu par le contrat.
+ * Registers `address` as a verified emitter via World ID proof.
+ * The proof is verified off-chain via the World ID REST API, then the backend
+ * calls `registerEmitter` on-chain as the trusted verifier.
  */
 export function RegisterEmitterWidget({ onRegistered }: Props) {
   const { t } = useTranslation('common');
   const { address, isConnected } = useAccount();
-  const { switchChainAsync } = useSwitchChain();
-  const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
-  const publicClientArc = usePublicClient({ chainId: registryChainId });
-  const { writeContractAsync, isPending } = useWriteContract();
 
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [open, setOpen] = useState(false);
   const [loadingRp, setLoadingRp] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   const handleVerifyResult = useCallback(
     async (result: IDKitResult) => {
@@ -55,13 +45,9 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
         return;
       }
 
+      setIsPending(true);
       try {
-        await registerEmitterOnChain(result, {
-          switchChainAsync,
-          writeContractAsync,
-          publicClientArc,
-          registryChainId,
-        });
+        await registerEmitterViaBackend(result, address);
         toast.success(t('invoice.toast.registerSuccess'));
         setOpen(false);
         onRegistered?.();
@@ -71,17 +57,11 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
           e instanceof Error ? e.message : t('invoice.toast.registerTxFailed'),
         );
         setOpen(false);
+      } finally {
+        setIsPending(false);
       }
     },
-    [
-      address,
-      onRegistered,
-      publicClientArc,
-      registryChainId,
-      switchChainAsync,
-      t,
-      writeContractAsync,
-    ],
+    [address, onRegistered, t],
   );
 
   async function start() {

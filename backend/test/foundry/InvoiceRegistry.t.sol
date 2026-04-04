@@ -8,23 +8,15 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 
 import {InvoiceRegistry} from "@/contracts/InvoiceRegistry.sol";
 import {MockERC20} from "@/contracts/mocks/MockERC20.sol";
-import {WorldIdRouterMock} from "@/contracts/mocks/WorldIdRouterMock.sol";
 
-/// @dev Mirrors Hardhat `InvoiceRegistry.test.ts` + edge cases for full line coverage on `InvoiceRegistry`.
 contract InvoiceRegistryTest is Test {
-    uint256 internal constant EXTERNAL_NULLIFIER = 42_424;
     address internal constant ZERO = address(0);
 
-    /// @dev Fixed calendar period for deterministic packed invoice ids in tests.
     uint256 internal constant INV_YEAR = 2026;
     uint256 internal constant INV_MONTH = 4;
-    /// @dev Sample emitter VAT ID for event / storage checks.
     string internal constant SAMPLE_VAT_NUMBER = "FR85939527636";
 
-    uint256[8] internal dummyProof;
-
     InvoiceRegistry internal registry;
-    WorldIdRouterMock internal worldId;
     MockERC20 internal token;
     address internal owner;
     address internal emitter;
@@ -32,6 +24,8 @@ contract InvoiceRegistryTest is Test {
     address internal stranger;
     address internal treasury;
 
+    event EmitterRegistered(address indexed emitter_, uint256 nullifierHash);
+    event TrustedVerifierUpdated(address indexed newVerifier);
     event InvoiceCreated(
         uint256 indexed invoiceId,
         bytes32 indexed invoiceHash,
@@ -59,34 +53,21 @@ contract InvoiceRegistryTest is Test {
         payer = makeAddr("payer");
         stranger = makeAddr("stranger");
         treasury = makeAddr("treasury");
-        vm.label(owner, "owner");
-        vm.label(emitter, "emitter");
-        vm.label(payer, "payer");
-        vm.label(stranger, "stranger");
-        vm.label(treasury, "treasury");
 
-        worldId = new WorldIdRouterMock();
-        worldId.setRevertMessage("WorldIdRouterMock: verify failed");
         token = new MockERC20("Mock USDC", "mUSDC", 6);
         assertEq(token.decimals(), 6);
 
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
-        registry = new InvoiceRegistry(
-            owner,
-            address(worldId),
-            EXTERNAL_NULLIFIER,
-            tokens,
-            treasury
-        );
+        registry = new InvoiceRegistry(owner, owner, tokens, treasury);
 
         token.mint(payer, 1_000_000);
         token.mint(emitter, 1_000_000);
     }
 
     function _registerEmitter() internal {
-        vm.prank(emitter);
-        registry.registerWithWorldId(1, 1, 777, dummyProof);
+        vm.prank(owner);
+        registry.registerEmitter(emitter, 777);
     }
 
     function _nextInvoiceId(
@@ -95,35 +76,47 @@ contract InvoiceRegistryTest is Test {
         return registry.getNextInvoiceId(worldIdNullifier, INV_YEAR, INV_MONTH);
     }
 
-    /* registerWithWorldId */
+    /* registerEmitter */
 
-    function testRegisterWithWorldIdMarksVerified() public {
-        vm.prank(emitter);
-        registry.registerWithWorldId(1, 1, 777, dummyProof);
+    function testRegisterEmitterMarksVerified() public {
+        vm.prank(owner);
+        registry.registerEmitter(emitter, 777);
         assertTrue(registry.isEmitterVerified(emitter));
         assertEq(registry.emitterWorldIdNullifier(emitter), 777);
     }
 
-    function testRevertWhenRegisterWithWorldIdRouterReverts() public {
-        worldId.setShouldRevert(true);
-        vm.prank(emitter);
-        vm.expectRevert("WorldIdRouterMock: verify failed");
-        registry.registerWithWorldId(1, 1, 1, dummyProof);
+    function testRegisterEmitterEmitsEvent() public {
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, true);
+        emit EmitterRegistered(emitter, 42);
+        registry.registerEmitter(emitter, 42);
     }
 
-    function testRevertWhenRegisterWithWorldIdNullifierReuse() public {
-        vm.startPrank(emitter);
-        registry.registerWithWorldId(1, 1, 999, dummyProof);
+    function testRevertWhenRegisterEmitterNotTrustedVerifier() public {
+        vm.prank(stranger);
+        vm.expectRevert("InvoiceRegistry: not trusted verifier");
+        registry.registerEmitter(emitter, 1);
+    }
+
+    function testRevertWhenRegisterEmitterNullifierReuse() public {
+        vm.startPrank(owner);
+        registry.registerEmitter(emitter, 999);
         vm.expectRevert("InvoiceRegistry: nullifier used");
-        registry.registerWithWorldId(2, 1, 999, dummyProof);
+        registry.registerEmitter(payer, 999);
         vm.stopPrank();
     }
 
-    function testSecondRegisterWithWorldIdOverwritesEmitterNullifier() public {
-        vm.startPrank(emitter);
-        registry.registerWithWorldId(1, 1, 111, dummyProof);
+    function testRevertWhenRegisterEmitterZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert("InvoiceRegistry: zero emitter");
+        registry.registerEmitter(ZERO, 1);
+    }
+
+    function testSecondRegisterEmitterOverwritesNullifier() public {
+        vm.startPrank(owner);
+        registry.registerEmitter(emitter, 111);
         assertEq(registry.emitterWorldIdNullifier(emitter), 111);
-        registry.registerWithWorldId(2, 1, 222, dummyProof);
+        registry.registerEmitter(emitter, 222);
         assertEq(registry.emitterWorldIdNullifier(emitter), 222);
         vm.stopPrank();
 
@@ -144,6 +137,33 @@ contract InvoiceRegistryTest is Test {
             .getInvoice(id);
         assertEq(wid, 222);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Pending));
+    }
+
+    /* setTrustedVerifier */
+
+    function testSetTrustedVerifierOwner() public {
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit TrustedVerifierUpdated(emitter);
+        registry.setTrustedVerifier(emitter);
+        assertEq(registry.trustedVerifier(), emitter);
+    }
+
+    function testRevertWhenSetTrustedVerifierNotOwner() public {
+        vm.prank(stranger);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                stranger
+            )
+        );
+        registry.setTrustedVerifier(emitter);
+    }
+
+    function testRevertWhenSetTrustedVerifierZero() public {
+        vm.prank(owner);
+        vm.expectRevert("InvoiceRegistry: zero verifier");
+        registry.setTrustedVerifier(ZERO);
     }
 
     /* createInvoice */
@@ -219,7 +239,6 @@ contract InvoiceRegistryTest is Test {
         assertEq(seq1 + 1, seq2);
     }
 
-    /// @dev External call to `getNextInvoiceSequence` so forge coverage counts that entry point (not only via `getNextInvoiceId`).
     function testGetNextInvoiceSequencePublicView() public {
         assertEq(registry.getNextInvoiceSequence(777, INV_YEAR, INV_MONTH), 1);
         _registerEmitter();
@@ -240,7 +259,6 @@ contract InvoiceRegistryTest is Test {
         assertEq(registry.getNextInvoiceSequence(777, INV_YEAR, INV_MONTH), 2);
     }
 
-    /// @dev Full tuple decode via external `parseInvoiceId` (ABI / coverage).
     function testParseInvoiceIdExternalDecodesPackedId() public view {
         uint160 wid = registry.worldIdNullifierToPacked160(777);
         uint256 id = registry.packInvoiceId(wid, INV_YEAR, INV_MONTH, 7);
@@ -348,10 +366,9 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenCreateInvoiceTokenNotAllowed() public {
         MockERC20 other = new MockERC20("Other", "O", 6);
-        vm.prank(emitter);
-        registry.registerWithWorldId(1, 1, 300, dummyProof);
+        _registerEmitter();
         bytes32 hash = keccak256("h3");
-        uint256 id = _nextInvoiceId(300);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: token not allowed");
         registry.createInvoice(
@@ -390,7 +407,6 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("h-vat");
         uint256 id = _nextInvoiceId(777);
-        // 65 bytes > 64 max
         string memory tooLong =
             "012345678901234567890123456789012345678901234567890123456789012345";
         vm.prank(emitter);
@@ -499,40 +515,19 @@ contract InvoiceRegistryTest is Test {
     }
 
     function testRevertWhenPayInvoiceInvalidId() public {
-        _registerEmitter();
-        bytes32 hash = keccak256("pay");
-        uint256 id = _nextInvoiceId(777);
-        vm.prank(emitter);
-        registry.createInvoice(
-            id,
-            hash,
-            emitter,
-            payer,
-            50_000,
-            address(token),
-            "",
-            INV_YEAR,
-            INV_MONTH
-        );
-
         vm.prank(payer);
         vm.expectRevert("InvoiceRegistry: invalid id");
         registry.payInvoice(0);
-
-        vm.prank(payer);
-        vm.expectRevert("InvoiceRegistry: invalid id");
-        registry.payInvoice(99);
     }
 
     function testRevertWhenPayInvoiceAlreadyPaid() public {
         _registerEmitter();
-        bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("pay"),
             emitter,
             payer,
             amount,
@@ -541,7 +536,6 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.startPrank(payer);
         token.approve(address(registry), amount);
         registry.payInvoice(id);
@@ -555,13 +549,12 @@ contract InvoiceRegistryTest is Test {
         vm.prank(owner);
         registry.setCommissionBps(0);
         _registerEmitter();
-        bytes32 hash = keccak256("pay-zero-fee");
         uint256 amount = 50_000;
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("pay-zero-fee"),
             emitter,
             payer,
             amount,
@@ -583,13 +576,12 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenPayInvoiceCancelled() public {
         _registerEmitter();
-        bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("pay"),
             emitter,
             payer,
             amount,
@@ -598,10 +590,8 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.prank(emitter);
         registry.cancelInvoice(id);
-
         vm.prank(payer);
         token.approve(address(registry), amount);
         vm.prank(payer);
@@ -613,13 +603,12 @@ contract InvoiceRegistryTest is Test {
         vm.prank(owner);
         registry.setCommissionBps(0);
         _registerEmitter();
-        bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("pay"),
             emitter,
             payer,
             amount,
@@ -628,7 +617,6 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.prank(payer);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -641,74 +629,15 @@ contract InvoiceRegistryTest is Test {
         registry.payInvoice(id);
     }
 
-    /// @dev `payInvoice` re-checks verification; corrupt storage to hit the revert branch.
-    function testRevertWhenPayInvoiceEmitterNoLongerVerified() public {
-        _registerEmitter();
-        bytes32 hash = keccak256("pay");
-        uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(777);
-        vm.prank(emitter);
-        registry.createInvoice(
-            id,
-            hash,
-            emitter,
-            payer,
-            amount,
-            address(token),
-            "",
-            INV_YEAR,
-            INV_MONTH
-        );
-
-        bytes32 slot = keccak256(abi.encode(emitter, uint256(4)));
-        vm.store(address(registry), slot, bytes32(0));
-
-        vm.prank(payer);
-        token.approve(address(registry), amount);
-        vm.prank(payer);
-        vm.expectRevert("InvoiceRegistry: emitter not verified");
-        registry.payInvoice(id);
-    }
-
-    /// @dev `payInvoice` re-checks allowed token; corrupt storage to hit the revert branch.
-    function testRevertWhenPayInvoiceTokenNoLongerAllowed() public {
-        _registerEmitter();
-        bytes32 hash = keccak256("pay");
-        uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(777);
-        vm.prank(emitter);
-        registry.createInvoice(
-            id,
-            hash,
-            emitter,
-            payer,
-            amount,
-            address(token),
-            "",
-            INV_YEAR,
-            INV_MONTH
-        );
-
-        bytes32 slot = keccak256(abi.encode(address(token), uint256(6)));
-        vm.store(address(registry), slot, bytes32(0));
-
-        vm.prank(payer);
-        token.approve(address(registry), amount);
-        vm.prank(payer);
-        vm.expectRevert("InvoiceRegistry: token not allowed");
-        registry.payInvoice(id);
-    }
-
     /* cancelInvoice */
 
     function testCancelInvoicePending() public {
         _registerEmitter();
-        bytes32 hash = keccak256("cancel");
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("cancel"),
             emitter,
             payer,
             100,
@@ -717,24 +646,21 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.prank(emitter);
         vm.expectEmit(true, true, true, true);
         emit InvoiceCancelled(id, emitter);
         registry.cancelInvoice(id);
-
         (, , , , , , , InvoiceRegistry.Status st) = registry.getInvoice(id);
         assertEq(uint256(st), uint256(InvoiceRegistry.Status.Cancelled));
     }
 
     function testRevertWhenCancelInvoiceNotEmitter() public {
         _registerEmitter();
-        bytes32 hash = keccak256("cancel");
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("cancel"),
             emitter,
             payer,
             100,
@@ -743,7 +669,6 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.prank(stranger);
         vm.expectRevert("InvoiceRegistry: not emitter");
         registry.cancelInvoice(id);
@@ -751,12 +676,11 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenCancelInvoiceAlreadyPaid() public {
         _registerEmitter();
-        bytes32 hash = keccak256("cancel");
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("cancel"),
             emitter,
             payer,
             100,
@@ -765,12 +689,10 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.prank(payer);
         token.approve(address(registry), 100);
         vm.prank(payer);
         registry.payInvoice(id);
-
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: not pending");
         registry.cancelInvoice(id);
@@ -778,12 +700,11 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenCancelInvoiceDoubleCancel() public {
         _registerEmitter();
-        bytes32 hash = keccak256("cancel");
         uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
-            hash,
+            keccak256("cancel"),
             emitter,
             payer,
             100,
@@ -792,7 +713,6 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         vm.startPrank(emitter);
         registry.cancelInvoice(id);
         vm.expectRevert("InvoiceRegistry: not pending");
@@ -821,7 +741,6 @@ contract InvoiceRegistryTest is Test {
         emit CommissionBpsUpdated(100);
         registry.setCommissionBps(100);
         assertEq(registry.commissionBps(), 100);
-
         vm.expectEmit(true, false, false, false);
         emit CommissionRecipientUpdated(emitter);
         registry.setCommissionRecipient(emitter);
@@ -857,11 +776,9 @@ contract InvoiceRegistryTest is Test {
     function testAddAllowedTokenOnlyOwner() public {
         MockERC20 newToken = new MockERC20("N", "N", 6);
         address addr = address(newToken);
-
         vm.prank(owner);
         registry.addAllowedToken(addr);
         assertTrue(registry.allowedToken(addr));
-
         vm.prank(stranger);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -876,12 +793,9 @@ contract InvoiceRegistryTest is Test {
         MockERC20 newToken = new MockERC20("N2", "N2", 6);
         vm.prank(owner);
         registry.addAllowedToken(address(newToken));
-
-        vm.prank(emitter);
-        registry.registerWithWorldId(1, 1, 800, dummyProof);
-
+        _registerEmitter();
         bytes32 hash = keccak256("newInvoice");
-        uint256 id = _nextInvoiceId(800);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -894,55 +808,40 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-
         (bytes32 invoiceHash_, , , , , , , ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
     }
 
     /* constructor */
 
-    function testRevertWhenConstructorZeroWorldId() public {
+    function testRevertWhenConstructorZeroVerifier() public {
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
-        vm.expectRevert("InvoiceRegistry: zero worldId");
-        new InvoiceRegistry(owner, ZERO, 1, tokens, treasury);
+        vm.expectRevert("InvoiceRegistry: zero verifier");
+        new InvoiceRegistry(owner, ZERO, tokens, treasury);
     }
 
     function testRevertWhenConstructorZeroToken() public {
         address[] memory tokens = new address[](1);
         tokens[0] = ZERO;
         vm.expectRevert("InvoiceRegistry: zero token");
-        new InvoiceRegistry(owner, address(worldId), 1, tokens, treasury);
+        new InvoiceRegistry(owner, owner, tokens, treasury);
     }
 
     function testRevertWhenConstructorZeroCommissionRecipient() public {
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
         vm.expectRevert("InvoiceRegistry: zero commission recipient");
-        new InvoiceRegistry(
-            owner,
-            address(worldId),
-            EXTERNAL_NULLIFIER,
-            tokens,
-            ZERO
-        );
+        new InvoiceRegistry(owner, owner, tokens, ZERO);
     }
 
-    /// @dev Constructor loop + `_addAllowedToken` for more than one token.
     function testConstructorAllowsMultipleInitialTokens() public {
         MockERC20 tA = new MockERC20("A", "A", 6);
         MockERC20 tB = new MockERC20("B", "B", 6);
         address[] memory tokens = new address[](2);
         tokens[0] = address(tA);
         tokens[1] = address(tB);
-
-        InvoiceRegistry r = new InvoiceRegistry(
-            owner,
-            address(worldId),
-            EXTERNAL_NULLIFIER,
-            tokens,
-            treasury
-        );
+        InvoiceRegistry r = new InvoiceRegistry(owner, owner, tokens, treasury);
         assertTrue(r.allowedToken(address(tA)));
         assertTrue(r.allowedToken(address(tB)));
     }

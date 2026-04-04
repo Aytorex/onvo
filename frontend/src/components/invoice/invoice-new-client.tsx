@@ -45,7 +45,7 @@ import {
   generateInvoicePdf,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
-import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
+import { registerEmitterViaBackend } from '@/lib/register-emitter-onchain';
 import {
   extractNullifierFromIdKitResult,
   fetchRpContext,
@@ -528,12 +528,7 @@ export function InvoiceNewClient() {
         return;
       }
       try {
-        await registerEmitterOnChain(result, {
-          switchChainAsync,
-          writeContractAsync,
-          publicClientArc,
-          registryChainId,
-        });
+        await registerEmitterViaBackend(result, address!);
         await refetchEmitterVerified();
         const kitNullifier = extractNullifierFromIdKitResult(result).trim();
         flushSync(() => {
