@@ -13,7 +13,8 @@
     "lodash": "^4.18.0",
     "lodash-es": "^4.18.0",
     "diff": "^8.0.3",
-    "defu": "^6.1.6"
+    "defu": "^6.1.6",
+    "axios": ">=1.12.0"
   },
   "dependencies": {
     "@types/node": "^25.5.2"
