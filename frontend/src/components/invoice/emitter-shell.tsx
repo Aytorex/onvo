@@ -158,8 +158,6 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     );
   }, [invoiceDetailHeader, t]);
 
-  const navLockedHint = t('emitterNav.navLockedHint');
-
   const renderNavLinks = (mobile: boolean) =>
     navItems.map((item) => {
       const active = item.match(pathname ?? '');
@@ -183,12 +181,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
           );
       if (locked) {
         return (
-          <span
-            key={item.href}
-            className={base}
-            aria-disabled
-            title={navLockedHint}
-          >
+          <span key={item.href} className={base} aria-disabled>
             <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
             {t(item.labelKey)}
           </span>
@@ -223,8 +216,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         <span
           className={linkClass}
           aria-disabled
-          aria-label={collapsed ? `${label} — ${navLockedHint}` : undefined}
-          title={navLockedHint}
+          aria-label={collapsed ? label : undefined}
         >
           <item.icon className="h-5 w-5 shrink-0" />
           <span
@@ -263,7 +255,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
           <Tooltip key={item.href} delayDuration={0}>
             <TooltipTrigger asChild>{link}</TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              {locked ? navLockedHint : label}
+              {label}
             </TooltipContent>
           </Tooltip>
         );
