@@ -36,7 +36,6 @@ import {
   generateInvoicePdf,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
-import { registerEmitterViaBackend } from '@/lib/register-emitter-onchain';
 import {
   extractNullifierFromIdKitResult,
   fetchRpContext,
@@ -256,11 +255,6 @@ export function InvoiceNewClient() {
   });
 
   const watched = useWatch({ control: form.control });
-  const issueDateWatched = useWatch({
-    control: form.control,
-    name: 'issueDate',
-  });
-
   const registryDeployed =
     invoiceRegistryContract.address.toLowerCase() !== zeroAddress.toLowerCase();
 
@@ -271,16 +265,9 @@ export function InvoiceNewClient() {
   }, [idKitWorldIdNullifier, sessionWorldIdNullifier]);
 
   const nextIdArgs = useMemo(() => {
-    if (worldIdNullifierBn === null || !issueDateWatched?.trim())
-      return undefined;
-    const d = new Date(issueDateWatched);
-    if (Number.isNaN(d.getTime())) return undefined;
-    return [
-      worldIdNullifierBn,
-      BigInt(d.getFullYear()),
-      BigInt(d.getMonth() + 1),
-    ] as const;
-  }, [worldIdNullifierBn, issueDateWatched]);
+    if (!address) return undefined;
+    return [address] as const;
+  }, [address]);
 
   const {
     data: nextPackedInvoiceId,
@@ -294,11 +281,7 @@ export function InvoiceNewClient() {
     args: nextIdArgs,
     query: {
       enabled: Boolean(
-        registryDeployed &&
-        nextIdArgs &&
-        isConnected &&
-        publicClientArc &&
-        worldIdNullifierBn !== null,
+        registryDeployed && nextIdArgs && isConnected && publicClientArc,
       ),
     },
   });
@@ -351,35 +334,6 @@ export function InvoiceNewClient() {
     if (!authReady) return;
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
-
-  const {
-    data: emitterVerified,
-    refetch: refetchEmitterVerified,
-    error: emitterVerifiedError,
-    status: emitterVerifiedStatus,
-  } = useReadContract({
-    chainId: invoiceRegistryContract.chainId,
-    address: invoiceRegistryContract.address,
-    abi: invoiceRegistryContract.abi,
-    functionName: 'isEmitterVerified',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  });
-
-  useEffect(() => {
-    if (emitterVerifiedError) {
-      console.error(
-        '[InvoiceNew] isEmitterVerified read failed:',
-        emitterVerifiedError,
-      );
-    }
-    console.debug('[InvoiceNew] emitterVerified:', {
-      status: emitterVerifiedStatus,
-      data: emitterVerified,
-      address,
-      contract: invoiceRegistryContract.address,
-    });
-  }, [emitterVerifiedError, emitterVerifiedStatus, emitterVerified, address]);
 
   const totals = useMemo(
     () => computeTotalsFromLines(debouncedPreview.lines),
@@ -453,6 +407,13 @@ export function InvoiceNewClient() {
           return;
         }
 
+        const nextInvoiceId = await publicClientArc!.readContract({
+          address: invoiceRegistryContract.address,
+          abi: invoiceRegistryContract.abi,
+          functionName: 'getNextInvoiceId',
+          args: [address],
+        });
+
         const onChainRecipient = address;
         const vatNumberOnChain = data.emitterVatNumber.trim().slice(0, 64);
 
@@ -468,8 +429,7 @@ export function InvoiceNewClient() {
             amount,
             token,
             vatNumberOnChain,
-            invYear,
-            invMonth,
+            nullifierBn,
           ],
           chainId: registryChainId,
         });
@@ -564,7 +524,7 @@ export function InvoiceNewClient() {
     [t],
   );
 
-  const handleRegisterSuccessFromSubmit = useCallback(
+  const handleIdKitSuccessFromSubmit = useCallback(
     async (result: IDKitResult) => {
       if (!address) {
         toast.error(t('invoice.toast.walletRequiredShort'));
@@ -578,8 +538,6 @@ export function InvoiceNewClient() {
         return;
       }
       try {
-        await registerEmitterViaBackend(result, address!);
-        await refetchEmitterVerified();
         const kitNullifier = extractNullifierFromIdKitResult(result).trim();
         flushSync(() => {
           setIdKitWorldIdNullifier(kitNullifier || null);
@@ -601,16 +559,7 @@ export function InvoiceNewClient() {
         setIdKitOpen(false);
       }
     },
-    [
-      address,
-      createInvoiceFromVerifiedForm,
-      publicClientArc,
-      refetchEmitterVerified,
-      sessionWorldIdNullifier,
-      switchChainAsync,
-      t,
-      writeContractAsync,
-    ],
+    [address, createInvoiceFromVerifiedForm, sessionWorldIdNullifier, t],
   );
 
   const submitInvoice = form.handleSubmit(
@@ -620,12 +569,7 @@ export function InvoiceNewClient() {
         return;
       }
 
-      if (address && emitterVerified === undefined) {
-        toast.error(t('invoice.toast.verifyingOnChain'));
-        return;
-      }
-
-      if (emitterVerified === false) {
+      if (worldIdNullifierBn === null) {
         pendingFormDataRef.current = data;
         setLoadingRpForSubmit(true);
         try {
@@ -760,29 +704,11 @@ export function InvoiceNewClient() {
                 </p>
               ) : null}
 
-              <form
-                onSubmit={handleFormSubmit}
-                className="flex min-h-0 flex-1 flex-col"
-              >
-                <Tabs
-                  value={activeTab}
-                  onValueChange={(v) => {
-                    const i = INVOICE_TABS.indexOf(v as InvoiceTab);
-                    if (i >= 0) setStepIndex(i);
-                  }}
-                  className="flex min-h-0 flex-1 flex-col"
-                >
-                  <TabsList className="flex h-10 w-full shrink-0">
-                    <TabsTrigger className="flex-1" value="issuer">
-                      {t('invoice.form.sectionEmitter')}
-                    </TabsTrigger>
-                    <TabsTrigger className="flex-1" value="client">
-                      {t('invoice.form.sectionClient')}
-                    </TabsTrigger>
-                    <TabsTrigger className="flex-1" value="items">
-                      {t('invoice.form.sectionLines')}
-                    </TabsTrigger>
-                  </TabsList>
+            {isConnected && worldIdNullifierBn === null ? (
+              <p className="mx-5 mt-4 shrink-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                {t('invoice.form.firstInvoiceHint')}
+              </p>
+            ) : null}
 
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
                     {/* ── Tab: Issuer ── */}
@@ -1300,7 +1226,7 @@ export function InvoiceNewClient() {
           preset={orbLegacy({ signal: address })}
           environment={WORLD_ID_CONFIG.environment}
           handleVerify={handleVerifyForInvoice}
-          onSuccess={(r) => void handleRegisterSuccessFromSubmit(r)}
+          onSuccess={(r) => void handleIdKitSuccessFromSubmit(r)}
           onError={() => {
             toast.error(t('invoice.toast.worldIdCancelled'));
             pendingFormDataRef.current = null;

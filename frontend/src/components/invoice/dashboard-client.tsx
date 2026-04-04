@@ -2,7 +2,6 @@
 
 import { DashboardHomeView } from '@/components/invoice/dashboard-home';
 import { DashboardInvoiceList } from '@/components/invoice/dashboard-invoice-list';
-import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
 import { Button } from '@/components/ui/button';
 import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
@@ -25,7 +24,6 @@ import { toast } from 'sonner';
 import {
   useAccount,
   usePublicClient,
-  useReadContract,
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
@@ -49,16 +47,6 @@ export function DashboardClient({
   const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync, isPending: isCancelPending } = useWriteContract();
-
-  const { data: emitterVerified, refetch: refetchEmitterVerified } =
-    useReadContract({
-      chainId: registryChainId,
-      address: invoiceRegistryContract.address,
-      abi: invoiceRegistryContract.abi,
-      functionName: 'isEmitterVerified',
-      args: address ? [address] : undefined,
-      query: { enabled: !!address && isConnected },
-    });
 
   const [rows, setRows] = useState<InvoiceRowView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,12 +185,6 @@ export function DashboardClient({
           </p>
         ) : null}
 
-        {isConnected && emitterVerified === false ? (
-          <RegisterEmitterWidget
-            onRegistered={() => void refetchEmitterVerified()}
-          />
-        ) : null}
-
         <DashboardInvoiceList
           rows={rows}
           loading={loading}
@@ -221,18 +203,11 @@ export function DashboardClient({
         rows={rows}
         loading={loading}
         alertsSlot={
-          <>
-            {!isConnected ? (
-              <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-                {t('invoice.dashboard.connectWalletHint')}
-              </p>
-            ) : null}
-            {isConnected && emitterVerified === false ? (
-              <RegisterEmitterWidget
-                onRegistered={() => void refetchEmitterVerified()}
-              />
-            ) : null}
-          </>
+          !isConnected ? (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+              {t('invoice.dashboard.connectWalletHint')}
+            </p>
+          ) : null
         }
         onExportAllCsv={() => exportInvoicesCSV(rows)}
         exportDisabled={rows.length === 0}

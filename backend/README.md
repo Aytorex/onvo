@@ -1,6 +1,6 @@
 # Hardhat
 
-Deploy **InvoiceRegistry** (test ERC-20, account[0] as trustedVerifier) on the in-process network:
+Deploy **InvoiceRegistry** (test ERC-20, owner = account[0]) on the in-process network:
 
 ```
 $ bun run deploy:invoice:local
@@ -15,13 +15,13 @@ $ bun run deploy:invoice:localhost
 
 Deploy on **Arc Testnet** (needs `PRIVATE_KEY`, RPC via `ALCHEMY_ENDPOINT_URL_ARC_TESTNET` + `ALCHEMY_API_KEY` or `ARC_TESTNET_RPC_URL` — see [`hardhat.config.ts`](hardhat.config.ts)):
 
-1. Copy the Ignition parameter template and edit addresses / nullifier:
+1. Copy the Ignition parameter template and edit addresses:
 
    ```
    $ cp ignition/parameters/invoice-registry.arc.example.json ignition/parameters/invoice-registry.arc.json
    ```
 
-2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `trustedVerifier` (backend wallet that calls `registerEmitter` after off-chain World ID v4 verification), `initialOwner`, and `commissionRecipient` (Onvo treasury wallet). You can drop `allowedTokens` to keep the module default (Arc USDC + EURC).
+2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `initialOwner`, `commissionRecipient` (Onvo treasury wallet), and optionally `allowedTokens` (defaults to Arc USDC + EURC in the Ignition module).
 
 3. Deploy:
 
@@ -37,7 +37,7 @@ Verify on ArcScan (uses `ARCSCAN_API_KEY` in [`hardhat.config.ts`](hardhat.confi
 $ bun run verify:invoice:arc -- 0xYourDeployedInvoiceRegistry
 ```
 
-After deploy, set `NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS` in the frontend env and refresh `frontend/src/lib/contract.ts` ABI if the contract changes (`bunx hardhat compile` then regenerate the ABI block if you use a script, or copy from `artifacts/contracts/InvoiceRegistry.sol/InvoiceRegistry.json`).
+After deploy, set `NEXT_PUBLIC_INVOICE_REGISTRY_ADDRESS` in the frontend env and refresh `frontend/src/lib/invoice-registry-abi.json` from `artifacts/contracts/InvoiceRegistry.sol/InvoiceRegistry.json` when the contract ABI changes.
 
 Run hardhat tests with coverage:
 

@@ -7,19 +7,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title InvoiceRegistry
-/// @notice On-chain invoice hash registry with World ID–gated emitters and ERC-20 settlement.
-/// @dev World ID proof verification happens off-chain via the REST API (`POST /api/v4/verify`).
-///      A `trustedVerifier` backend wallet calls {registerEmitter} after successful off-chain verification.
-/// @dev Invoice IDs are packed `uint256` values encoding `F-<wid160>-<year>-<month>-<seq>` (human form off-chain).
-///      Layout: worldIdPacked (160 bits) << 96 | year (16) << 80 | month (8) << 72 | sequence (40 low bits).
-///      `worldIdPacked` is `uint160(uint256(keccak256(abi.encodePacked(worldIdNullifierHash))))` (same as {worldIdNullifierToPacked160}).
-/// @custom:clear-signing ERC-7730 v2 descriptor: `contracts/erc7730/invoice-registry.erc7730.json` (see https://eips.ethereum.org/EIPS/eip-7730).
-/// After deployment, run `bun run erc7730:bindings` with `INVOICE_REGISTRY_ADDRESS` (and optional `CHAIN_ID`) so wallets can bind `context.contract.deployments`.
-/// After ABI changes, run `bun run erc7730:sync` to verify `display.formats` selectors still match the contract.
+/// @notice On-chain invoice registry with ERC-20 settlement and optional World ID nullifier metadata (off-chain verified on Arc).
+/// @dev Invoice ID layout: `uint160(emitter) << 96 | seq` with `seq` in 96 low bits, unique and incremental per emitter wallet.
 contract InvoiceRegistry is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 private constant _SEQ_MASK = (1 << 40) - 1;
+    /// @dev Low 96 bits encode per-emitter sequence (1-based after first invoice).
+    uint256 private constant _SEQ_MASK = (1 << 96) - 1;
 
     enum Status {
         Pending,
@@ -35,24 +29,16 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         address token;
         /// @dev Emitter VAT identification number (e.g. EU VAT ID), max 64 bytes.
         string vatNumber;
-        /// @dev World ID nullifier hash of the emitter at registration (snapshotted on each invoice).
+        /// @dev World ID nullifier hash (metadata; verified off-chain / API on Arc — no on-chain proof in MVP).
         uint256 worldIdNullifierHash;
         Status status;
     }
 
     mapping(uint256 => Invoice) private _invoices;
     mapping(bytes32 => bool) private _hashUsed;
-    mapping(address => bool) public isEmitterVerified;
-    mapping(uint256 => bool) private _nullifierUsed;
     mapping(address => bool) public allowedToken;
-    /// @dev Count of invoices already minted for this World ID nullifier in calendar month `year * 100 + month`.
-    mapping(uint256 => mapping(uint256 => uint256))
-        private _invoiceCountByNullifierMonth;
-    /// @dev Last World ID nullifier hash recorded for `emitter` in {registerEmitter} (also snapshotted on each invoice).
-    mapping(address => uint256) public emitterWorldIdNullifier;
-
-    /// @dev Backend wallet authorized to call {registerEmitter} after off-chain World ID v4 proof verification.
-    address public trustedVerifier;
+    /// @dev Number of invoices already created by this emitter (used for next sequence).
+    mapping(address => uint256) private _invoiceCountByEmitter;
 
     /// @dev Basis points denominator (100% = 10_000). Default commission is 10 bps = 0.1%.
     uint256 public constant COMMISSION_BPS_DENOMINATOR = 10_000;
@@ -63,8 +49,6 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @dev Onvo treasury wallet receiving commission transfers.
     address public commissionRecipient;
 
-    event EmitterRegistered(address indexed emitter, uint256 nullifierHash);
-    event TrustedVerifierUpdated(address indexed newVerifier);
     event CommissionBpsUpdated(uint256 newCommissionBps);
     event CommissionRecipientUpdated(address indexed newRecipient);
 
@@ -89,19 +73,13 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
 
     constructor(
         address initialOwner,
-        address trustedVerifier_,
         address[] memory tokens,
         address commissionRecipient_
     ) Ownable(initialOwner) {
         require(
-            trustedVerifier_ != address(0),
-            "InvoiceRegistry: zero verifier"
-        );
-        require(
             commissionRecipient_ != address(0),
             "InvoiceRegistry: zero commission recipient"
         );
-        trustedVerifier = trustedVerifier_;
         commissionRecipient = commissionRecipient_;
         commissionBps = 10;
         uint256 len = tokens.length;
@@ -142,161 +120,26 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         allowedToken[token] = true;
     }
 
-    /// @notice Updates the backend wallet authorized to register emitters.
-    function setTrustedVerifier(address newVerifier) external onlyOwner {
-        require(newVerifier != address(0), "InvoiceRegistry: zero verifier");
-        trustedVerifier = newVerifier;
-        emit TrustedVerifierUpdated(newVerifier);
-    }
-
-    /// @notice Registers `emitter` as a verified emitter with World ID nullifier.
-    /// @dev Only callable by {trustedVerifier} after off-chain World ID v4 proof verification via `POST /api/v4/verify`.
-    function registerEmitter(address emitter, uint256 nullifierHash) external {
-        require(
-            msg.sender == trustedVerifier,
-            "InvoiceRegistry: not trusted verifier"
-        );
+    /// @notice Packs emitter address and sequence into the on-chain invoice id (96-bit sequence per emitter).
+    function packInvoiceId(address emitter, uint256 seq) public pure returns (uint256 invoiceId) {
         require(emitter != address(0), "InvoiceRegistry: zero emitter");
-        require(
-            !_nullifierUsed[nullifierHash],
-            "InvoiceRegistry: nullifier used"
-        );
-        _nullifierUsed[nullifierHash] = true;
-        isEmitterVerified[emitter] = true;
-        emitterWorldIdNullifier[emitter] = nullifierHash;
-        emit EmitterRegistered(emitter, nullifierHash);
+        require(seq > 0 && seq <= _SEQ_MASK, "InvoiceRegistry: invalid sequence");
+        invoiceId = (uint256(uint160(emitter)) << 96) | seq;
     }
 
-    /// @dev Lower 160 bits of keccak256(abi.encodePacked(nullifier)) — packed into invoice ids (matches off-chain helpers).
-    function worldIdNullifierToPacked160(
-        uint256 worldIdNullifierHash
-    ) public pure returns (uint160) {
-        return
-            uint160(uint256(keccak256(abi.encodePacked(worldIdNullifierHash))));
+    /// @notice Decodes emitter and sequence from a packed invoice id.
+    function parseInvoiceId(uint256 invoiceId) public pure returns (address emitter, uint256 seq) {
+        emitter = address(uint160(invoiceId >> 96));
+        seq = invoiceId & _SEQ_MASK;
     }
 
-    /// @notice Decodes a packed invoice id (same packing as {packInvoiceId}).
-    function parseInvoiceId(
-        uint256 invoiceId
-    )
-        external
-        pure
-        returns (
-            uint160 worldIdPacked_,
-            uint256 year,
-            uint256 month,
-            uint256 sequence
-        )
-    {
-        return _parseInvoiceId(invoiceId);
+    /// @notice Next invoice id for `emitter` (sequential per wallet).
+    function getNextInvoiceId(address emitter) external view returns (uint256) {
+        return packInvoiceId(emitter, _invoiceCountByEmitter[emitter] + 1);
     }
 
-    function _parseInvoiceId(
-        uint256 invoiceId
-    )
-        internal
-        pure
-        returns (
-            uint160 worldIdPacked_,
-            uint256 year,
-            uint256 month,
-            uint256 sequence
-        )
-    {
-        worldIdPacked_ = uint160(invoiceId >> 96);
-        year = (invoiceId >> 80) & 0xffff;
-        month = (invoiceId >> 72) & 0xff;
-        sequence = invoiceId & _SEQ_MASK;
-    }
-
-    /// @notice Packs World ID fingerprint, calendar year/month, and per-month sequence into the on-chain invoice id.
-    function packInvoiceId(
-        uint160 worldIdPacked_,
-        uint256 year,
-        uint256 month,
-        uint256 sequence
-    ) public pure returns (uint256 invoiceId) {
-        require(year <= type(uint16).max, "InvoiceRegistry: year overflow");
-        require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
-        require(
-            sequence > 0 && sequence <= _SEQ_MASK,
-            "InvoiceRegistry: invalid sequence"
-        );
-        invoiceId =
-            (uint256(worldIdPacked_) << 96) |
-            ((year & 0xffff) << 80) |
-            ((month & 0xff) << 72) |
-            (sequence & _SEQ_MASK);
-    }
-
-    function _yearMonthKey(
-        uint256 year,
-        uint256 month
-    ) internal pure returns (uint256) {
-        return year * 100 + month;
-    }
-
-    /// @notice Next 1-based sequence number for this World ID nullifier in the given calendar month (what the next invoice will use).
-    function getNextInvoiceSequence(
-        uint256 worldIdNullifierHash,
-        uint256 year,
-        uint256 month
-    ) public view returns (uint256) {
-        require(year >= 2000 && year <= 9999, "InvoiceRegistry: invalid year");
-        require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
-        uint256 ym = _yearMonthKey(year, month);
-        return _invoiceCountByNullifierMonth[worldIdNullifierHash][ym] + 1;
-    }
-
-    /// @notice Packed id the next `createInvoice` must pass for this World ID and month (human label: `F-<wid160>-<y>-<mm>-<seq>` off-chain).
-    function getNextInvoiceId(
-        uint256 worldIdNullifierHash,
-        uint256 year,
-        uint256 month
-    ) external view returns (uint256) {
-        uint256 seq = getNextInvoiceSequence(worldIdNullifierHash, year, month);
-        return
-            packInvoiceId(
-                worldIdNullifierToPacked160(worldIdNullifierHash),
-                year,
-                month,
-                seq
-            );
-    }
-
-    function _validateNewInvoiceId(
-        uint256 invoiceId,
-        address emitter,
-        uint256 year,
-        uint256 month
-    ) internal view {
-        (
-            uint160 idWorldPacked,
-            uint256 yId,
-            uint256 mId,
-            uint256 seq
-        ) = _parseInvoiceId(invoiceId);
-        uint256 nullifier = emitterWorldIdNullifier[emitter];
-        require(
-            idWorldPacked == worldIdNullifierToPacked160(nullifier),
-            "InvoiceRegistry: id world id mismatch"
-        );
-        require(
-            yId == year && mId == month,
-            "InvoiceRegistry: id period mismatch"
-        );
-        uint256 ym = _yearMonthKey(year, month);
-        require(
-            seq == _invoiceCountByNullifierMonth[nullifier][ym] + 1,
-            "InvoiceRegistry: id sequence mismatch"
-        );
-        require(
-            _invoices[invoiceId].emitter == address(0),
-            "InvoiceRegistry: id already used"
-        );
-    }
-
-    /// @param invoiceId Packed id; must equal {getNextInvoiceId}(`worldIdNullifierHash`, `year`, `month`) for the emitter's bound World ID nullifier.
+    /// @notice Creates an invoice; `invoiceId` must equal {getNextInvoiceId}(emitter) (emitter in high 160 bits, seq in low 96).
+    /// @dev `worldIdNullifierHash_` is optional metadata (0 if unused); World ID is verified off-chain on Arc for MVP.
     function createInvoice(
         uint256 invoiceId,
         bytes32 invoiceHash_,
@@ -305,14 +148,9 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         uint256 amount,
         address token,
         string calldata vatNumber,
-        uint256 year,
-        uint256 month
+        uint256 worldIdNullifierHash_
     ) external {
         require(msg.sender == emitter, "InvoiceRegistry: not emitter");
-        require(
-            isEmitterVerified[emitter],
-            "InvoiceRegistry: emitter not verified"
-        );
         require(recipient != address(0), "InvoiceRegistry: zero recipient");
         require(allowedToken[token], "InvoiceRegistry: token not allowed");
         require(amount > 0, "InvoiceRegistry: zero amount");
@@ -321,21 +159,22 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             "InvoiceRegistry: vat number too long"
         );
         require(!_hashUsed[invoiceHash_], "InvoiceRegistry: hash used");
-        require(year >= 2000 && year <= 9999, "InvoiceRegistry: invalid year");
-        require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
 
-        _validateNewInvoiceId(invoiceId, emitter, year, month);
-
-        uint256 worldIdNullifierHash_ = emitterWorldIdNullifier[emitter];
+        (address idEmitter, uint256 seq) = parseInvoiceId(invoiceId);
+        require(idEmitter == emitter, "InvoiceRegistry: id emitter mismatch");
         require(
-            worldIdNullifierHash_ != 0,
-            "InvoiceRegistry: emitter world id missing"
+            seq == _invoiceCountByEmitter[emitter] + 1,
+            "InvoiceRegistry: id sequence mismatch"
+        );
+        require(
+            _invoices[invoiceId].emitter == address(0),
+            "InvoiceRegistry: id already used"
         );
 
         _hashUsed[invoiceHash_] = true;
-        uint256 ym = _yearMonthKey(year, month);
-        _invoiceCountByNullifierMonth[worldIdNullifierHash_][ym] =
-            _invoiceCountByNullifierMonth[worldIdNullifierHash_][ym] + 1;
+        unchecked {
+            _invoiceCountByEmitter[emitter] += 1;
+        }
         _invoices[invoiceId] = Invoice({
             invoiceHash: invoiceHash_,
             emitter: emitter,
@@ -362,10 +201,6 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     function payInvoice(uint256 invoiceId) external nonReentrant {
         Invoice storage inv = _requireInvoice(invoiceId);
         require(inv.status == Status.Pending, "InvoiceRegistry: not pending");
-        require(
-            isEmitterVerified[inv.emitter],
-            "InvoiceRegistry: emitter not verified"
-        );
         require(allowedToken[inv.token], "InvoiceRegistry: token not allowed");
 
         uint256 gross = inv.amount;

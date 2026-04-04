@@ -21,7 +21,7 @@ export async function readCommissionConfig(
   client: PublicClient,
 ): Promise<CommissionConfig> {
   const [commissionBps, commissionBpsDenominator, commissionRecipient] =
-    await Promise.all([
+    (await Promise.all([
       client.readContract({
         address: invoiceRegistryContract.address,
         abi: invoiceRegistryContract.abi,
@@ -37,7 +37,7 @@ export async function readCommissionConfig(
         abi: invoiceRegistryContract.abi,
         functionName: 'commissionRecipient',
       }),
-    ]);
+    ])) as [bigint, bigint, `0x${string}`];
   return {
     commissionBps,
     commissionBpsDenominator,
@@ -67,12 +67,21 @@ export async function readInvoice(
     vatNumber,
     worldIdNullifierHash,
     status,
-  ] = await client.readContract({
+  ] = (await client.readContract({
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
     functionName: 'getInvoice',
     args: [invoiceId],
-  });
+  })) as [
+    `0x${string}`,
+    `0x${string}`,
+    `0x${string}`,
+    bigint,
+    `0x${string}`,
+    string,
+    bigint,
+    number,
+  ];
   return {
     invoiceHash,
     emitter,
@@ -85,18 +94,6 @@ export async function readInvoice(
   };
 }
 
-export async function readEmitterVerified(
-  client: PublicClient,
-  emitter: `0x${string}`,
-): Promise<boolean> {
-  return client.readContract({
-    address: invoiceRegistryContract.address,
-    abi: invoiceRegistryContract.abi,
-    functionName: 'isEmitterVerified',
-    args: [emitter],
-  });
-}
-
 export function parseInvoiceCreatedInvoiceId(
   receipt: TransactionReceipt,
 ): bigint | undefined {
@@ -104,8 +101,8 @@ export function parseInvoiceCreatedInvoiceId(
     abi: invoiceRegistryContract.abi,
     eventName: 'InvoiceCreated',
     logs: receipt.logs,
-  });
+  }) as { args: { invoiceId?: bigint } }[];
   const first = parsed[0];
   if (!first || first.args.invoiceId === undefined) return undefined;
-  return first.args.invoiceId as bigint;
+  return first.args.invoiceId;
 }

@@ -21,7 +21,6 @@ if (!existsSync(paramsPath)) {
 const doc = JSON.parse(readFileSync(paramsPath, 'utf8')) as {
   InvoiceRegistryProdModule?: {
     initialOwner?: string;
-    trustedVerifier?: string;
     allowedTokens?: string[];
     commissionRecipient?: string;
   };
@@ -31,12 +30,6 @@ const m = doc.InvoiceRegistryProdModule;
 if (m == null) {
   throw new Error(
     'invoice-registry.arc.json must contain an "InvoiceRegistryProdModule" object.',
-  );
-}
-
-if (m.trustedVerifier == null || m.trustedVerifier === '') {
-  throw new Error(
-    'invoice-registry.arc.json: set InvoiceRegistryProdModule.trustedVerifier',
   );
 }
 
@@ -58,9 +51,4 @@ const allowedTokens =
     : [ARC_USDC, ARC_EURC];
 
 /** Constructor args for `InvoiceRegistry` — consumed by `hardhat verify etherscan --constructor-args-path`. */
-export default [
-  m.initialOwner,
-  m.trustedVerifier,
-  allowedTokens,
-  m.commissionRecipient,
-];
+export default [m.initialOwner, allowedTokens, m.commissionRecipient];
