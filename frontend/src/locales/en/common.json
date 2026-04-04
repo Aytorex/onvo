@@ -113,10 +113,12 @@
     "light": "Light",
     "dark": "Dark",
     "system": "Device",
-    "toggleAria": "Theme"
+    "toggleAria": "Theme",
+    "tooltip": "Appearance"
   },
   "language": {
     "label": "Language",
+    "tooltip": "Language",
     "device": "Device",
     "en": "English",
     "fr": "Français"
