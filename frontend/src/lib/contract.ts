@@ -429,3 +429,7 @@ export const invoiceRegistryContract = {
     },
   ] as const,
 };
+
+/** Dev 1 ABI / address — aliases for `import { INVOICE_REGISTRY_ABI } from '@/lib/contract'`. */
+export const INVOICE_REGISTRY_ADDRESS = invoiceRegistryContract.address;
+export const INVOICE_REGISTRY_ABI = invoiceRegistryContract.abi;

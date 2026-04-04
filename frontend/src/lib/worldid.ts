@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAccount } from 'wagmi';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 
 const STORAGE_KEY = 'onvo_worldid_proof';
@@ -31,12 +32,32 @@ function getStoredProof(): WorldIDProof | null {
   }
 }
 
+/**
+ * In-memory cache so each new `useWorldID()` mount (e.g. /dashboard → /invoice/[id])
+ * reads a verified session on the first render — avoids `isVerified === false` flash
+ * and spurious `router.replace('/')`.
+ */
+let memoryProof: WorldIDProof | null | undefined;
+
+function readProofForInitialState(): WorldIDProof | null {
+  if (typeof window === 'undefined') return null;
+  if (memoryProof !== undefined) return memoryProof;
+  memoryProof = getStoredProof();
+  return memoryProof;
+}
+
+function setMemoryProof(next: WorldIDProof | null): void {
+  memoryProof = next;
+}
+
 function setStoredProof(proof: WorldIDProof): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(proof));
+  setMemoryProof(proof);
 }
 
 function clearStoredProof(): void {
   localStorage.removeItem(STORAGE_KEY);
+  setMemoryProof(null);
 }
 
 function setSessionCookie(value: string): void {
@@ -96,17 +117,26 @@ function extractNullifier(result: IDKitResult): string {
 
 export function useWorldID() {
   const router = useRouter();
-  const [proof, setProof] = useState<WorldIDProof | null>(null);
+  const { address } = useAccount();
+  const [proof, setProof] = useState<WorldIDProof | null>(() =>
+    readProofForInitialState(),
+  );
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
+  /** False until client has synced `localStorage` (avoids SSR/hydration redirect flicker). */
+  const [authReady, setAuthReady] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = getStoredProof();
-    if (stored) setProof(stored);
+    setMemoryProof(stored);
+    setProof(stored);
+    setAuthReady(true);
   }, []);
 
   const isVerified = proof !== null;
 
-  const worldAddress = proof ? extractNullifier(proof.result) : null;
+  /** Connected wallet — use as `emitter` for `createInvoice` and localStorage keys. */
+  const worldAddress = address ?? null;
+  const nullifier = proof?.nullifier ?? null;
 
   const verify = useCallback(() => {
     setIsWidgetOpen(true);
@@ -137,14 +167,17 @@ export function useWorldID() {
 
   const logout = useCallback(() => {
     clearStoredProof();
+    setMemoryProof(null);
     clearSessionCookie();
     setProof(null);
     router.push('/');
   }, [router]);
 
   return {
+    authReady,
     isVerified,
     worldAddress,
+    nullifier,
     proof,
     verify,
     logout,
