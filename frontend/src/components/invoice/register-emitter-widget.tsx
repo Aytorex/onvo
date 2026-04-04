@@ -8,6 +8,7 @@ import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   useAccount,
@@ -26,6 +27,7 @@ type Props = {
  * pour correspondre au `signalHash` attendu par le contrat.
  */
 export function RegisterEmitterWidget({ onRegistered }: Props) {
+  const { t } = useTranslation('common');
   const { address, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   /** Client Arc pour le receipt même si le wallet était sur un autre réseau au montage. */
@@ -36,15 +38,18 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
   const [open, setOpen] = useState(false);
   const [loadingRp, setLoadingRp] = useState(false);
 
-  const handleVerifyResult = useCallback(async (result: IDKitResult) => {
-    const ok = await verifyProof(result);
-    if (!ok) throw new Error('Vérification World ID refusée');
-  }, []);
+  const handleVerifyResult = useCallback(
+    async (result: IDKitResult) => {
+      const ok = await verifyProof(result);
+      if (!ok) throw new Error(t('invoice.toast.worldIdRejected'));
+    },
+    [t],
+  );
 
   const handleSuccess = useCallback(
     async (result: IDKitResult) => {
       if (!address) {
-        toast.error('Wallet requis.');
+        toast.error(t('invoice.toast.walletRequiredShort'));
         setOpen(false);
         return;
       }
@@ -55,27 +60,30 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
           writeContractAsync,
           publicClientArc,
         });
-        toast.success('Adresse enregistrée comme émetteur vérifié.');
+        toast.success(t('invoice.toast.registerSuccess'));
         setOpen(false);
         onRegistered?.();
       } catch (e) {
         console.error(e);
         toast.error(
-          e instanceof Error
-            ? e.message
-            : 'Transaction registerWithWorldId échouée.',
+          e instanceof Error ? e.message : t('invoice.toast.registerTxFailed'),
         );
         setOpen(false);
       }
     },
-    [address, onRegistered, publicClientArc, switchChainAsync, writeContractAsync],
+    [
+      address,
+      onRegistered,
+      publicClientArc,
+      switchChainAsync,
+      t,
+      writeContractAsync,
+    ],
   );
 
   async function start() {
     if (!address) {
-      toast.error(
-        'Connectez d’abord votre wallet (même adresse que pour les factures).',
-      );
+      toast.error(t('invoice.toast.connectWalletFirst'));
       return;
     }
     setLoadingRp(true);
@@ -84,7 +92,7 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
       setRpContext(ctx);
       setOpen(true);
     } catch {
-      toast.error('Impossible d’initialiser World ID (RP).');
+      toast.error(t('invoice.toast.worldIdInitRp'));
     } finally {
       setLoadingRp(false);
     }
@@ -95,12 +103,14 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-4 text-sm">
       <p className="font-medium text-foreground">
-        Enregistrement émetteur on-chain
+        {t('invoice.registerEmitter.title')}
       </p>
       <p className="mt-2 text-muted-foreground">
-        Une transaction <code className="text-xs">registerWithWorldId</code> lie
-        votre wallet à World ID sur Arc. Utilisez le même wallet que pour signer
-        les factures.
+        <Trans
+          i18nKey="invoice.registerEmitter.description"
+          ns="common"
+          components={{ code: <code className="text-xs" /> }}
+        />
       </p>
       <Button
         type="button"
@@ -113,7 +123,7 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
         ) : (
           <ShieldCheck className="mr-2 h-4 w-4" />
         )}
-        Enregistrer mon wallet avec World ID
+        {t('invoice.registerEmitter.button')}
       </Button>
 
       {rpContext ? (
@@ -129,7 +139,7 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
           handleVerify={handleVerifyResult}
           onSuccess={(r) => void handleSuccess(r)}
           onError={() => {
-            toast.error('World ID annulé ou erreur.');
+            toast.error(t('invoice.toast.worldIdCancelled'));
             setOpen(false);
           }}
         />

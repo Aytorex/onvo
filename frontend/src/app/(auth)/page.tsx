@@ -16,9 +16,13 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { useWorldID, fetchRpContext, WORLD_ID_CONFIG } from '@/lib/worldid';
+import { LanguageToggle } from '@/components/shared/language-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginPage() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const {
     isVerified,
@@ -47,7 +51,7 @@ export default function LoginPage() {
       setRpContext(ctx);
       setIsWidgetOpen(true);
     } catch {
-      setError('Failed to initialize verification. Please try again.');
+      setError(t('auth.initError'));
     } finally {
       setIsLoadingRp(false);
     }
@@ -56,8 +60,12 @@ export default function LoginPage() {
   if (isVerified) return null;
 
   return (
-    <div className="w-full max-w-md px-4">
-      <Card className="border-border/60 bg-card shadow-md backdrop-blur-sm">
+    <div className="flex w-full max-w-md flex-col items-end gap-2 px-4">
+      <div className="flex gap-2">
+        <LanguageToggle />
+        <ThemeToggle />
+      </div>
+      <Card className="w-full border-border/60 bg-card shadow-md backdrop-blur-sm">
         <CardHeader className="items-center space-y-4 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/15">
             <ShieldCheck className="h-8 w-8 text-primary" />
@@ -65,13 +73,13 @@ export default function LoginPage() {
           <div className="space-y-2">
             <OnvoLogo className="text-center text-3xl sm:text-4xl" />
             <CardDescription className="text-base text-muted-foreground">
-              B2B invoicing powered by World ID
+              {t('auth.tagline')}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4 pb-8">
           <p className="text-center text-sm text-muted-foreground">
-            Verify your identity with World ID to access the platform.
+            {t('auth.verifyIntro')}
           </p>
 
           <Button
@@ -85,7 +93,7 @@ export default function LoginPage() {
             ) : (
               <ShieldCheck className="mr-2 h-4 w-4" />
             )}
-            Verify with World ID
+            {t('auth.verifyButton')}
           </Button>
 
           {error && (
@@ -93,16 +101,16 @@ export default function LoginPage() {
           )}
 
           <p className="text-center text-xs text-muted-foreground/60">
-            Staging environment &mdash; use the{' '}
+            {t('auth.stagingNoteBefore')}{' '}
             <a
               href="https://simulator.worldcoin.org/"
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-muted-foreground"
             >
-              World ID Simulator
+              {t('auth.simulatorLink')}
             </a>{' '}
-            for testing
+            {t('auth.stagingNoteAfter')}
           </p>
         </CardContent>
       </Card>
@@ -120,7 +128,7 @@ export default function LoginPage() {
           handleVerify={handleVerifyResult}
           onSuccess={handleSuccess}
           onError={(errorCode) => {
-            setError(`Verification error: ${errorCode}`);
+            setError(t('auth.verificationError', { code: String(errorCode) }));
             setIsWidgetOpen(false);
           }}
         />

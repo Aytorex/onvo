@@ -25,6 +25,7 @@
     "viem",
     "wagmi",
     "Reentrancy",
+    "siret",
     "IERC",
     "keccak",
     "EURC",

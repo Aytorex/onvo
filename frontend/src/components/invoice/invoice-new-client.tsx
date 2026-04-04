@@ -1,6 +1,6 @@
 'use client';
 
-import { invoiceFormSchema } from '@/components/invoice/invoice-form-schema';
+import { createInvoiceFormSchema } from '@/components/invoice/invoice-form-schema';
 import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,7 @@ import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { isAddress, parseUnits } from 'viem';
@@ -85,6 +86,7 @@ function defaultForm(): InvoiceFormValues {
 }
 
 export function InvoiceNewClient() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const previewRef = useRef<HTMLDivElement>(null);
   const { authReady, isVerified } = useWorldID();
@@ -101,6 +103,8 @@ export function InvoiceNewClient() {
   const [idKitOpen, setIdKitOpen] = useState(false);
   const [loadingRpForSubmit, setLoadingRpForSubmit] = useState(false);
   const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
+
+  const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
@@ -162,20 +166,18 @@ export function InvoiceNewClient() {
   const createInvoiceFromVerifiedForm = useCallback(
     async (data: InvoiceFormValues) => {
       if (!address || !isAddress(data.clientWallet)) {
-        toast.error('Connectez votre wallet et vérifiez l’adresse client.');
+        toast.error(t('invoice.toast.walletAndClient'));
         return;
       }
       try {
         await switchWalletToArcTestnet(switchChainAsync);
       } catch {
-        toast.error(
-          'Passez sur Arc Testnet (chain 5042002) dans le wallet pour continuer.',
-        );
+        toast.error(t('invoice.toast.arcNetworkRequired'));
         return;
       }
       const el = previewRef.current;
       if (!el) {
-        toast.error('Aperçu indisponible.');
+        toast.error(t('invoice.toast.previewUnavailable'));
         return;
       }
 
@@ -195,9 +197,7 @@ export function InvoiceNewClient() {
         const token = getTokenAddress(data.currency);
 
         if (token === '0x0000000000000000000000000000000000000000') {
-          toast.error(
-            'Configurez NEXT_PUBLIC_TOKEN_USDC et NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).',
-          );
+          toast.error(t('invoice.toast.tokenEnv'));
           return;
         }
 
@@ -221,7 +221,7 @@ export function InvoiceNewClient() {
         });
         const newId = parseInvoiceCreatedInvoiceId(receipt);
         if (newId === undefined) {
-          toast.error('Transaction OK mais invoiceId introuvable dans les logs.');
+          toast.error(t('invoice.toast.receiptNoId'));
           return;
         }
 
@@ -253,30 +253,33 @@ export function InvoiceNewClient() {
         setInvoiceMeta(newId, meta);
 
         setSuccessId(newId);
-        toast.success('Facture créée on-chain.');
+        toast.success(t('invoice.toast.invoiceCreated'));
       } catch (e) {
         console.error(e);
         toast.error(
           e instanceof Error
             ? e.message
-            : 'Échec de la création de la facture.',
+            : t('invoice.toast.invoiceCreateFailed'),
         );
       } finally {
         setStepSubmitting(false);
       }
     },
-    [address, publicClientArc, switchChainAsync, writeContractAsync],
+    [address, publicClientArc, switchChainAsync, t, writeContractAsync],
   );
 
-  const handleVerifyForInvoice = useCallback(async (result: IDKitResult) => {
-    const ok = await verifyProof(result);
-    if (!ok) throw new Error('Vérification World ID refusée');
-  }, []);
+  const handleVerifyForInvoice = useCallback(
+    async (result: IDKitResult) => {
+      const ok = await verifyProof(result);
+      if (!ok) throw new Error(t('invoice.toast.worldIdRejected'));
+    },
+    [t],
+  );
 
   const handleRegisterSuccessFromSubmit = useCallback(
     async (result: IDKitResult) => {
       if (!address) {
-        toast.error('Wallet requis.');
+        toast.error(t('invoice.toast.walletRequiredShort'));
         pendingFormDataRef.current = null;
         setIdKitOpen(false);
         return;
@@ -301,7 +304,7 @@ export function InvoiceNewClient() {
         toast.error(
           e instanceof Error
             ? e.message
-            : 'Échec inscription émetteur ou facture.',
+            : t('invoice.toast.emitterOrInvoiceFailed'),
         );
         pendingFormDataRef.current = null;
         setIdKitOpen(false);
@@ -313,20 +316,19 @@ export function InvoiceNewClient() {
       publicClientArc,
       refetchEmitterVerified,
       switchChainAsync,
+      t,
       writeContractAsync,
     ],
   );
 
   const onSubmit = form.handleSubmit(async (data) => {
     if (!address || !isAddress(data.clientWallet)) {
-      toast.error('Connectez votre wallet et vérifiez l’adresse client.');
+      toast.error(t('invoice.toast.walletAndClient'));
       return;
     }
 
     if (address && emitterVerified === undefined) {
-      toast.error(
-        'Vérification on-chain en cours, réessayez dans un instant.',
-      );
+      toast.error(t('invoice.toast.verifyingOnChain'));
       return;
     }
 
@@ -338,7 +340,7 @@ export function InvoiceNewClient() {
         setRpContext(ctx);
         setIdKitOpen(true);
       } catch {
-        toast.error('Impossible d’initialiser World ID (RP).');
+        toast.error(t('invoice.toast.worldIdInitRp'));
         pendingFormDataRef.current = null;
       } finally {
         setLoadingRpForSubmit(false);
@@ -367,7 +369,7 @@ export function InvoiceNewClient() {
       <div
         className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
         aria-busy
-        aria-label="Chargement session"
+        aria-label={t('invoice.detail.loadingSessionAria')}
       />
     );
   }
@@ -375,11 +377,11 @@ export function InvoiceNewClient() {
   if (!isVerified) {
     return (
       <p className="text-center text-muted-foreground">
-        Accès réservé —{' '}
+        {t('invoice.form.accessDenied')}{' '}
         <Link href="/" className="text-primary underline">
-          connectez-vous avec World ID
+          {t('invoice.form.accessDeniedLink')}
         </Link>
-        .
+        {t('invoice.form.accessDeniedSuffix')}
       </p>
     );
   }
@@ -387,9 +389,11 @@ export function InvoiceNewClient() {
   if (successId !== null) {
     return (
       <div className="mx-auto max-w-lg space-y-6 rounded-2xl border border-border bg-card p-8 text-center">
-        <h1 className="text-xl font-semibold">Facture enregistrée</h1>
+        <h1 className="text-xl font-semibold">
+          {t('invoice.form.successTitle')}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Partagez le lien de paiement avec votre client.
+          {t('invoice.form.successSubtitle')}
         </p>
         <div className="rounded-lg bg-muted/50 p-4 font-mono text-sm break-all">
           {typeof window !== 'undefined'
@@ -398,11 +402,11 @@ export function InvoiceNewClient() {
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           <Button asChild variant="secondary">
-            <Link href="/dashboard">Retour au dashboard</Link>
+            <Link href="/dashboard">{t('invoice.form.backDashboard')}</Link>
           </Button>
           <Button asChild>
             <Link href={`/pay/${successId.toString()}`}>
-              Ouvrir la page paiement
+              {t('invoice.form.openPayPage')}
             </Link>
           </Button>
         </div>
@@ -412,270 +416,296 @@ export function InvoiceNewClient() {
 
   return (
     <>
-    <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-      <form onSubmit={onSubmit} className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Nouvelle facture
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Remplissez le formulaire — l&apos;aperçu se met à jour (300 ms).
-          </p>
-        </div>
-
-        {!isConnected ? (
-          <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Connectez un wallet (émetteur) pour signer la transaction.
-          </p>
-        ) : null}
-
-        {isConnected && emitterVerified === false ? (
-          <p className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-            Première facture avec ce wallet : au clic sur « Générer la facture
-            », l’orb World ID s’ouvre pour enregistrer votre adresse on-chain,
-            puis le PDF et la transaction suivent dans la foulée.
-          </p>
-        ) : null}
-
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Émetteur
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="emitterName">Nom / Raison sociale</Label>
-              <Input id="emitterName" {...form.register('emitterName')} />
-              {form.formState.errors.emitterName ? (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.emitterName.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="emitterAddress">Adresse (siège)</Label>
-              <Input id="emitterAddress" {...form.register('emitterAddress')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emitterSiret">SIRET (optionnel)</Label>
-              <Input id="emitterSiret" {...form.register('emitterSiret')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emitterEmail">Email</Label>
-              <Input
-                id="emitterEmail"
-                type="email"
-                {...form.register('emitterEmail')}
-              />
-            </div>
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+        <form onSubmit={onSubmit} className="space-y-8">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t('invoice.form.title')}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('invoice.form.subtitle')}
+            </p>
           </div>
-        </section>
 
-        <Separator />
+          {!isConnected ? (
+            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              {t('invoice.form.walletConnectHint')}
+            </p>
+          ) : null}
 
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Client
-          </h2>
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="clientName">Nom</Label>
-              <Input id="clientName" {...form.register('clientName')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="clientWallet">Adresse wallet</Label>
-              <Input
-                id="clientWallet"
-                placeholder="0x…"
-                className="font-mono text-sm"
-                {...form.register('clientWallet')}
-              />
-              {form.formState.errors.clientWallet ? (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.clientWallet.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="clientEmail">Email (optionnel)</Label>
-              <Input
-                id="clientEmail"
-                type="email"
-                {...form.register('clientEmail')}
-              />
-            </div>
-          </div>
-        </section>
+          {isConnected && emitterVerified === false ? (
+            <p className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+              {t('invoice.form.firstInvoiceHint')}
+            </p>
+          ) : null}
 
-        <Separator />
-
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
+          <section className="space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Lignes
+              {t('invoice.form.sectionEmitter')}
             </h2>
-            <Button type="button" variant="outline" size="sm" onClick={addLine}>
-              + Ligne
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {fields.map((field, index) => (
-              <div
-                key={field.id}
-                className="grid gap-3 rounded-lg border border-border/80 p-4 sm:grid-cols-12"
-              >
-                <div className="sm:col-span-4">
-                  <Label>Description</Label>
-                  <Input
-                    {...form.register(`lines.${index}.description` as const)}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Qté</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...form.register(`lines.${index}.quantity` as const)}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>P.U. HT</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...form.register(`lines.${index}.unitPrice` as const)}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>TVA %</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    max={100}
-                    {...form.register(`lines.${index}.vatPercent`, {
-                      valueAsNumber: true,
-                    })}
-                  />
-                </div>
-                <div className="flex items-end sm:col-span-2">
-                  {fields.length > 1 ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => remove(index)}
-                    >
-                      Retirer
-                    </Button>
-                  ) : null}
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="emitterName">
+                  {t('invoice.form.emitterName')}
+                </Label>
+                <Input id="emitterName" {...form.register('emitterName')} />
+                {form.formState.errors.emitterName ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.emitterName.message}
+                  </p>
+                ) : null}
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="emitterAddress">
+                  {t('invoice.form.emitterAddress')}
+                </Label>
+                <Input
+                  id="emitterAddress"
+                  {...form.register('emitterAddress')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emitterSiret">
+                  {t('invoice.form.emitterSiretOptional')}
+                </Label>
+                <Input id="emitterSiret" {...form.register('emitterSiret')} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emitterEmail">
+                  {t('invoice.form.emitterEmail')}
+                </Label>
+                <Input
+                  id="emitterEmail"
+                  type="email"
+                  {...form.register('emitterEmail')}
+                />
+              </div>
+            </div>
+          </section>
 
-        <section className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Devise (stablecoin)</Label>
-            <Select
-              value={form.watch('currency')}
-              onValueChange={(v) =>
-                form.setValue('currency', v as InvoiceFormValues['currency'])
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USDC">USDC</SelectItem>
-                <SelectItem value="EURC">EURC</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="invoiceNumber">N° facture</Label>
-            <Input id="invoiceNumber" {...form.register('invoiceNumber')} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="issueDate">Date d&apos;émission</Label>
-            <Input id="issueDate" type="date" {...form.register('issueDate')} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="dueDate">Échéance</Label>
-            <Input id="dueDate" type="date" {...form.register('dueDate')} />
-          </div>
-        </section>
+          <Separator />
 
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes (optionnel)</Label>
-          <Textarea id="notes" rows={3} {...form.register('notes')} />
-        </div>
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('invoice.form.sectionClient')}
+            </h2>
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientName">
+                  {t('invoice.form.clientName')}
+                </Label>
+                <Input id="clientName" {...form.register('clientName')} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientWallet">
+                  {t('invoice.form.clientWallet')}
+                </Label>
+                <Input
+                  id="clientWallet"
+                  placeholder={t('invoice.form.walletPlaceholder')}
+                  className="font-mono text-sm"
+                  {...form.register('clientWallet')}
+                />
+                {form.formState.errors.clientWallet ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.clientWallet.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientEmail">
+                  {t('invoice.form.clientEmailOptional')}
+                </Label>
+                <Input
+                  id="clientEmail"
+                  type="email"
+                  {...form.register('clientEmail')}
+                />
+              </div>
+            </div>
+          </section>
 
-        <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
-          <p className="font-medium">Résumé</p>
-          <p className="mt-2 text-muted-foreground">
-            Total HT : {totals.totalHt.toFixed(2)} — TVA :{' '}
-            {totals.tvaAmount.toFixed(2)} —{' '}
-            <span className="font-semibold text-foreground">
-              Total TTC : {totals.totalTtc.toFixed(2)}
-            </span>
+          <Separator />
+
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('invoice.form.sectionLines')}
+              </h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addLine}
+              >
+                {t('invoice.form.addLine')}
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="grid gap-3 rounded-lg border border-border/80 p-4 sm:grid-cols-12"
+                >
+                  <div className="sm:col-span-4">
+                    <Label>{t('invoice.form.description')}</Label>
+                    <Input
+                      {...form.register(`lines.${index}.description` as const)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>{t('invoice.form.qty')}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...form.register(`lines.${index}.quantity` as const)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>{t('invoice.form.unitPriceHt')}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...form.register(`lines.${index}.unitPrice` as const)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>{t('invoice.form.vatPercent')}</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      max={100}
+                      {...form.register(`lines.${index}.vatPercent`, {
+                        valueAsNumber: true,
+                      })}
+                    />
+                  </div>
+                  <div className="flex items-end sm:col-span-2">
+                    {fields.length > 1 ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => remove(index)}
+                      >
+                        {t('invoice.form.removeLine')}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t('invoice.form.currency')}</Label>
+              <Select
+                value={form.watch('currency')}
+                onValueChange={(v) =>
+                  form.setValue('currency', v as InvoiceFormValues['currency'])
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USDC">USDC</SelectItem>
+                  <SelectItem value="EURC">EURC</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invoiceNumber">
+                {t('invoice.form.invoiceNumber')}
+              </Label>
+              <Input id="invoiceNumber" {...form.register('invoiceNumber')} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="issueDate">{t('invoice.form.issueDate')}</Label>
+              <Input
+                id="issueDate"
+                type="date"
+                {...form.register('issueDate')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">{t('invoice.form.dueDate')}</Label>
+              <Input id="dueDate" type="date" {...form.register('dueDate')} />
+            </div>
+          </section>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">{t('invoice.form.notesOptional')}</Label>
+            <Textarea id="notes" rows={3} {...form.register('notes')} />
+          </div>
+
+          <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+            <p className="font-medium">{t('invoice.form.summary')}</p>
+            <p className="mt-2 text-muted-foreground">
+              {t('invoice.form.summaryLine', {
+                ht: totals.totalHt.toFixed(2),
+                vat: totals.tvaAmount.toFixed(2),
+                ttc: totals.totalTtc.toFixed(2),
+              })}
+            </p>
+          </div>
+
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full sm:w-auto"
+            disabled={
+              stepSubmitting ||
+              isWritePending ||
+              loadingRpForSubmit ||
+              !isConnected ||
+              (address !== undefined && emitterVerified === undefined)
+            }
+          >
+            {loadingRpForSubmit
+              ? t('invoice.form.submitPreparingWorldId')
+              : stepSubmitting || isWritePending
+                ? t('invoice.form.submitTransaction')
+                : t('invoice.form.submitGenerate')}
+          </Button>
+        </form>
+
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">
+            {t('invoice.form.previewLabel')}
           </p>
+          <InvoicePreviewDocument
+            values={debouncedPreview}
+            previewRef={previewRef}
+          />
         </div>
-
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full sm:w-auto"
-          disabled={
-            stepSubmitting ||
-            isWritePending ||
-            loadingRpForSubmit ||
-            !isConnected ||
-            (address !== undefined && emitterVerified === undefined)
-          }
-        >
-          {loadingRpForSubmit
-            ? 'Préparation World ID…'
-            : stepSubmitting || isWritePending
-              ? 'Transaction…'
-              : 'Générer la facture'}
-        </Button>
-      </form>
-
-      <div className="lg:sticky lg:top-24 lg:self-start">
-        <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">
-          Aperçu
-        </p>
-        <InvoicePreviewDocument
-          values={debouncedPreview}
-          previewRef={previewRef}
-        />
       </div>
-    </div>
 
-    {rpContext && address ? (
-      <IDKitRequestWidget
-        open={idKitOpen}
-        onOpenChange={(open) => {
-          setIdKitOpen(open);
-          if (!open) pendingFormDataRef.current = null;
-        }}
-        app_id={WORLD_ID_CONFIG.app_id}
-        action={WORLD_ID_CONFIG.action}
-        rp_context={rpContext}
-        allow_legacy_proofs={true}
-        preset={orbLegacy({ signal: address })}
-        environment={WORLD_ID_CONFIG.environment}
-        handleVerify={handleVerifyForInvoice}
-        onSuccess={(r) => void handleRegisterSuccessFromSubmit(r)}
-        onError={() => {
-          toast.error('World ID annulé ou erreur.');
-          pendingFormDataRef.current = null;
-          setIdKitOpen(false);
-        }}
-      />
-    ) : null}
+      {rpContext && address ? (
+        <IDKitRequestWidget
+          open={idKitOpen}
+          onOpenChange={(open) => {
+            setIdKitOpen(open);
+            if (!open) pendingFormDataRef.current = null;
+          }}
+          app_id={WORLD_ID_CONFIG.app_id}
+          action={WORLD_ID_CONFIG.action}
+          rp_context={rpContext}
+          allow_legacy_proofs={true}
+          preset={orbLegacy({ signal: address })}
+          environment={WORLD_ID_CONFIG.environment}
+          handleVerify={handleVerifyForInvoice}
+          onSuccess={(r) => void handleRegisterSuccessFromSubmit(r)}
+          onError={() => {
+            toast.error(t('invoice.toast.worldIdCancelled'));
+            pendingFormDataRef.current = null;
+            setIdKitOpen(false);
+          }}
+        />
+      ) : null}
     </>
   );
 }

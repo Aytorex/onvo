@@ -1,5 +1,6 @@
 'use client';
 
+import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
+import { invoiceRegistryContract } from '@/lib/contract';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
 import type { InvoiceRowView } from '@/lib/invoice-types';
@@ -19,13 +22,11 @@ import {
   getInvoicePdfBase64,
   getStoredInvoiceIds,
 } from '@/lib/invoice-storage';
-import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
-import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
-import { invoiceRegistryContract } from '@/lib/contract';
 import { useWorldID } from '@/lib/worldid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   useAccount,
@@ -35,11 +36,11 @@ import {
   useWriteContract,
 } from 'wagmi';
 
-function statusBadge(status: 0 | 1 | 2) {
+function statusBadge(status: 0 | 1 | 2, t: (key: string) => string) {
   if (status === 0)
     return (
       <Badge variant="outline" className="border-amber-500/60 text-amber-400">
-        PENDING
+        {t('invoice.status.pending')}
       </Badge>
     );
   if (status === 1)
@@ -48,12 +49,12 @@ function statusBadge(status: 0 | 1 | 2) {
         variant="outline"
         className="border-emerald-500/60 text-emerald-400"
       >
-        PAID
+        {t('invoice.status.paid')}
       </Badge>
     );
   return (
     <Badge variant="secondary" className="text-muted-foreground">
-      CANCELLED
+      {t('invoice.status.cancelled')}
     </Badge>
   );
 }
@@ -63,6 +64,7 @@ function shortAddr(a: string) {
 }
 
 export function DashboardClient() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const { authReady, isVerified } = useWorldID();
   const { address, isConnected } = useAccount();
@@ -128,7 +130,7 @@ export function DashboardClient() {
     try {
       await switchWalletToArcTestnet(switchChainAsync);
     } catch {
-      toast.error('Arc Testnet (5042002) requis — changez de réseau dans le wallet.');
+      toast.error(t('invoice.toast.arcNetworkRequired'));
       return;
     }
     try {
@@ -140,17 +142,19 @@ export function DashboardClient() {
         chainId: arcTestnet.id,
         chain: arcTestnet,
       });
-      toast.success('Annulation envoyée.');
+      toast.success(t('invoice.toast.cancelSent'));
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Annulation impossible');
+      toast.error(
+        e instanceof Error ? e.message : t('invoice.toast.cancelFailed'),
+      );
     }
   };
 
   const exportPdf = (invoiceId: bigint) => {
     const b64 = getInvoicePdfBase64(invoiceId);
     if (!b64) {
-      toast.error('PDF non stocké localement pour cette facture.');
+      toast.error(t('invoice.toast.pdfNotStored'));
       return;
     }
     downloadBase64Pdf(b64, `invoice-${invoiceId.toString()}.pdf`);
@@ -161,7 +165,7 @@ export function DashboardClient() {
       <div
         className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
         aria-busy
-        aria-label="Chargement session"
+        aria-label={t('invoice.dashboard.loadingSessionAria')}
       />
     );
   }
@@ -170,7 +174,7 @@ export function DashboardClient() {
     return (
       <p className="text-center text-muted-foreground">
         <Link href="/" className="text-primary underline">
-          Connectez-vous avec World ID
+          {t('invoice.dashboard.connectWorldIdLink')}
         </Link>
       </p>
     );
@@ -180,28 +184,30 @@ export function DashboardClient() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t('invoice.dashboard.title')}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Factures émises par votre wallet sur Arc Testnet.
+            {t('invoice.dashboard.subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild>
-            <Link href="/invoice/new">Nouvelle facture</Link>
+            <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
           </Button>
           <Button
             variant="outline"
             disabled={rows.length === 0}
             onClick={() => exportInvoicesCSV(rows)}
           >
-            Exporter tout (CSV)
+            {t('invoice.dashboard.exportAllCsv')}
           </Button>
         </div>
       </div>
 
       {!isConnected ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-          Connectez votre wallet pour voir les factures liées à cette adresse.
+          {t('invoice.dashboard.connectWalletHint')}
         </p>
       ) : null}
 
@@ -212,23 +218,26 @@ export function DashboardClient() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <p className="text-sm text-muted-foreground">
+          {t('invoice.dashboard.loading')}
+        </p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Aucune facture enregistrée localement. Créez-en une ou importez les
-          IDs dans le stockage.
+          {t('invoice.dashboard.emptyState')}
         </p>
       ) : (
         <div className="rounded-xl border border-border/80">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Destinataire</TableHead>
-                <TableHead>Montant (raw)</TableHead>
-                <TableHead>Token</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('invoice.dashboard.colId')}</TableHead>
+                <TableHead>{t('invoice.dashboard.colRecipient')}</TableHead>
+                <TableHead>{t('invoice.dashboard.colAmountRaw')}</TableHead>
+                <TableHead>{t('invoice.dashboard.colToken')}</TableHead>
+                <TableHead>{t('invoice.dashboard.colStatus')}</TableHead>
+                <TableHead className="text-right">
+                  {t('invoice.dashboard.colActions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -246,12 +255,12 @@ export function DashboardClient() {
                   <TableCell className="font-mono text-xs">
                     {shortAddr(r.token)}
                   </TableCell>
-                  <TableCell>{statusBadge(r.status)}</TableCell>
+                  <TableCell>{statusBadge(r.status, t)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-wrap justify-end gap-1">
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/invoice/${r.invoiceId.toString()}`}>
-                          Voir
+                          {t('invoice.dashboard.view')}
                         </Link>
                       </Button>
                       <Button
@@ -259,7 +268,7 @@ export function DashboardClient() {
                         size="sm"
                         onClick={() => exportPdf(r.invoiceId)}
                       >
-                        Exporter
+                        {t('invoice.dashboard.export')}
                       </Button>
                       {r.status === 0 ? (
                         <Button
@@ -269,7 +278,7 @@ export function DashboardClient() {
                           disabled={isCancelPending}
                           onClick={() => void onCancel(r.invoiceId)}
                         >
-                          Annuler
+                          {t('invoice.dashboard.cancel')}
                         </Button>
                       ) : null}
                     </div>

@@ -1,16 +1,20 @@
 'use client';
 
+import { LanguageToggle } from '@/components/shared/language-toggle';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { WalletButton } from '@/components/shared/wallet-button';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useWorldID } from '@/lib/worldid';
 import { FilePlus2, LayoutDashboard, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 export function EmitterShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { logout } = useWorldID();
+  const { t } = useTranslation('common');
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -27,7 +31,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
             >
               <Link href="/dashboard">
                 <LayoutDashboard className="mr-1.5 h-4 w-4" />
-                Dashboard
+                {t('emitterNav.dashboard')}
               </Link>
             </Button>
             <Button
@@ -39,9 +43,11 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
             >
               <Link href="/invoice/new">
                 <FilePlus2 className="mr-1.5 h-4 w-4" />
-                Nouvelle facture
+                {t('emitterNav.newInvoice')}
               </Link>
             </Button>
+            <LanguageToggle />
+            <ThemeToggle />
             <WalletButton />
             <Button
               variant="outline"
@@ -50,7 +56,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               onClick={() => void logout()}
             >
               <LogOut className="mr-1.5 h-4 w-4" />
-              Log out
+              {t('emitterNav.logOut')}
             </Button>
           </nav>
         </div>

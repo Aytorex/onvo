@@ -12,16 +12,18 @@ import { useWorldID } from '@/lib/worldid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { usePublicClient } from 'wagmi';
 
-function statusLabel(s: 0 | 1 | 2) {
-  if (s === 0) return 'PENDING';
-  if (s === 1) return 'PAID';
-  return 'CANCELLED';
+function statusLabel(s: 0 | 1 | 2, t: (key: string) => string) {
+  if (s === 0) return t('invoice.status.pending');
+  if (s === 1) return t('invoice.status.paid');
+  return t('invoice.status.cancelled');
 }
 
 export function InvoiceDetailClient() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const params = useParams();
   const idStr = typeof params.id === 'string' ? params.id : '';
@@ -57,7 +59,7 @@ export function InvoiceDetailClient() {
       <div
         className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
         aria-busy
-        aria-label="Chargement session"
+        aria-label={t('invoice.detail.loadingSessionAria')}
       />
     );
   }
@@ -66,23 +68,25 @@ export function InvoiceDetailClient() {
     return (
       <p className="text-muted-foreground">
         <Link href="/" className="text-primary underline">
-          World ID requis
+          {t('invoice.detail.worldIdRequired')}
         </Link>
       </p>
     );
   }
 
   if (!invoiceId) {
-    return <p className="text-destructive">ID invalide.</p>;
+    return <p className="text-destructive">{t('invoice.detail.invalidId')}</p>;
   }
 
-  if (loading) return <p className="text-muted-foreground">Chargement…</p>;
+  if (loading) {
+    return (
+      <p className="text-muted-foreground">{t('invoice.detail.loading')}</p>
+    );
+  }
 
   if (!data) {
     return (
-      <p className="text-muted-foreground">
-        Facture introuvable on-chain (ou réseau incorrect).
-      </p>
+      <p className="text-muted-foreground">{t('invoice.detail.notFound')}</p>
     );
   }
 
@@ -92,43 +96,57 @@ export function InvoiceDetailClient() {
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Facture</p>
+          <p className="text-sm text-muted-foreground">
+            {t('invoice.detail.invoiceLabel')}
+          </p>
           <h1 className="text-2xl font-semibold">#{invoiceId.toString()}</h1>
         </div>
-        <Badge variant="outline">{statusLabel(data.status)}</Badge>
+        <Badge variant="outline">{statusLabel(data.status, t)}</Badge>
       </div>
 
       <dl className="grid gap-4 rounded-xl border border-border/80 bg-card/50 p-6 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-muted-foreground">Hash PDF</dt>
+          <dt className="text-muted-foreground">
+            {t('invoice.detail.hashPdf')}
+          </dt>
           <dd className="mt-1 break-all font-mono text-xs">
             {data.invoiceHash}
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Émetteur</dt>
+          <dt className="text-muted-foreground">
+            {t('invoice.detail.emitter')}
+          </dt>
           <dd className="mt-1 font-mono text-xs">{data.emitter}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Destinataire</dt>
+          <dt className="text-muted-foreground">
+            {t('invoice.detail.recipient')}
+          </dt>
           <dd className="mt-1 font-mono text-xs">{data.recipient}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Montant (wei smallest)</dt>
+          <dt className="text-muted-foreground">
+            {t('invoice.detail.amountWei')}
+          </dt>
           <dd className="mt-1 font-mono text-xs">{data.amount.toString()}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Token</dt>
+          <dt className="text-muted-foreground">{t('invoice.detail.token')}</dt>
           <dd className="mt-1 font-mono text-xs">{data.token}</dd>
         </div>
         {meta ? (
           <>
             <div>
-              <dt className="text-muted-foreground">N° pièce</dt>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.docNumber')}
+              </dt>
               <dd className="mt-1">{meta.invoiceNumber}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Client</dt>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.client')}
+              </dt>
               <dd className="mt-1">{meta.clientName}</dd>
             </div>
           </>
@@ -137,24 +155,26 @@ export function InvoiceDetailClient() {
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="secondary">
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/dashboard">{t('invoice.detail.backDashboard')}</Link>
         </Button>
         <Button asChild>
-          <Link href={`/pay/${invoiceId.toString()}`}>Page paiement</Link>
+          <Link href={`/pay/${invoiceId.toString()}`}>
+            {t('invoice.detail.payPage')}
+          </Link>
         </Button>
         {pdf ? (
           <Button
             variant="outline"
             onClick={() => {
               downloadBase64Pdf(pdf, `invoice-${invoiceId.toString()}.pdf`);
-              toast.success('Téléchargement démarré.');
+              toast.success(t('invoice.detail.downloadStarted'));
             }}
           >
-            Télécharger PDF
+            {t('invoice.detail.downloadPdf')}
           </Button>
         ) : (
           <p className="text-sm text-muted-foreground">
-            PDF non disponible en local.
+            {t('invoice.detail.pdfUnavailable')}
           </p>
         )}
       </div>
