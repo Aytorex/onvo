@@ -49,6 +49,7 @@ import {
   type FormEvent,
 } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { parseUnits, zeroAddress } from 'viem';
@@ -624,8 +625,29 @@ export function InvoiceNewClient() {
   }
 
   return (
-    <>
-      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col">
+      {stepSubmitting ? (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-background/95 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label={t('invoice.form.submitTransaction')}
+        >
+          <Loader2
+            className="h-10 w-10 animate-spin text-primary"
+            aria-hidden
+          />
+          <p className="text-sm text-muted-foreground">
+            {t('invoice.form.submitTransaction')}
+          </p>
+        </div>
+      ) : null}
+      <div
+        className="flex min-h-0 w-full min-w-0 flex-1 flex-col"
+        aria-hidden={stepSubmitting}
+        inert={stepSubmitting ? true : undefined}
+      >
         <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
           <div className="flex min-h-0 min-w-0 flex-1 flex-row gap-4">
             {/* ── Left panel: tabbed form (40% ≥ lg) ── */}
@@ -1151,6 +1173,6 @@ export function InvoiceNewClient() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
