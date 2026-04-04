@@ -215,11 +215,14 @@
       "client": "Client",
       "emitterWorldId": "Issuer World ID number",
       "vatNumber": "VAT number (on-chain)",
+      "back": "Back",
       "backDashboard": "Dashboard",
       "payPage": "Payment page",
       "downloadPdf": "Download PDF",
       "downloadStarted": "Download started.",
       "pdfUnavailable": "PDF not available locally.",
+      "storedMetaMissing": "Full invoice layout is not stored on this device — only on-chain fields are shown below.",
+      "onChainDetailsSummary": "On-chain details",
       "loadingSessionAria": "Loading session"
     },
     "commission": {
