@@ -36,7 +36,7 @@ Key dependencies from [frontend/package.json](mdc:frontend/package.json):
 
 - **Next.js** — React framework
 - **React** — UI library
-- **Web3**: Wagmi, Viem, Reown
+- **Web3**: Wagmi, Viem, `@wagmi/connectors` (wallet injecté Rabby/MetaMask)
 - **UI**: Radix UI components, shadcn/ui, Tailwind CSS
 - **Forms**: React Hook Form with Zod validation
 - **State**: TanStack Query for server state management
@@ -77,7 +77,7 @@ Required environment variables for frontend:
 - `ALCHEMY_ENDPOINT_URL_BASE_MAINNET`
 - `ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA`
 - `ALCHEMY_API_KEY`
-- `WALLET_CONNECT_PROJECT_ID`
+- `ALCHEMY_ENDPOINT_URL_ARC_TESTNET` (ou repli `ALCHEMY_ENDPOINT_URL_BASE_SEPOLIA` dans `next.config.mjs`)
 
 ## Best Practices
 

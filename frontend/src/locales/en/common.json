@@ -14,6 +14,15 @@
     "home": "Home",
     "notFound": "404"
   },
+  "wallet": {
+    "connect": "Connect",
+    "disconnect": "Disconnect"
+  },
+  "pay": {
+    "title": "Payment",
+    "tokenReceived": "Token received:",
+    "missingToken": "Missing token in the URL."
+  },
   "notFound": {
     "title": "Page not found",
     "description": "This page does not exist or the link may be incorrect. Use the navigation or the shortcuts below.",

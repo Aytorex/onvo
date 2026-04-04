@@ -57,17 +57,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* Reown AppKit / w3m — reprend les variables du thème (héritées par le shadow DOM). */
-html.light,
-html.dark {
-  --apkt-tokens-core-backgroundAccentPrimary-base: hsl(var(--primary));
-  --apkt-tokens-theme-textPrimary: hsl(var(--foreground));
-  --apkt-tokens-theme-textSecondary: hsl(var(--foreground));
-  --apkt-tokens-theme-foregroundPrimary: hsl(var(--muted));
-  --apkt-tokens-theme-foregroundSecondary: hsl(var(--accent));
-  --apkt-tokens-theme-foregroundTertiary: hsl(var(--popover));
-  --apkt-tokens-theme-backgroundPrimary: hsl(var(--background));
-  --apkt-tokens-theme-iconInverse: hsl(var(--foreground));
-  --apkt-tokens-theme-textInvert: hsl(var(--primary-foreground));
-}
