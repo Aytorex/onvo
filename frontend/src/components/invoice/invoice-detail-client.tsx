@@ -126,7 +126,7 @@ export function InvoiceDetailClient() {
       : (meta?.emitterWorldIdNullifier?.trim() ?? '');
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-8 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold">
