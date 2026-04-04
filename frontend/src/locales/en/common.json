@@ -463,10 +463,10 @@
         "subtitle": "Proof of Humanity",
         "description": "Every invoice issuer is verified as a real human via World ID 4.0. No bots, no fraud — only trusted identities can create invoices on Onvo."
       },
-      "ledger": {
-        "title": "Ledger",
-        "subtitle": "Clear Signing",
-        "description": "Every transaction is signed securely with Ledger hardware wallets. See exactly what you sign before you sign it — full transparency, zero surprises."
+      "dynamic": {
+        "title": "Dynamic",
+        "subtitle": "Wallet & sign-in",
+        "description": "Issuers connect and manage their wallet through Dynamic: smooth onboarding, built-in auth, and a unified flow to sign invoices on-chain without friction."
       },
       "arc": {
         "title": "Arc",
@@ -498,7 +498,7 @@
     "sponsors": {
       "world": { "label": "Identity" },
       "arc": { "label": "Payments" },
-      "ledger": { "label": "Security" }
+      "dynamic": { "label": "Wallet" }
     },
     "finalCta": {
       "title": "Ready to get started?",

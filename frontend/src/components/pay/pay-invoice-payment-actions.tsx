@@ -81,7 +81,14 @@ export function PayInvoicePaymentActions({
         toast.error(msg);
       }
     },
-    [address, isConnected, invoice, onPaymentConfirmed, payWithInjectedWallet, t],
+    [
+      address,
+      isConnected,
+      invoice,
+      onPaymentConfirmed,
+      payWithInjectedWallet,
+      t,
+    ],
   );
 
   const loadingLabel = busy ? busyLabel(busy, t) : null;

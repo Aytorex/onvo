@@ -1,4 +1,3 @@
-import { injected } from '@wagmi/connectors';
 import { arcTestnet, hardhat } from 'viem/chains';
 import { cookieStorage, createConfig, createStorage, http } from 'wagmi';
 
@@ -9,11 +8,7 @@ export const chains = [arcTestnet, hardhat] as const;
 
 export const config = createConfig({
   chains,
-  connectors: [
-    injected({
-      shimDisconnect: true,
-    }),
-  ],
+  multiInjectedProviderDiscovery: false,
   ssr: true,
   storage: createStorage({
     storage: cookieStorage,

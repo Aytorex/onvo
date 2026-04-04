@@ -10,13 +10,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { DynamicContext, DynamicWidget } from '@dynamic-labs/sdk-react-core';
 import { EurcIcon, UsdcIcon } from '@/components/shared/stablecoin-icons';
 import { arcTestnet } from '@/lib/arc-chain';
 import { getTokenAddress, tokenDecimals } from '@/lib/invoice-tokens';
 import { LogOut, Wallet } from 'lucide-react';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { erc20Abi, formatUnits } from 'viem';
-import { useAccount, useConnect, useDisconnect, useReadContract } from 'wagmi';
+import { useAccount, useDisconnect, useReadContract } from 'wagmi';
 
 function shortAddr(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -57,8 +59,8 @@ function balanceSegment(
 
 export function WalletButton() {
   const { t, i18n } = useTranslation('common');
+  const dynamicCtx = useContext(DynamicContext);
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const [addressCopied, setAddressCopied] = useState(false);
   const [addressTooltipOpen, setAddressTooltipOpen] = useState(false);
@@ -179,10 +181,6 @@ export function WalletButton() {
       refetchInterval: 20_000,
     },
   });
-
-  const injected = connectors.find(
-    (c) => c.type === 'injected' || c.id === 'injected',
-  );
 
   if (isConnected && address) {
     const usdcSeg = balanceSegment(
@@ -307,16 +305,14 @@ export function WalletButton() {
     );
   }
 
+  if (dynamicCtx?.sdkHasLoaded) {
+    return <DynamicWidget />;
+  }
+
   return (
-    <Button
-      variant="default"
-      size="sm"
-      className="gap-1.5"
-      disabled={isPending || !injected}
-      onClick={() => injected && connect({ connector: injected })}
-    >
+    <Button variant="default" size="sm" className="gap-1.5" disabled>
       <Wallet className="h-3.5 w-3.5 opacity-80" aria-hidden />
-      {isPending ? t('wallet.connecting') : t('wallet.connect')}
+      {t('wallet.connect')}
     </Button>
   );
 }

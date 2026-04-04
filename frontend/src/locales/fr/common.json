@@ -463,10 +463,10 @@
         "subtitle": "Preuve d'humanité",
         "description": "Chaque émetteur de facture est vérifié comme un humain réel via World ID 4.0. Pas de bots ni de fraude — seules des identités de confiance peuvent créer des factures sur Onvo."
       },
-      "ledger": {
-        "title": "Ledger",
-        "subtitle": "Clear Signing",
-        "description": "Chaque transaction est signée en toute sécurité avec un portefeuille matériel Ledger. Voyez exactement ce que vous signez avant de signer — transparence totale, aucune surprise."
+      "dynamic": {
+        "title": "Dynamic",
+        "subtitle": "Portefeuille & connexion",
+        "description": "Les émetteurs se connectent et gèrent leur wallet via Dynamic : onboarding fluide, authentification intégrée et expérience unifiée pour signer vos factures on-chain sans friction."
       },
       "arc": {
         "title": "Arc",
@@ -498,7 +498,7 @@
     "sponsors": {
       "world": { "label": "Identité" },
       "arc": { "label": "Paiements" },
-      "ledger": { "label": "Sécurité" }
+      "dynamic": { "label": "Portefeuille" }
     },
     "finalCta": {
       "title": "Prêt à commencer ?",
