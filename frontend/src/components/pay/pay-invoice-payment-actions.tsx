@@ -12,7 +12,11 @@ import {
   useInvoicePayment,
   type WalletPaymentStep,
 } from '@/hooks/use-invoice-payment';
-import { explorerTxUrl, INVOICE_STATUS, type InvoiceView } from '@/lib/pay-invoice';
+import {
+  explorerTxUrl,
+  INVOICE_STATUS,
+  type InvoiceView,
+} from '@/lib/pay-invoice';
 import { cn } from '@/lib/utils';
 
 import { PayInvoiceCopyHashButton } from '@/components/pay/pay-invoice-copy-hash-button';

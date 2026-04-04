@@ -2,13 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    SafeERC20
-} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title InvoiceRegistry
 /// @notice On-chain invoice registry with ERC-20 settlement and optional World ID metadata (off-chain verified on Arc).
@@ -112,7 +108,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     function _worldIdAddressFromNullifier(
         uint256 nullifier
     ) private pure returns (address) {
-        return address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))));
+        return
+            address(uint160(uint256(keccak256(abi.encodePacked(nullifier)))));
     }
 
     /// @notice Updates commission rate (basis points of gross invoice amount). Max 100%.
@@ -242,9 +239,10 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
             "InvoiceRegistry: id already used"
         );
 
-        address worldIdAddr = worldIdNullifier_ == 0
-            ? address(0)
-            : _worldIdAddressFromNullifier(worldIdNullifier_);
+        address worldIdAddr =
+            worldIdNullifier_ == 0
+                ? address(0)
+                : _worldIdAddressFromNullifier(worldIdNullifier_);
 
         _hashUsed[invoiceHash_] = true;
         unchecked {

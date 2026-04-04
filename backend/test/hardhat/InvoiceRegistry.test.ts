@@ -43,7 +43,8 @@ describe('InvoiceRegistry', () => {
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pdf-hash-1'));
       const amount = 1000n;
       const id = await nextInvoiceId(registry, emitter.address);
-      const worldIdAddr = await registry.worldIdAddressFromNullifier(WORLD_META);
+      const worldIdAddr =
+        await registry.worldIdAddressFromNullifier(WORLD_META);
       await expect(
         registry
           .connect(emitter)

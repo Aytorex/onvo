@@ -125,10 +125,9 @@ export function InvoiceDetailClient() {
 
   const pdf = getInvoicePdfBase64(invoiceId);
 
-  const worldIdDisplay =
-    !isAddressEqual(data.worldIdAddress, zeroAddress)
-      ? formatWorldIdAddressForDisplay(data.worldIdAddress)
-      : (meta?.emitterWorldIdNullifier?.trim() ?? '');
+  const worldIdDisplay = !isAddressEqual(data.worldIdAddress, zeroAddress)
+    ? formatWorldIdAddressForDisplay(data.worldIdAddress)
+    : (meta?.emitterWorldIdNullifier?.trim() ?? '');
 
   const worldIdForPreview =
     meta?.emitterWorldIdNullifier?.trim() ||

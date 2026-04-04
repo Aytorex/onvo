@@ -16,7 +16,12 @@ import { Loader2, Link2 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useAccount, useChainId, useSwitchChain, useWriteContract } from 'wagmi';
+import {
+  useAccount,
+  useChainId,
+  useSwitchChain,
+  useWriteContract,
+} from 'wagmi';
 
 type Props = {
   onBound?: () => void;
@@ -32,7 +37,8 @@ export function BindWorldIdWidget({ onBound, unstyled = false }: Props) {
   const { t } = useTranslation('common');
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { switchChainAsync, isPending: isSwitchChainPending } = useSwitchChain();
+  const { switchChainAsync, isPending: isSwitchChainPending } =
+    useSwitchChain();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
 
@@ -68,7 +74,9 @@ export function BindWorldIdWidget({ onBound, unstyled = false }: Props) {
       }
       bindTxInFlightRef.current = true;
       setOnChainBinding(true);
-      const toastId = toast.loading(t('invoice.registerEmitter.bindingInProgress'));
+      const toastId = toast.loading(
+        t('invoice.registerEmitter.bindingInProgress'),
+      );
       try {
         if (chainId !== registryChainId) {
           try {
@@ -135,8 +143,7 @@ export function BindWorldIdWidget({ onBound, unstyled = false }: Props) {
 
   if (!isConnected || !address) return null;
 
-  const bindingBusy =
-    onChainBinding || isSwitchChainPending || isWritePending;
+  const bindingBusy = onChainBinding || isSwitchChainPending || isWritePending;
 
   const body = (
     <>

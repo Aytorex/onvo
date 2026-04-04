@@ -45,7 +45,7 @@ export function DashboardClient({
     isVerified,
     nullifier: sessionWorldIdNullifier,
   } = useWorldID();
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   const { emitterReady, refetchEmitterVerified } = useEmitterOnChainReady();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
@@ -190,6 +190,14 @@ export function DashboardClient({
     );
   }
 
+  if (!emitterReady) {
+    return (
+      <div className="p-4">
+        <EmitterSetupCard onRegistered={() => void refetchEmitterVerified()} />
+      </div>
+    );
+  }
+
   const actionsRow = (
     <div className="flex flex-wrap gap-2 shrink-0">
       <Button variant="default" className="gap-2" asChild>
@@ -211,17 +219,6 @@ export function DashboardClient({
   if (variant === 'invoices') {
     return (
       <div className="space-y-8 p-4">
-        {!emitterReady ? (
-          <EmitterSetupCard
-            onRegistered={() => void refetchEmitterVerified()}
-          />
-        ) : null}
-        {!isConnected ? (
-          <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-            {t('invoice.dashboard.connectWalletHint')}
-          </p>
-        ) : null}
-
         <DashboardInvoiceList
           rows={rows}
           loading={loading}
@@ -236,21 +233,9 @@ export function DashboardClient({
 
   return (
     <div className="space-y-8 p-4">
-      {!emitterReady ? (
-        <EmitterSetupCard
-          onRegistered={() => void refetchEmitterVerified()}
-        />
-      ) : null}
       <DashboardHomeView
         rows={rows}
         loading={loading}
-        alertsSlot={
-          !isConnected ? (
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-              {t('invoice.dashboard.connectWalletHint')}
-            </p>
-          ) : null
-        }
         onExportAllCsv={() => exportInvoicesCSV(rows)}
         exportDisabled={rows.length === 0}
         onCancel={(invoiceId) => void onCancel(invoiceId)}
