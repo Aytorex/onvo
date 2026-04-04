@@ -24,7 +24,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -103,7 +103,6 @@ function DecorativeInvoiceStack() {
 export function DashboardHomeView({
   rows,
   loading,
-  alertsSlot,
   onExportAllCsv,
   exportDisabled,
   onCancel,
@@ -112,7 +111,6 @@ export function DashboardHomeView({
 }: {
   rows: InvoiceRowView[];
   loading: boolean;
-  alertsSlot: ReactNode;
   onExportAllCsv: () => void;
   exportDisabled: boolean;
   onCancel: (invoiceId: bigint) => void;
@@ -202,8 +200,6 @@ export function DashboardHomeView({
             <DecorativeInvoiceStack />
           </div>
         </section>
-
-        {alertsSlot}
 
         {!loading && rows.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

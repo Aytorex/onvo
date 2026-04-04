@@ -95,11 +95,11 @@ export function InvoiceDetailClient() {
 
   if (!isVerified) {
     return (
-      <p className="text-muted-foreground">
-        <Link href="/" className="text-primary underline">
-          {t('invoice.detail.worldIdRequired')}
-        </Link>
-      </p>
+      <div
+        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30 p-4"
+        aria-busy
+        aria-label={t('invoice.detail.loadingSessionAria')}
+      />
     );
   }
 

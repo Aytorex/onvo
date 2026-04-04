@@ -149,7 +149,8 @@
     "newInvoice": "New invoice",
     "logOut": "Log out",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "navLockedHint": "Connect a wallet and register it with World ID from the dashboard."
   },
   "invoice": {
     "status": {
@@ -177,7 +178,12 @@
       "seeAllInvoices": "View all invoices →",
       "newInvoice": "New invoice",
       "exportAllCsv": "Export all (CSV)",
-      "connectWalletHint": "Connect your wallet to see invoices linked to this address.",
+      "emitterSetupTitle": "Finish issuer setup",
+      "emitterSetupSubtitle": "Connect the wallet you will use to sign invoices, then register it as a verified issuer with World ID.",
+      "setupStepWallet": "1. Connect wallet",
+      "walletConnected": "Wallet connected",
+      "setupStepRegister": "2. Register with World ID",
+      "setupRegisterAfterWallet": "Connect your wallet first to start on-chain registration.",
       "loading": "Loading…",
       "emptyState": "No invoices stored locally. Create one or import IDs into storage.",
       "invoiceListLead": "Every invoice created with this wallet in this browser. Use search and status to narrow the list.",
@@ -207,11 +213,9 @@
       "view": "View",
       "export": "Export",
       "cancel": "Cancel",
-      "connectWorldIdLink": "Sign in with World ID",
       "loadingSessionAria": "Loading session"
     },
     "detail": {
-      "worldIdRequired": "World ID required",
       "invalidId": "Invalid ID.",
       "loading": "Loading…",
       "notFound": "Invoice not found on-chain (or wrong network).",
@@ -267,9 +271,6 @@
       "openPayPage": "Open payment page",
       "title": "New invoice",
       "subtitle": "Fill in the form — the preview updates (300 ms).",
-      "walletConnectHint": "Connect an issuer wallet to sign the transaction.",
-      "firstInvoiceHint": "First invoice with this wallet: when you click “Generate invoice”, the World ID orb opens to register your address on-chain, then the PDF and transaction follow.",
-      "dismissAlert": "Dismiss",
       "sectionEmitter": "Issuer",
       "sectionClient": "Client",
       "sectionLines": "Line items",
@@ -309,7 +310,6 @@
       "summary": "Summary",
       "summaryLine": "Subtotal excl. tax: {{ht}} — VAT: {{vat}} — Total incl. tax: {{ttc}}",
       "previewLabel": "Preview",
-      "submitPreparingWorldId": "Preparing World ID…",
       "submitTransaction": "Transaction…",
       "submitGenerate": "Generate invoice",
       "walletPlaceholder": "0x…",
@@ -392,7 +392,7 @@
       "worldIdRejected": "World ID verification rejected",
       "walletRequiredShort": "Wallet required.",
       "emitterOrInvoiceFailed": "Issuer registration or invoice failed.",
-      "verifyingOnChain": "On-chain check in progress, try again shortly.",
+      "emitterSetupIncomplete": "Finish wallet connection and World ID registration on the dashboard.",
       "worldIdRequiredForInvoiceId": "World ID is required to reserve the on-chain invoice number.",
       "worldIdInitRp": "Could not initialize World ID (RP).",
       "worldIdCancelled": "World ID cancelled or error.",

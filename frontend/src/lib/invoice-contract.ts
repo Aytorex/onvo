@@ -1,8 +1,8 @@
 import { invoiceRegistryContract } from '@/lib/contract';
 import {
-    parseEventLogs,
-    type PublicClient,
-    type TransactionReceipt,
+  parseEventLogs,
+  type PublicClient,
+  type TransactionReceipt,
 } from 'viem';
 
 /** Decimal string for display (matches typical World IDKit nullifier formatting). */

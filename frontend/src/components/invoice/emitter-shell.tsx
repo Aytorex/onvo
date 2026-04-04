@@ -19,6 +19,7 @@ import {
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
 import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { useWorldID } from '@/lib/worldid';
 import {
   ChevronLeft,
@@ -31,7 +32,7 @@ import {
   Menu,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -47,7 +48,15 @@ type NavItem = {
 
 export function EmitterShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { authReady, isVerified, logout } = useWorldID();
+  const {
+    address,
+    isConnected,
+    emitterReady,
+    emitterVerified,
+    emitterVerifyPending,
+  } = useEmitterOnChainReady();
   const { t } = useTranslation('common');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHydrated, setSidebarHydrated] = useState(false);
@@ -61,6 +70,44 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     }
     setSidebarHydrated(true);
   }, []);
+
+  const needsEmitterSetupGate = useMemo(() => {
+    if (pathname == null) return false;
+    if (pathname === '/dashboard') return false;
+    return (
+      pathname === '/dashboard/invoices' || pathname.startsWith('/invoice/')
+    );
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!authReady || !isVerified || !needsEmitterSetupGate) return;
+    if (!isConnected || !address) {
+      router.replace('/dashboard');
+      return;
+    }
+    if (emitterVerifyPending) return;
+    if (emitterVerified !== true) {
+      router.replace('/dashboard');
+    }
+  }, [
+    address,
+    authReady,
+    emitterVerifyPending,
+    emitterVerified,
+    isConnected,
+    isVerified,
+    needsEmitterSetupGate,
+    router,
+  ]);
+
+  const showEmitterRouteBlocker =
+    authReady &&
+    isVerified &&
+    needsEmitterSetupGate &&
+    (!isConnected ||
+      !address ||
+      emitterVerifyPending ||
+      emitterVerified !== true);
 
   const setCollapsed = (next: boolean) => {
     setSidebarCollapsed(next);
@@ -127,17 +174,42 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     );
   }, [invoiceDetailHeader, t]);
 
+  const navLockedHint = t('emitterNav.navLockedHint');
+
   const renderNavLinks = (mobile: boolean) =>
     navItems.map((item) => {
       const active = item.match(pathname ?? '');
+      const locked = item.href !== '/dashboard' && !emitterReady;
       const base = mobile
         ? cn(
             'flex items-center gap-4 rounded-xl px-3 py-2 transition-colors',
-            active
-              ? 'bg-muted text-primary hover:bg-muted hover:text-primary'
-              : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+            locked
+              ? 'cursor-not-allowed text-muted-foreground/45'
+              : active
+                ? 'bg-muted text-primary hover:bg-muted hover:text-primary'
+                : 'text-foreground hover:bg-accent hover:text-accent-foreground',
           )
-        : `${active ? 'bg-muted text-primary' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
+        : cn(
+            'flex items-center gap-3 rounded-xl px-3 py-2 transition-all',
+            locked
+              ? 'cursor-not-allowed text-muted-foreground/40'
+              : active
+                ? 'bg-muted text-primary hover:text-primary'
+                : 'text-muted-foreground hover:text-primary',
+          );
+      if (locked) {
+        return (
+          <span
+            key={item.href}
+            className={base}
+            aria-disabled
+            title={navLockedHint}
+          >
+            <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
+            {t(item.labelKey)}
+          </span>
+        );
+      }
       return (
         <Link key={item.href} href={item.href} className={base}>
           <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
@@ -150,15 +222,39 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     navItems.map((item) => {
       const active = item.match(pathname ?? '');
       const label = t(item.labelKey);
+      const locked = item.href !== '/dashboard' && !emitterReady;
       const linkClass = cn(
-        'flex items-center rounded-xl text-sm font-medium transition-all hover:text-primary',
+        'flex items-center rounded-xl text-sm font-medium transition-all',
         collapsed
           ? 'mx-auto size-10 shrink-0 justify-center p-0'
           : 'h-10 min-h-10 gap-3 px-3 py-0',
-        active ? 'bg-muted text-primary' : 'text-muted-foreground',
+        locked
+          ? 'cursor-not-allowed text-muted-foreground/45'
+          : active
+            ? 'bg-muted text-primary hover:text-primary'
+            : 'text-muted-foreground hover:text-primary',
       );
 
-      const link = (
+      const link = locked ? (
+        <span
+          className={linkClass}
+          aria-disabled
+          aria-label={collapsed ? `${label} — ${navLockedHint}` : undefined}
+          title={navLockedHint}
+        >
+          <item.icon className="h-5 w-5 shrink-0" />
+          <span
+            className={cn(
+              'truncate transition-[opacity,width,margin] duration-200',
+              collapsed
+                ? 'sr-only w-0 overflow-hidden opacity-0'
+                : 'opacity-100',
+            )}
+          >
+            {label}
+          </span>
+        </span>
+      ) : (
         <Link
           href={item.href}
           className={linkClass}
@@ -183,7 +279,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
           <Tooltip key={item.href} delayDuration={0}>
             <TooltipTrigger asChild>{link}</TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              {label}
+              {locked ? navLockedHint : label}
             </TooltipContent>
           </Tooltip>
         );
@@ -418,7 +514,17 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               <WalletButton />
             </div>
           </header>
-          <main className={shellMainClass}>{children}</main>
+          <main className={shellMainClass}>
+            {showEmitterRouteBlocker ? (
+              <div
+                className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30 p-4"
+                aria-busy
+                aria-label={t('invoice.dashboard.loading')}
+              />
+            ) : (
+              children
+            )}
+          </main>
         </div>
       </div>
     </TooltipProvider>

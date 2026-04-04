@@ -2,10 +2,11 @@
 
 import { DashboardHomeView } from '@/components/invoice/dashboard-home';
 import { DashboardInvoiceList } from '@/components/invoice/dashboard-invoice-list';
-import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
+import { EmitterSetupCard } from '@/components/invoice/emitter-setup-card';
 import { Button } from '@/components/ui/button';
 import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
+import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
 import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
@@ -25,7 +26,6 @@ import { toast } from 'sonner';
 import {
   useAccount,
   usePublicClient,
-  useReadContract,
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
@@ -44,21 +44,13 @@ export function DashboardClient({
     isVerified,
     nullifier: sessionWorldIdNullifier,
   } = useWorldID();
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync, isPending: isCancelPending } = useWriteContract();
 
-  const { data: emitterVerified, refetch: refetchEmitterVerified } =
-    useReadContract({
-      chainId: registryChainId,
-      address: invoiceRegistryContract.address,
-      abi: invoiceRegistryContract.abi,
-      functionName: 'isEmitterVerified',
-      args: address ? [address] : undefined,
-      query: { enabled: !!address && isConnected },
-    });
+  const { refetchEmitterVerified, emitterReady } = useEmitterOnChainReady();
 
   const [rows, setRows] = useState<InvoiceRowView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,11 +157,11 @@ export function DashboardClient({
 
   if (!isVerified) {
     return (
-      <p className="p-4 text-center text-muted-foreground">
-        <Link href="/" className="text-primary underline">
-          {t('invoice.dashboard.connectWorldIdLink')}
-        </Link>
-      </p>
+      <div
+        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30 p-4"
+        aria-busy
+        aria-label={t('invoice.dashboard.loadingSessionAria')}
+      />
     );
   }
 
@@ -191,18 +183,6 @@ export function DashboardClient({
   if (variant === 'invoices') {
     return (
       <div className="space-y-8 p-4">
-        {!isConnected ? (
-          <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-            {t('invoice.dashboard.connectWalletHint')}
-          </p>
-        ) : null}
-
-        {isConnected && emitterVerified === false ? (
-          <RegisterEmitterWidget
-            onRegistered={() => void refetchEmitterVerified()}
-          />
-        ) : null}
-
         <DashboardInvoiceList
           rows={rows}
           loading={loading}
@@ -215,25 +195,19 @@ export function DashboardClient({
     );
   }
 
+  if (!emitterReady) {
+    return (
+      <div className="mx-auto w-full max-w-3xl p-4 lg:p-6">
+        <EmitterSetupCard onRegistered={() => void refetchEmitterVerified()} />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
       <DashboardHomeView
         rows={rows}
         loading={loading}
-        alertsSlot={
-          <>
-            {!isConnected ? (
-              <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-                {t('invoice.dashboard.connectWalletHint')}
-              </p>
-            ) : null}
-            {isConnected && emitterVerified === false ? (
-              <RegisterEmitterWidget
-                onRegistered={() => void refetchEmitterVerified()}
-              />
-            ) : null}
-          </>
-        }
         onExportAllCsv={() => exportInvoicesCSV(rows)}
         exportDisabled={rows.length === 0}
         onCancel={(invoiceId) => void onCancel(invoiceId)}

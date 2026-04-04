@@ -5,7 +5,6 @@ import {
   InvoicePreviewDocument,
   type InvoiceDraftDocumentNo,
 } from '@/components/invoice/invoice-preview';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,19 +35,9 @@ import {
   generateInvoicePdf,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
-import { registerEmitterViaBackend } from '@/lib/register-emitter-onchain';
-import {
-  extractNullifierFromIdKitResult,
-  fetchRpContext,
-  useWorldID,
-  verifyProof,
-  WORLD_ID_CONFIG,
-} from '@/lib/worldid';
+import { useWorldID } from '@/lib/worldid';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IDKitResult, RpContext } from '@worldcoin/idkit';
-import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
 import { addDays, format } from 'date-fns';
-import { Info } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -59,7 +48,6 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-import { flushSync } from 'react-dom';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -223,24 +211,11 @@ export function InvoiceNewClient() {
     useState<InvoiceFormValues>(defaultForm);
   const [successId, setSuccessId] = useState<bigint | null>(null);
   const [stepSubmitting, setStepSubmitting] = useState(false);
-  const [rpContext, setRpContext] = useState<RpContext | null>(null);
-  const [idKitOpen, setIdKitOpen] = useState(false);
-  const [loadingRpForSubmit, setLoadingRpForSubmit] = useState(false);
-  const [idKitWorldIdNullifier, setIdKitWorldIdNullifier] = useState<
-    string | null
-  >(null);
-  const [firstInvoiceHintDismissed, setFirstInvoiceHintDismissed] =
-    useState(false);
-  const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
 
   const [stepIndex, setStepIndex] = useState(0);
   const stepIndexRef = useRef(0);
   stepIndexRef.current = stepIndex;
   const activeTab = INVOICE_TABS[stepIndex] ?? INVOICE_TABS[0];
-
-  useEffect(() => {
-    setFirstInvoiceHintDismissed(false);
-  }, [address]);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -265,10 +240,9 @@ export function InvoiceNewClient() {
     invoiceRegistryContract.address.toLowerCase() !== zeroAddress.toLowerCase();
 
   const worldIdNullifierBn = useMemo(() => {
-    const s =
-      idKitWorldIdNullifier?.trim() || sessionWorldIdNullifier?.trim() || null;
+    const s = sessionWorldIdNullifier?.trim() || null;
     return parseWorldIdNullifierToBigInt(s);
-  }, [idKitWorldIdNullifier, sessionWorldIdNullifier]);
+  }, [sessionWorldIdNullifier]);
 
   const nextIdArgs = useMemo(() => {
     if (worldIdNullifierBn === null || !issueDateWatched?.trim())
@@ -352,19 +326,15 @@ export function InvoiceNewClient() {
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
 
-  const {
-    data: emitterVerified,
-    refetch: refetchEmitterVerified,
-    error: emitterVerifiedError,
-    status: emitterVerifiedStatus,
-  } = useReadContract({
-    chainId: invoiceRegistryContract.chainId,
-    address: invoiceRegistryContract.address,
-    abi: invoiceRegistryContract.abi,
-    functionName: 'isEmitterVerified',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  });
+  const { data: emitterVerified, error: emitterVerifiedError } =
+    useReadContract({
+      chainId: invoiceRegistryContract.chainId,
+      address: invoiceRegistryContract.address,
+      abi: invoiceRegistryContract.abi,
+      functionName: 'isEmitterVerified',
+      args: address ? [address] : undefined,
+      query: { enabled: !!address },
+    });
 
   useEffect(() => {
     if (emitterVerifiedError) {
@@ -373,21 +343,14 @@ export function InvoiceNewClient() {
         emitterVerifiedError,
       );
     }
-    console.debug('[InvoiceNew] emitterVerified:', {
-      status: emitterVerifiedStatus,
-      data: emitterVerified,
-      address,
-      contract: invoiceRegistryContract.address,
-    });
-  }, [emitterVerifiedError, emitterVerifiedStatus, emitterVerified, address]);
+  }, [emitterVerifiedError]);
 
   const totals = useMemo(
     () => computeTotalsFromLines(debouncedPreview.lines),
     [debouncedPreview.lines],
   );
 
-  const previewWorldIdNullifier =
-    idKitWorldIdNullifier?.trim() || sessionWorldIdNullifier?.trim() || null;
+  const previewWorldIdNullifier = sessionWorldIdNullifier?.trim() || null;
 
   const createInvoiceFromVerifiedForm = useCallback(
     async (
@@ -556,63 +519,6 @@ export function InvoiceNewClient() {
     ],
   );
 
-  const handleVerifyForInvoice = useCallback(
-    async (result: IDKitResult) => {
-      const ok = await verifyProof(result);
-      if (!ok) throw new Error(t('invoice.toast.worldIdRejected'));
-    },
-    [t],
-  );
-
-  const handleRegisterSuccessFromSubmit = useCallback(
-    async (result: IDKitResult) => {
-      if (!address) {
-        toast.error(t('invoice.toast.walletRequiredShort'));
-        pendingFormDataRef.current = null;
-        setIdKitOpen(false);
-        return;
-      }
-      const data = pendingFormDataRef.current;
-      if (!data) {
-        setIdKitOpen(false);
-        return;
-      }
-      try {
-        await registerEmitterViaBackend(result, address!);
-        await refetchEmitterVerified();
-        const kitNullifier = extractNullifierFromIdKitResult(result).trim();
-        flushSync(() => {
-          setIdKitWorldIdNullifier(kitNullifier || null);
-        });
-        pendingFormDataRef.current = null;
-        setIdKitOpen(false);
-        await createInvoiceFromVerifiedForm(
-          data,
-          kitNullifier || sessionWorldIdNullifier,
-        );
-      } catch (e) {
-        console.error(e);
-        toast.error(
-          e instanceof Error
-            ? e.message
-            : t('invoice.toast.emitterOrInvoiceFailed'),
-        );
-        pendingFormDataRef.current = null;
-        setIdKitOpen(false);
-      }
-    },
-    [
-      address,
-      createInvoiceFromVerifiedForm,
-      publicClientArc,
-      refetchEmitterVerified,
-      sessionWorldIdNullifier,
-      switchChainAsync,
-      t,
-      writeContractAsync,
-    ],
-  );
-
   const submitInvoice = form.handleSubmit(
     async (data) => {
       if (!address) {
@@ -620,24 +526,9 @@ export function InvoiceNewClient() {
         return;
       }
 
-      if (address && emitterVerified === undefined) {
-        toast.error(t('invoice.toast.verifyingOnChain'));
-        return;
-      }
-
-      if (emitterVerified === false) {
-        pendingFormDataRef.current = data;
-        setLoadingRpForSubmit(true);
-        try {
-          const ctx = await fetchRpContext();
-          setRpContext(ctx);
-          setIdKitOpen(true);
-        } catch {
-          toast.error(t('invoice.toast.worldIdInitRp'));
-          pendingFormDataRef.current = null;
-        } finally {
-          setLoadingRpForSubmit(false);
-        }
+      if (emitterVerified !== true) {
+        toast.error(t('invoice.toast.emitterSetupIncomplete'));
+        router.push('/dashboard');
         return;
       }
 
@@ -736,30 +627,9 @@ export function InvoiceNewClient() {
     <>
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
-          {isConnected &&
-          emitterVerified === false &&
-          !firstInvoiceHintDismissed ? (
-            <Alert
-              className="shrink-0 border-primary/25 bg-primary/5 py-3 text-muted-foreground"
-              onDismiss={() => setFirstInvoiceHintDismissed(true)}
-              dismissLabel={t('invoice.form.dismissAlert')}
-            >
-              <Info className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-xs leading-relaxed sm:text-sm">
-                {t('invoice.form.firstInvoiceHint')}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
           <div className="flex min-h-0 min-w-0 flex-1 flex-row gap-4">
             {/* ── Left panel: tabbed form (40% ≥ lg) ── */}
             <div className="flex min-h-0 w-full min-w-0 flex-col lg:flex-[2]">
-              {!isConnected ? (
-                <p className="mx-5 mt-4 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                  {t('invoice.form.walletConnectHint')}
-                </p>
-              ) : null}
-
               <form
                 onSubmit={handleFormSubmit}
                 className="flex min-h-0 flex-1 flex-col"
@@ -1242,16 +1112,12 @@ export function InvoiceNewClient() {
                     <Button
                       type="button"
                       size="sm"
-                      disabled={
-                        stepSubmitting || isWritePending || loadingRpForSubmit
-                      }
+                      disabled={stepSubmitting || isWritePending}
                       onClick={() => void submitInvoice()}
                     >
-                      {loadingRpForSubmit
-                        ? t('invoice.form.submitPreparingWorldId')
-                        : stepSubmitting || isWritePending
-                          ? t('invoice.form.submitTransaction')
-                          : t('invoice.form.tabValidate')}
+                      {stepSubmitting || isWritePending
+                        ? t('invoice.form.submitTransaction')
+                        : t('invoice.form.tabValidate')}
                     </Button>
                   ) : (
                     <Button
@@ -1285,29 +1151,6 @@ export function InvoiceNewClient() {
           </div>
         </div>
       </div>
-
-      {rpContext && address ? (
-        <IDKitRequestWidget
-          open={idKitOpen}
-          onOpenChange={(open) => {
-            setIdKitOpen(open);
-            if (!open) pendingFormDataRef.current = null;
-          }}
-          app_id={WORLD_ID_CONFIG.app_id}
-          action={WORLD_ID_CONFIG.action}
-          rp_context={rpContext}
-          allow_legacy_proofs={true}
-          preset={orbLegacy({ signal: address })}
-          environment={WORLD_ID_CONFIG.environment}
-          handleVerify={handleVerifyForInvoice}
-          onSuccess={(r) => void handleRegisterSuccessFromSubmit(r)}
-          onError={() => {
-            toast.error(t('invoice.toast.worldIdCancelled'));
-            pendingFormDataRef.current = null;
-            setIdKitOpen(false);
-          }}
-        />
-      ) : null}
     </>
   );
 }

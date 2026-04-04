@@ -13,6 +13,8 @@ import { useAccount } from 'wagmi';
 
 type Props = {
   onRegistered?: () => void;
+  /** Omit bordered panel when embedded in the dashboard setup card. */
+  unstyled?: boolean;
 };
 
 /**
@@ -20,7 +22,10 @@ type Props = {
  * The proof is verified off-chain via the World ID REST API, then the backend
  * calls `registerEmitter` on-chain as the trusted verifier.
  */
-export function RegisterEmitterWidget({ onRegistered }: Props) {
+export function RegisterEmitterWidget({
+  onRegistered,
+  unstyled = false,
+}: Props) {
   const { t } = useTranslation('common');
   const { address, isConnected } = useAccount();
 
@@ -83,12 +88,20 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
 
   if (!isConnected || !address) return null;
 
-  return (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-4 text-sm">
-      <p className="font-medium text-foreground">
-        {t('invoice.registerEmitter.title')}
-      </p>
-      <p className="mt-2 text-muted-foreground">
+  const body = (
+    <>
+      {!unstyled ? (
+        <p className="font-medium text-foreground">
+          {t('invoice.registerEmitter.title')}
+        </p>
+      ) : null}
+      <p
+        className={
+          unstyled
+            ? 'text-muted-foreground text-sm'
+            : 'mt-2 text-muted-foreground'
+        }
+      >
         <Trans
           i18nKey="invoice.registerEmitter.description"
           ns="common"
@@ -97,7 +110,7 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
       </p>
       <Button
         type="button"
-        className="mt-4"
+        className={unstyled ? 'mt-3' : 'mt-4'}
         disabled={loadingRp || isPending}
         onClick={() => void start()}
       >
@@ -127,6 +140,16 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
           }}
         />
       ) : null}
+    </>
+  );
+
+  if (unstyled) {
+    return <div className="text-sm">{body}</div>;
+  }
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-4 text-sm">
+      {body}
     </div>
   );
 }

@@ -149,7 +149,8 @@
     "newInvoice": "Nouvelle facture",
     "logOut": "Déconnexion",
     "collapseSidebar": "Réduire le menu",
-    "expandSidebar": "Agrandir le menu"
+    "expandSidebar": "Agrandir le menu",
+    "navLockedHint": "Connectez un wallet et enregistrez-le avec World ID depuis le tableau de bord."
   },
   "invoice": {
     "status": {
@@ -177,7 +178,12 @@
       "seeAllInvoices": "Voir toutes les factures →",
       "newInvoice": "Nouvelle facture",
       "exportAllCsv": "Exporter tout (CSV)",
-      "connectWalletHint": "Connectez votre wallet pour voir les factures liées à cette adresse.",
+      "emitterSetupTitle": "Configurer votre émission",
+      "emitterSetupSubtitle": "Connectez le wallet avec lequel vous signerez les factures, puis enregistrez-le comme émetteur vérifié avec World ID.",
+      "setupStepWallet": "1. Connecter le wallet",
+      "walletConnected": "Wallet connecté",
+      "setupStepRegister": "2. Enregistrer avec World ID",
+      "setupRegisterAfterWallet": "Connectez d’abord votre wallet pour lancer l’enregistrement on-chain.",
       "loading": "Chargement…",
       "emptyState": "Aucune facture enregistrée localement. Créez-en une ou importez les IDs dans le stockage.",
       "invoiceListLead": "Toutes les factures créées avec ce wallet dans ce navigateur. Filtrez par texte ou par statut.",
@@ -207,11 +213,9 @@
       "view": "Voir",
       "export": "Exporter",
       "cancel": "Annuler",
-      "connectWorldIdLink": "Connectez-vous avec World ID",
       "loadingSessionAria": "Chargement de la session"
     },
     "detail": {
-      "worldIdRequired": "World ID requis",
       "invalidId": "ID invalide.",
       "loading": "Chargement…",
       "notFound": "Facture introuvable on-chain (ou réseau incorrect).",
@@ -267,9 +271,6 @@
       "openPayPage": "Ouvrir la page paiement",
       "title": "Nouvelle facture",
       "subtitle": "Remplissez le formulaire — l'aperçu se met à jour (300 ms).",
-      "walletConnectHint": "Connectez un wallet (émetteur) pour signer la transaction.",
-      "firstInvoiceHint": "Première facture avec ce wallet : au clic sur « Générer la facture », l'orb World ID s'ouvre pour enregistrer votre adresse on-chain, puis le PDF et la transaction suivent dans la foulée.",
-      "dismissAlert": "Fermer",
       "sectionEmitter": "Émetteur",
       "sectionClient": "Client",
       "sectionLines": "Lignes",
@@ -309,7 +310,6 @@
       "summary": "Résumé",
       "summaryLine": "Total HT : {{ht}} — TVA : {{vat}} — Total TTC : {{ttc}}",
       "previewLabel": "Aperçu",
-      "submitPreparingWorldId": "Préparation World ID…",
       "submitTransaction": "Transaction…",
       "submitGenerate": "Générer la facture",
       "walletPlaceholder": "0x…",
@@ -392,7 +392,7 @@
       "worldIdRejected": "Vérification World ID refusée",
       "walletRequiredShort": "Wallet requis.",
       "emitterOrInvoiceFailed": "Échec inscription émetteur ou facture.",
-      "verifyingOnChain": "Vérification on-chain en cours, réessayez dans un instant.",
+      "emitterSetupIncomplete": "Terminez la connexion du wallet et l’enregistrement World ID sur le tableau de bord.",
       "worldIdRequiredForInvoiceId": "World ID est requis pour réserver le numéro de facture on-chain.",
       "worldIdInitRp": "Impossible d'initialiser World ID (RP).",
       "worldIdCancelled": "World ID annulé ou erreur.",
