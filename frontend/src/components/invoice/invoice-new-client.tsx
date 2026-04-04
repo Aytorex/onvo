@@ -471,11 +471,6 @@ export function InvoiceNewClient() {
         );
         const token = getTokenAddress(data.currency);
 
-        if (token === '0x0000000000000000000000000000000000000000') {
-          toast.error(t('invoice.toast.tokenEnv'));
-          return;
-        }
-
         const onChainRecipient = address;
         const vatNumberOnChain = data.emitterVatNumber.trim().slice(0, 64);
 

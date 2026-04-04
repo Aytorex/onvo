@@ -41,31 +41,33 @@ export function PayInvoiceDocumentColumn({
         className="rounded-3xl border border-border/80 bg-card p-6 shadow-md sm:p-8"
         aria-labelledby="pay-invoice-heading"
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <h1
               id="pay-invoice-heading"
-              className="text-xl font-bold tracking-tight text-heading sm:text-2xl"
+              className="min-w-0 shrink text-xl font-bold tracking-tight text-heading sm:text-2xl"
             >
               {t('pay.title')}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t('pay.invoiceId')}:{' '}
-              <span
-                className="break-all font-mono text-xs font-medium text-foreground sm:text-sm"
-                title={invoice.invoiceId.toString(10)}
-              >
-                {formatOnvoInvoiceLabel(invoice.invoiceId)}
-              </span>
+            <PayInvoiceStatusBadge
+              status={invoice.status}
+              label={t(`pay.status.${sk}`)}
+            />
+          </div>
+          <div className="rounded-xl border border-border/50 bg-muted/25 px-3 py-3 sm:px-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('pay.invoiceId')}
             </p>
-            <p className="mt-1 break-all font-mono text-[11px] leading-snug text-muted-foreground">
+            <p
+              className="mt-1.5 break-all font-mono text-xs font-medium leading-relaxed text-foreground sm:text-sm"
+              title={invoice.invoiceId.toString(10)}
+            >
+              {formatOnvoInvoiceLabel(invoice.invoiceId)}
+            </p>
+            <p className="mt-2 break-all font-mono text-[10px] leading-relaxed text-muted-foreground sm:text-[11px]">
               {invoiceIdToUrlSegment(invoice.invoiceId)}
             </p>
           </div>
-          <PayInvoiceStatusBadge
-            status={invoice.status}
-            label={t(`pay.status.${sk}`)}
-          />
         </div>
 
         <div className="mt-8 rounded-2xl border border-border/60 bg-muted/30 p-6 sm:mt-10">
