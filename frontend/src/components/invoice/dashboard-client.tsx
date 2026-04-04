@@ -1,5 +1,6 @@
 'use client';
 
+import { DashboardHomeView } from '@/components/invoice/dashboard-home';
 import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -187,9 +188,6 @@ export function DashboardClient({
     );
   }
 
-  const pendingCount = rows.filter((r) => r.status === 0).length;
-  const paidCount = rows.filter((r) => r.status === 1).length;
-
   const invoiceTable = loading ? (
     <p className="text-sm text-muted-foreground">
       {t('invoice.dashboard.loading')}
@@ -306,70 +304,28 @@ export function DashboardClient({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <p className="max-w-xl text-sm text-muted-foreground">
-          {t('invoice.dashboard.subtitle')}
-        </p>
-        {actionsRow}
-      </div>
-
-      {!isConnected ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-          {t('invoice.dashboard.connectWalletHint')}
-        </p>
-      ) : null}
-
-      {isConnected && emitterVerified === false ? (
-        <RegisterEmitterWidget
-          onRegistered={() => void refetchEmitterVerified()}
-        />
-      ) : null}
-
-      {!loading && rows.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-border/80 bg-card/40 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t('invoice.dashboard.statTotal')}
+    <DashboardHomeView
+      rows={rows}
+      loading={loading}
+      alertsSlot={
+        <>
+          {!isConnected ? (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+              {t('invoice.dashboard.connectWalletHint')}
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">
-              {rows.length}
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-card/40 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t('invoice.dashboard.statPending')}
-            </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-amber-400">
-              {pendingCount}
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-card/40 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t('invoice.dashboard.statPaid')}
-            </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-400">
-              {paidCount}
-            </p>
-          </div>
-        </div>
-      ) : null}
-
-      {!loading && rows.length > 0 ? (
-        <p className="text-sm">
-          <Button variant="link" className="h-auto p-0" asChild>
-            <Link href="/dashboard/invoices">
-              {t('invoice.dashboard.seeAllInvoices')}
-            </Link>
-          </Button>
-        </p>
-      ) : null}
-
-      {!loading && rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {t('invoice.dashboard.emptyState')}
-        </p>
-      ) : null}
-    </div>
+          ) : null}
+          {isConnected && emitterVerified === false ? (
+            <RegisterEmitterWidget
+              onRegistered={() => void refetchEmitterVerified()}
+            />
+          ) : null}
+        </>
+      }
+      onExportAllCsv={() => exportInvoicesCSV(rows)}
+      exportDisabled={rows.length === 0}
+      onCancel={(invoiceId) => void onCancel(invoiceId)}
+      onExportPdf={exportPdf}
+      isCancelPending={isCancelPending}
+    />
   );
 }
