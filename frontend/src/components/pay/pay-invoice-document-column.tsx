@@ -4,6 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { useArcScanTokenInfo } from '@/hooks/use-arcscan-token';
 import {
+  formatOnvoInvoiceLabel,
+  invoiceIdToUrlSegment,
+} from '@/lib/invoice-id';
+import {
   formatInvoiceAmount,
   invoiceStatusI18nKey,
   type InvoiceView,
@@ -47,9 +51,15 @@ export function PayInvoiceDocumentColumn({
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {t('pay.invoiceId')}:{' '}
-              <span className="font-medium text-foreground">
-                {invoice.invoiceId.toString()}
+              <span
+                className="break-all font-mono text-xs font-medium text-foreground sm:text-sm"
+                title={invoice.invoiceId.toString(10)}
+              >
+                {formatOnvoInvoiceLabel(invoice.invoiceId)}
               </span>
+            </p>
+            <p className="mt-1 break-all font-mono text-[11px] leading-snug text-muted-foreground">
+              {invoiceIdToUrlSegment(invoice.invoiceId)}
             </p>
           </div>
           <PayInvoiceStatusBadge

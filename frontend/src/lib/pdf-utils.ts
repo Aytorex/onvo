@@ -161,13 +161,18 @@ export async function generateInvoicePdf(
   }
 
   function drawSlimHeader() {
-    page.drawText(docNo, {
-      x: MARGIN,
-      y: y,
-      size: 9,
-      font: fontBold,
-      color: COLOR_BLACK,
-    });
+    const slimLines = wrapTextToWidth(docNo, CONTENT_W, fontBold, 9);
+    let lineY = y;
+    for (const line of slimLines) {
+      page.drawText(line, {
+        x: MARGIN,
+        y: lineY,
+        size: 9,
+        font: fontBold,
+        color: COLOR_BLACK,
+      });
+      lineY -= 11;
+    }
     page.drawText(`${data.issueDate}  \u2014  ${data.currency}`, {
       x: PAGE_W - MARGIN - 120,
       y: y,
@@ -175,7 +180,7 @@ export async function generateInvoicePdf(
       font: fontRegular,
       color: COLOR_GRAY,
     });
-    y -= 20;
+    y = lineY - 9;
     drawHLine(y);
     y -= 15;
   }
@@ -190,13 +195,21 @@ export async function generateInvoicePdf(
     color: COLOR_BLACK,
   });
 
-  page.drawText(`Document no.: ${docNo}`, {
-    x: MARGIN,
-    y: y - 18,
-    size: 10,
-    font: fontRegular,
-    color: COLOR_GRAY,
-  });
+  const docNoBlockText = `Document no.: ${docNo}`;
+  const docNoLines = wrapTextToWidth(docNoBlockText, CONTENT_W, fontRegular, 10);
+  const docLineStep = 12;
+  let docLineY = y - 18;
+  for (const line of docNoLines) {
+    page.drawText(line, {
+      x: MARGIN,
+      y: docLineY,
+      size: 10,
+      font: fontRegular,
+      color: COLOR_GRAY,
+    });
+    docLineY -= docLineStep;
+  }
+  const docNoExtraDrop = (docNoLines.length - 1) * docLineStep;
 
   const rightX = PAGE_W - MARGIN;
 
@@ -229,7 +242,7 @@ export async function generateInvoicePdf(
     color: COLOR_LIGHT_GRAY,
   });
 
-  y -= 50;
+  y -= 50 + docNoExtraDrop;
   drawHLine(y);
   y -= 25;
 
@@ -504,6 +517,31 @@ export async function generateInvoicePdf(
   return new Blob([pdfBytes.buffer as ArrayBuffer], {
     type: 'application/pdf',
   });
+}
+
+function wrapTextToWidth(
+  text: string,
+  maxWidth: number,
+  font: { widthOfTextAtSize(t: string, s: number): number },
+  size: number,
+): string[] {
+  if (text.length === 0) return [''];
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return [text];
+  const lines: string[] = [];
+  let i = 0;
+  while (i < text.length) {
+    let end = i + 1;
+    while (
+      end <= text.length &&
+      font.widthOfTextAtSize(text.slice(i, end), size) <= maxWidth
+    ) {
+      end++;
+    }
+    end = Math.max(i + 1, end - 1);
+    lines.push(text.slice(i, end));
+    i = end;
+  }
+  return lines;
 }
 
 function truncateText(

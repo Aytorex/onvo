@@ -55,16 +55,12 @@ export function unpackPackedInvoiceId(invoiceId: bigint): {
   return { emitter: `0x${padded}`, seq };
 }
 
-function shortHexAddress(addr: string): string {
-  const hex = addr.startsWith('0x') ? addr.slice(2) : addr;
-  if (hex.length < 10) return addr;
-  return `${hex.slice(0, 4)}…${hex.slice(-4)}`;
-}
-
-/** Human label `F-0x<short>-<seq>` (emitter address truncated + sequence). */
+/**
+ * Human label `F-<emitter>-<seq>` — full emitter `0x` + 40 hex (no middle truncation).
+ */
 export function formatOnvoInvoiceLabel(invoiceId: bigint): string {
   const { emitter, seq } = unpackPackedInvoiceId(invoiceId);
-  return `F-0x${shortHexAddress(emitter)}-${seq.toString()}`;
+  return `F-${emitter}-${seq.toString()}`;
 }
 
 const ONVO_LABEL_FULL_RE = /^(F-)(0x)([0-9a-f]{40})(-\d+-\d{2}-\d{4})$/i;
@@ -87,14 +83,14 @@ export function formatOnvoInvoiceLabelDisplay(invoiceId: bigint): string {
 }
 
 /**
- * Raccourci pour titres / listes : `headLen` premiers caractères + … + `tailLen` derniers.
- * Par défaut 5 + 17 (affichage fiche facture, onglet navigateur).
+ * Shorten only for very long strings (e.g. browser tab). Defaults allow a full Onvo label
+ * (~55 chars) to display without `...`.
  */
 export function cropOnvoLabelMiddle(
   label: string,
-  headLen = 5,
-  tailLen = 17,
+  headLen = 48,
+  tailLen = 48,
 ): string {
   if (label.length <= headLen + tailLen) return label;
-  return `${label.slice(0, headLen)}…${label.slice(-tailLen)}`;
+  return `${label.slice(0, headLen)}...${label.slice(-tailLen)}`;
 }
