@@ -18,7 +18,7 @@ import {
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import { useWorldID } from '@/lib/worldid';
-import { Plus } from 'lucide-react';
+import { FileSpreadsheet, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -210,9 +210,11 @@ export function DashboardClient({
       ) : null}
       <Button
         variant="outline"
+        className="gap-2"
         disabled={rows.length === 0}
         onClick={() => exportInvoicesCSV(rows)}
       >
+        <FileSpreadsheet className="size-4 shrink-0" aria-hidden />
         {t('invoice.dashboard.exportAllCsv')}
       </Button>
     </div>

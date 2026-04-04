@@ -191,7 +191,7 @@ export function DashboardHomeView({
                   disabled={exportDisabled}
                   onClick={onExportAllCsv}
                 >
-                  <FileSpreadsheet className="size-4" aria-hidden />
+                  <FileSpreadsheet className="size-4 shrink-0" aria-hidden />
                   {t('invoice.dashboard.exportAllCsv')}
                 </Button>
                 <Button
