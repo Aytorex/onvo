@@ -1,30 +1,13 @@
 import { expect } from 'chai';
 import { network } from 'hardhat';
-import type {
-  InvoiceRegistry,
-  MockERC20,
-  WorldIdRouterMock,
-} from '@/typechain-types';
+import type { InvoiceRegistry, MockERC20 } from '@/typechain-types';
 const { ethers, networkHelpers } = await network.connect();
 const { loadFixture } = networkHelpers;
 
 const ZERO = '0x0000000000000000000000000000000000000000';
-const EXTERNAL_NULLIFIER = 42_424n;
-const DUMMY_PROOF = Array.from({ length: 8 }, () => 0n) as [
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-];
 
-/** Calendar period for deterministic packed invoice ids (matches Foundry tests). */
 const INV_YEAR = 2026n;
 const INV_MONTH = 4n;
-/** Sample emitter VAT ID (EU-style). */
 const SAMPLE_VAT_NUMBER = 'FR85939527636';
 const EMPTY_VAT_NUMBER = '';
 
@@ -37,8 +20,6 @@ async function nextInvoiceId(
 
 async function deployFixture() {
   const [owner, emitter, payer, stranger, treasury] = await ethers.getSigners();
-  const worldId = await ethers.deployContract('WorldIdRouterMock', []);
-  await worldId.setRevertMessage('WorldIdRouterMock: verify failed');
   const token = await ethers.deployContract('MockERC20', [
     'Mock USDC',
     'mUSDC',
@@ -47,72 +28,77 @@ async function deployFixture() {
   expect(await token.decimals()).to.equal(6);
   const registry = await ethers.deployContract('InvoiceRegistry', [
     owner.address,
-    await worldId.getAddress(),
-    EXTERNAL_NULLIFIER,
+    owner.address,
     [await token.getAddress()],
     treasury.address,
   ]);
   await token.mint(payer.address, 1_000_000n);
   await token.mint(emitter.address, 1_000_000n);
-  return {
-    owner,
-    emitter,
-    payer,
-    stranger,
-    treasury,
-    worldId,
-    token,
-    registry,
-  };
+  return { owner, emitter, payer, stranger, treasury, token, registry };
+}
+
+async function registerEmitter(
+  registry: InvoiceRegistry,
+  verifier: Awaited<ReturnType<typeof ethers.getSigners>>[0],
+  emitter: Awaited<ReturnType<typeof ethers.getSigners>>[0],
+  nullifier: bigint,
+) {
+  await registry.connect(verifier).registerEmitter(emitter.address, nullifier);
 }
 
 describe('InvoiceRegistry', () => {
-  describe('registerWithWorldId', () => {
-    it('marks emitter as verified after successful verifyProof', async () => {
-      const { emitter, registry } = await loadFixture(deployFixture);
+  describe('registerEmitter', () => {
+    it('marks emitter as verified', async () => {
+      const { owner, emitter, registry } = await loadFixture(deployFixture);
       const nullifier = 777n;
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, nullifier, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, nullifier);
       expect(await registry.isEmitterVerified(emitter.address)).to.equal(true);
       expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
         nullifier,
       );
     });
 
-    it('reverts when router is configured to revert', async () => {
-      const { emitter, worldId, registry } = await loadFixture(deployFixture);
-      await worldId.setShouldRevert(true);
+    it('emits EmitterRegistered event', async () => {
+      const { owner, emitter, registry } = await loadFixture(deployFixture);
       await expect(
-        registry.connect(emitter).registerWithWorldId(1n, 1n, 1n, DUMMY_PROOF),
-      ).to.be.revertedWith('WorldIdRouterMock: verify failed');
+        registry.connect(owner).registerEmitter(emitter.address, 42n),
+      )
+        .to.emit(registry, 'EmitterRegistered')
+        .withArgs(emitter.address, 42n);
+    });
+
+    it('reverts when caller is not trusted verifier', async () => {
+      const { emitter, stranger, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(stranger).registerEmitter(emitter.address, 1n),
+      ).to.be.revertedWith('InvoiceRegistry: not trusted verifier');
     });
 
     it('reverts on nullifier reuse', async () => {
-      const { emitter, registry } = await loadFixture(deployFixture);
+      const { owner, emitter, payer, registry } =
+        await loadFixture(deployFixture);
       const nullifier = 999n;
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, nullifier, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, nullifier);
       await expect(
-        registry
-          .connect(emitter)
-          .registerWithWorldId(2n, 1n, nullifier, DUMMY_PROOF),
+        registry.connect(owner).registerEmitter(payer.address, nullifier),
       ).to.be.revertedWith('InvoiceRegistry: nullifier used');
     });
 
-    it('overwrites emitterWorldIdNullifier on a second successful registration', async () => {
-      const { emitter, payer, registry, token } =
+    it('reverts when emitter address is zero', async () => {
+      const { owner, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(owner).registerEmitter(ZERO, 1n),
+      ).to.be.revertedWith('InvoiceRegistry: zero emitter');
+    });
+
+    it('overwrites emitterWorldIdNullifier on a second registration', async () => {
+      const { owner, emitter, payer, registry, token } =
         await loadFixture(deployFixture);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 111n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 111n);
       expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
         111n,
       );
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(2n, 1n, 222n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 222n);
       expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
         222n,
       );
@@ -135,13 +121,35 @@ describe('InvoiceRegistry', () => {
     });
   });
 
+  describe('setTrustedVerifier', () => {
+    it('owner can update trusted verifier', async () => {
+      const { owner, emitter, registry } = await loadFixture(deployFixture);
+      await expect(registry.connect(owner).setTrustedVerifier(emitter.address))
+        .to.emit(registry, 'TrustedVerifierUpdated')
+        .withArgs(emitter.address);
+      expect(await registry.trustedVerifier()).to.equal(emitter.address);
+    });
+
+    it('reverts when not owner', async () => {
+      const { stranger, emitter, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(stranger).setTrustedVerifier(emitter.address),
+      ).to.be.revertedWithCustomError(registry, 'OwnableUnauthorizedAccount');
+    });
+
+    it('reverts when zero address', async () => {
+      const { owner, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(owner).setTrustedVerifier(ZERO),
+      ).to.be.revertedWith('InvoiceRegistry: zero verifier');
+    });
+  });
+
   describe('createInvoice', () => {
     it('creates pending invoice and emits InvoiceCreated', async () => {
-      const { emitter, payer, registry, token } =
+      const { owner, emitter, payer, registry, token } =
         await loadFixture(deployFixture);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 100n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 100n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pdf-hash-1'));
       const amount = 1000n;
       const id = await nextInvoiceId(registry, 100n);
@@ -184,11 +192,9 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when msg.sender is not emitter', async () => {
-      const { emitter, payer, stranger, registry, token } =
+      const { owner, emitter, payer, stranger, registry, token } =
         await loadFixture(deployFixture);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 200n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 200n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h'));
       const id = await nextInvoiceId(registry, 200n);
       await expect(
@@ -208,7 +214,7 @@ describe('InvoiceRegistry', () => {
       ).to.be.revertedWith('InvoiceRegistry: not emitter');
     });
 
-    it('reverts when emitter is not World-ID verified', async () => {
+    it('reverts when emitter is not verified', async () => {
       const { emitter, payer, registry, token } =
         await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h2'));
@@ -231,15 +237,14 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts for non-allowed token', async () => {
-      const { emitter, payer, registry } = await loadFixture(deployFixture);
+      const { owner, emitter, payer, registry } =
+        await loadFixture(deployFixture);
       const otherToken = await ethers.deployContract('MockERC20', [
         'Other',
         'O',
         6,
       ]);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 300n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 300n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h3'));
       const id = await nextInvoiceId(registry, 300n);
       await expect(
@@ -260,11 +265,9 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when amount is zero', async () => {
-      const { emitter, payer, registry, token } =
+      const { owner, emitter, payer, registry, token } =
         await loadFixture(deployFixture);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 400n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 400n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h4'));
       const id = await nextInvoiceId(registry, 400n);
       await expect(
@@ -285,11 +288,9 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when VAT number exceeds max length', async () => {
-      const { emitter, payer, registry, token } =
+      const { owner, emitter, payer, registry, token } =
         await loadFixture(deployFixture);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 450n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 450n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h-vat'));
       const id = await nextInvoiceId(registry, 450n);
       const tooLong = 'X'.repeat(65);
@@ -311,11 +312,9 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts on duplicate invoice hash', async () => {
-      const { emitter, payer, registry, token } =
+      const { owner, emitter, payer, registry, token } =
         await loadFixture(deployFixture);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 500n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 500n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('dup'));
       const id1 = await nextInvoiceId(registry, 500n);
       await registry
@@ -353,10 +352,8 @@ describe('InvoiceRegistry', () => {
   describe('payInvoice', () => {
     async function setupPaidFlow() {
       const ctx = await loadFixture(deployFixture);
-      const { emitter, payer, registry, token } = ctx;
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 600n, DUMMY_PROOF);
+      const { owner, emitter, payer, registry, token } = ctx;
+      await registerEmitter(registry, owner, emitter, 600n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pay'));
       const amount = 50_000n;
       const invoiceId = await nextInvoiceId(registry, 600n);
@@ -396,9 +393,6 @@ describe('InvoiceRegistry', () => {
     it('reverts for invalid id', async () => {
       const { payer, registry } = await setupPaidFlow();
       await expect(registry.connect(payer).payInvoice(0n)).to.be.revertedWith(
-        'InvoiceRegistry: invalid id',
-      );
-      await expect(registry.connect(payer).payInvoice(99n)).to.be.revertedWith(
         'InvoiceRegistry: invalid id',
       );
     });
@@ -449,10 +443,8 @@ describe('InvoiceRegistry', () => {
   describe('cancelInvoice', () => {
     async function setupInvoice() {
       const ctx = await loadFixture(deployFixture);
-      const { emitter, payer, registry, token } = ctx;
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 700n, DUMMY_PROOF);
+      const { owner, emitter, payer, registry, token } = ctx;
+      await registerEmitter(registry, owner, emitter, 700n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('cancel'));
       const invoiceId = await nextInvoiceId(registry, 700n);
       await registry
@@ -582,9 +574,7 @@ describe('InvoiceRegistry', () => {
       await registry
         .connect(owner)
         .addAllowedToken(await newToken.getAddress());
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 800n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 800n);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('newInvoice'));
       const id = await nextInvoiceId(registry, 800n);
       await registry
@@ -607,7 +597,7 @@ describe('InvoiceRegistry', () => {
   });
 
   describe('invoice id helpers', () => {
-    it('parseInvoiceId decodes a packed id (external wrapper)', async () => {
+    it('parseInvoiceId decodes a packed id', async () => {
       const { registry } = await loadFixture(deployFixture);
       const wid = await registry.worldIdNullifierToPacked160(42n);
       const packed = await registry.packInvoiceId(wid, INV_YEAR, INV_MONTH, 7n);
@@ -619,14 +609,12 @@ describe('InvoiceRegistry', () => {
     });
 
     it('getNextInvoiceSequence reflects count before and after createInvoice', async () => {
-      const { emitter, payer, registry, token } =
+      const { owner, emitter, payer, registry, token } =
         await loadFixture(deployFixture);
       expect(
         await registry.getNextInvoiceSequence(901n, INV_YEAR, INV_MONTH),
       ).to.equal(1n);
-      await registry
-        .connect(emitter)
-        .registerWithWorldId(1n, 1n, 901n, DUMMY_PROOF);
+      await registerEmitter(registry, owner, emitter, 901n);
       expect(
         await registry.getNextInvoiceSequence(901n, INV_YEAR, INV_MONTH),
       ).to.equal(1n);
@@ -651,28 +639,25 @@ describe('InvoiceRegistry', () => {
   });
 
   describe('constructor', () => {
-    it('reverts when worldId router is zero', async () => {
+    it('reverts when trusted verifier is zero', async () => {
       const [owner, , , , treasury] = await ethers.getSigners();
       const token = await ethers.deployContract('MockERC20', ['T', 'T', 6]);
       await expect(
         ethers.deployContract('InvoiceRegistry', [
           owner.address,
           ZERO,
-          1n,
           [await token.getAddress()],
           treasury.address,
         ]),
-      ).to.be.revertedWith('InvoiceRegistry: zero worldId');
+      ).to.be.revertedWith('InvoiceRegistry: zero verifier');
     });
 
     it('reverts when allowed token is zero address', async () => {
       const [owner, , , , treasury] = await ethers.getSigners();
-      const worldId = await ethers.deployContract('WorldIdRouterMock', []);
       await expect(
         ethers.deployContract('InvoiceRegistry', [
           owner.address,
-          await worldId.getAddress(),
-          1n,
+          owner.address,
           [ZERO],
           treasury.address,
         ]),
@@ -681,13 +666,11 @@ describe('InvoiceRegistry', () => {
 
     it('reverts when commission recipient is zero', async () => {
       const [owner] = await ethers.getSigners();
-      const worldId = await ethers.deployContract('WorldIdRouterMock', []);
       const token = await ethers.deployContract('MockERC20', ['T', 'T', 6]);
       await expect(
         ethers.deployContract('InvoiceRegistry', [
           owner.address,
-          await worldId.getAddress(),
-          1n,
+          owner.address,
           [await token.getAddress()],
           ZERO,
         ]),

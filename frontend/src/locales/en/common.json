@@ -345,7 +345,7 @@
     },
     "registerEmitter": {
       "title": "On-chain issuer registration",
-      "description": "A <code>registerWithWorldId</code> transaction links your wallet to World ID on Arc. Use the same wallet you use to sign invoices.",
+      "description": "Verify your identity with World ID to link your wallet as a verified emitter. Use the same wallet you use to sign invoices.",
       "button": "Register my wallet with World ID"
     },
     "errors": {
@@ -393,7 +393,7 @@
       "worldIdInitRp": "Could not initialize World ID (RP).",
       "worldIdCancelled": "World ID cancelled or error.",
       "registerSuccess": "Address registered as verified issuer.",
-      "registerTxFailed": "registerWithWorldId transaction failed.",
+      "registerTxFailed": "Emitter registration failed.",
       "connectWalletFirst": "Connect your wallet first (same address as for invoices).",
       "formValidationError": "Please fill in all required fields."
     }

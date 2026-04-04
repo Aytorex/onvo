@@ -21,8 +21,7 @@ if (!existsSync(paramsPath)) {
 const doc = JSON.parse(readFileSync(paramsPath, 'utf8')) as {
   InvoiceRegistryProdModule?: {
     initialOwner?: string;
-    worldIdRouter?: string;
-    externalNullifierHash?: string;
+    trustedVerifier?: string;
     allowedTokens?: string[];
     commissionRecipient?: string;
   };
@@ -35,15 +34,9 @@ if (m == null) {
   );
 }
 
-if (m.worldIdRouter == null || m.worldIdRouter === '') {
+if (m.trustedVerifier == null || m.trustedVerifier === '') {
   throw new Error(
-    'invoice-registry.arc.json: set InvoiceRegistryProdModule.worldIdRouter',
-  );
-}
-
-if (m.externalNullifierHash == null || m.externalNullifierHash === '') {
-  throw new Error(
-    'invoice-registry.arc.json: set InvoiceRegistryProdModule.externalNullifierHash (decimal string)',
+    'invoice-registry.arc.json: set InvoiceRegistryProdModule.trustedVerifier',
   );
 }
 
@@ -67,8 +60,7 @@ const allowedTokens =
 /** Constructor args for `InvoiceRegistry` — consumed by `hardhat verify etherscan --constructor-args-path`. */
 export default [
   m.initialOwner,
-  m.worldIdRouter,
-  m.externalNullifierHash,
+  m.trustedVerifier,
   allowedTokens,
   m.commissionRecipient,
 ];

@@ -13,22 +13,17 @@
   },
   "display": {
     "formats": {
-      "registerWithWorldId(uint256 root,uint256 groupId,uint256 nullifierHash,uint256[8] proof)": {
-        "intent": "Verify emitter with World ID",
+      "registerEmitter(address emitter,uint256 nullifierHash)": {
+        "intent": "Register verified emitter (World ID validated off-chain)",
         "fields": [
           {
-            "path": "root",
-            "label": "Merkle root",
-            "format": "raw"
-          },
-          {
-            "path": "groupId",
-            "label": "Group ID",
-            "format": "raw"
+            "path": "emitter",
+            "label": "Emitter wallet",
+            "format": "addressName"
           },
           {
             "path": "nullifierHash",
-            "label": "Nullifier hash",
+            "label": "World ID nullifier hash",
             "format": "raw"
           }
         ]

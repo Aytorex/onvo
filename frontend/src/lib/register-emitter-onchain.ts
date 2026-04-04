@@ -1,45 +1,28 @@
-import { invoiceRegistryContract } from '@/lib/contract';
-import { parseRegisterWithWorldIdArgs } from '@/lib/worldid-register-args';
 import type { IDKitResult } from '@worldcoin/idkit';
-import type { PublicClient } from 'viem';
-import type { UseWriteContractReturnType } from 'wagmi';
-
-type SwitchChainAsync = (args: { chainId: number }) => Promise<unknown>;
 
 /**
- * Switch to the registry chain, send `registerWithWorldId`, wait for receipt.
+ * Sends the World ID proof + emitter address to the Next.js API route.
+ * The server verifies the proof via `POST /api/v4/verify/{rp_id}`,
+ * then calls `registerEmitter(emitter, nullifierHash)` on-chain as the trusted verifier.
  */
-export async function registerEmitterOnChain(
+export async function registerEmitterViaBackend(
   result: IDKitResult,
-  deps: {
-    switchChainAsync: SwitchChainAsync;
-    writeContractAsync: UseWriteContractReturnType['writeContractAsync'];
-    publicClientArc: PublicClient | null | undefined;
-    registryChainId: number;
-  },
+  emitterAddress: string,
 ): Promise<void> {
-  await deps.switchChainAsync({ chainId: deps.registryChainId });
-  const args = parseRegisterWithWorldIdArgs(result);
-  const hash = await deps.writeContractAsync({
-    address: invoiceRegistryContract.address,
-    abi: invoiceRegistryContract.abi,
-    functionName: 'registerWithWorldId',
-    args: [
-      args.root,
-      args.groupId,
-      args.nullifierHash,
-      [...args.proof] as [
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-      ],
-    ],
-    chainId: deps.registryChainId,
+  const res = await fetch('/api/worldid/register-emitter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      emitterAddress,
+      idkitResult: result,
+    }),
   });
-  await deps.publicClientArc!.waitForTransactionReceipt({ hash });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      (body as { message?: string }).message ||
+        `Registration failed (${res.status})`,
+    );
+  }
 }
