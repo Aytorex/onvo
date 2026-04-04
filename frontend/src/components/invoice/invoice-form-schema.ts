@@ -7,13 +7,9 @@ export function createInvoiceFormSchema(t: TFunction<'common'>) {
     description: z
       .string()
       .min(1, t('invoice.validation.lineDescriptionRequired')),
-    quantity: z.coerce
-      .number()
-      .positive(t('invoice.validation.quantityPositive')),
-    unitPrice: z.coerce
-      .number()
-      .nonnegative(t('invoice.validation.priceNonnegative')),
-    vatPercent: z.coerce.number().min(0).max(100),
+    quantity: z.number().positive(t('invoice.validation.quantityPositive')),
+    unitPrice: z.number().nonnegative(t('invoice.validation.priceNonnegative')),
+    vatPercent: z.number().min(0).max(100),
   });
 
   const optionalEmail = z.union([

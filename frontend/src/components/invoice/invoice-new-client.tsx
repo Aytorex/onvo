@@ -1,5 +1,6 @@
 'use client';
 
+import { EmitterSetupCard } from '@/components/invoice/emitter-setup-card';
 import { createInvoiceFormSchema } from '@/components/invoice/invoice-form-schema';
 import {
   InvoicePreviewDocument,
@@ -19,7 +20,6 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { EmitterSetupCard } from '@/components/invoice/emitter-setup-card';
 import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
@@ -27,8 +27,8 @@ import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
 import {
   formatOnvoInvoiceLabel,
-  shortenOnvoInvoiceLabelString,
   invoiceIdToUrlSegment,
+  shortenOnvoInvoiceLabelString,
 } from '@/lib/invoice-id';
 import {
   appendInvoiceId,
@@ -47,14 +47,19 @@ import {
   fetchRpContext,
   parseWorldIdNullifierToBigInt,
   useWorldID,
-  verifyProof,
-  WORLD_ID_CONFIG,
+  verifyProof
 } from '@/lib/worldid';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
-import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
 import { addDays, format, parseISO } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
+import {
+  Copy,
+  ExternalLink,
+  Info,
+  Loader2,
+  Mail
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -67,15 +72,6 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import {
-  ArrowLeft,
-  Check,
-  Copy,
-  ExternalLink,
-  Info,
-  Loader2,
-  Mail,
-} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { parseUnits, zeroAddress } from 'viem';
@@ -1220,6 +1216,7 @@ export function InvoiceNewClient() {
                                     aria-required
                                     {...form.register(
                                       `lines.${index}.quantity` as const,
+                                      { valueAsNumber: true },
                                     )}
                                   />
                                 </div>
@@ -1234,6 +1231,7 @@ export function InvoiceNewClient() {
                                     aria-required
                                     {...form.register(
                                       `lines.${index}.unitPrice` as const,
+                                      { valueAsNumber: true },
                                     )}
                                   />
                                 </div>
