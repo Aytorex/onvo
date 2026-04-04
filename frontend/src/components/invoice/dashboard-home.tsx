@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   CircleDollarSign,
   Clock,
+  Eye,
+  FileDown,
   FileSpreadsheet,
   FileText,
   Layers,
@@ -336,28 +338,40 @@ export function DashboardHomeView({
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-                        <Button variant="secondary" size="sm" asChild>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="gap-1.5"
+                          asChild
+                        >
                           <Link
                             href={`/invoice/${invoiceIdToUrlSegment(r.invoiceId)}`}
                           >
+                            <Eye className="size-3.5 shrink-0" aria-hidden />
                             {t('invoice.dashboard.view')}
                           </Link>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="gap-1.5"
                           onClick={() => onExportPdf(r.invoiceId)}
                         >
+                          <FileDown className="size-3.5 shrink-0" aria-hidden />
                           {t('invoice.dashboard.export')}
                         </Button>
                         {r.status === 0 ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:text-destructive"
+                            className="gap-1.5 text-destructive hover:text-destructive"
                             disabled={isCancelPending}
                             onClick={() => onCancel(r.invoiceId)}
                           >
+                            <XCircle
+                              className="size-3.5 shrink-0"
+                              aria-hidden
+                            />
                             {t('invoice.dashboard.cancel')}
                           </Button>
                         ) : null}
