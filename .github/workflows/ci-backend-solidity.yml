@@ -34,6 +34,15 @@ jobs:
           forge --version
           forge build --build-info --sizes contracts
 
+      # ERC-7730: descriptor selectors vs ABI + Ledger-style calldata test vectors (see contracts/erc7730/).
+      - name: Set up Bun and install (ERC-7730 checks)
+        uses: ./.github/actions/setup
+
+      - name: ERC-7730 — descriptor sync + calldata tests
+        run: |
+          cd backend
+          bun run erc7730:check
+
       - name: Slither
         uses: crytic/slither-action@v0.4.0
         with:

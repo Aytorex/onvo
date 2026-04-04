@@ -20,6 +20,9 @@ interface IWorldIdRouter {
 
 /// @title InvoiceRegistry
 /// @notice On-chain invoice hash registry with World ID–gated emitters and ERC-20 settlement.
+/// @custom:clear-signing ERC-7730 v2 descriptor: `contracts/erc7730/invoice-registry.erc7730.json` (see https://eips.ethereum.org/EIPS/eip-7730).
+/// After deployment, run `bun run erc7730:bindings` with `INVOICE_REGISTRY_ADDRESS` (and optional `CHAIN_ID`) so wallets can bind `context.contract.deployments`.
+/// After ABI changes, run `bun run erc7730:sync` to verify `display.formats` selectors still match the contract.
 contract InvoiceRegistry is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
