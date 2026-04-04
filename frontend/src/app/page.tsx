@@ -76,12 +76,12 @@ const LANDING_FEATURES = [
     logoHeight: 32,
   },
   {
-    id: 'ledger',
+    id: 'dynamic',
     gradient: 'from-onvo-cyan/20 to-onvo-cyan/5',
-    lightLogo: '/logos/ledger.svg',
-    darkLogo: '/logos/ledger-white.svg',
-    logoWidth: 110,
-    logoHeight: 36,
+    lightLogo: '/logos/dynamic.svg',
+    darkLogo: '/logos/dynamic-dark.svg',
+    logoWidth: 448,
+    logoHeight: 100,
   },
   {
     id: 'arc',
@@ -117,12 +117,12 @@ const LANDING_SPONSORS = [
     height: 34,
   },
   {
-    id: 'ledger',
-    name: 'Ledger',
-    lightLogo: '/logos/ledger.svg',
-    darkLogo: '/logos/ledger-white.svg',
-    width: 120,
-    height: 40,
+    id: 'dynamic',
+    name: 'Dynamic',
+    lightLogo: '/logos/dynamic.svg',
+    darkLogo: '/logos/dynamic-dark.svg',
+    width: 448,
+    height: 100,
   },
 ] as const;
 
