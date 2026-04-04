@@ -2,7 +2,7 @@
 
 ## Contract Structure
 
-Follow the pattern established in [backend/contracts/Ballot.sol](mdc:backend/contracts/Ballot.sol):
+Follow the pattern established in [backend/contracts/InvoiceRegistry.sol](mdc:backend/contracts/InvoiceRegistry.sol):
 
 1. **SPDX License**: Always include `// SPDX-License-Identifier: GPL-3.0` at the top
 2. **Pragma**: Use `pragma solidity 0.8.24;` for consistency

@@ -2,9 +2,9 @@
 
 ## Contract Integration Pattern
 
-Follow the established pattern in [frontend/src/contracts/ballot.contract.ts](mdc:frontend/src/contracts/ballot.contract.ts):
+Follow the established pattern in [frontend/src/lib/contract.ts](mdc:frontend/src/lib/contract.ts) (`invoiceRegistryContract`):
 
-- Export contract configuration with address, ABI, and fromBlock
+- Export contract configuration with address, ABI, chain id, and fromBlock
 - Use `as const` for type safety
 - Keep contract addresses configurable for different environments
 

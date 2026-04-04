@@ -30,7 +30,7 @@ DApp-specific components in [frontend/src/components/shared/](mdc:frontend/src/c
 
 ### Contract Integration
 
-- Use the contract configuration from [frontend/src/contracts/ballot.contract.ts](mdc:frontend/src/contracts/ballot.contract.ts)
+- Use the contract configuration from [frontend/src/lib/contract.ts](mdc:frontend/src/lib/contract.ts) (`invoiceRegistryContract`)
 - Follow the pattern in [frontend/src/hooks/useContract.ts](mdc:frontend/src/hooks/useContract.ts) for transaction handling
 - Always handle connection states and transaction statuses
 

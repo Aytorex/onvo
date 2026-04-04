@@ -28,9 +28,6 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_TOKEN_EURC ?? ARC_TESTNET_EURC,
     NEXT_PUBLIC_WORLD_ID_GROUP_ID:
       process.env.NEXT_PUBLIC_WORLD_ID_GROUP_ID ?? '1',
-    /** `true` = démo Ballot + useWatchContractEvent depuis le bloc 0 (casse le plan gratuit Alchemy sur Arc). */
-    NEXT_PUBLIC_ENABLE_BALLOT_SYNC:
-      process.env.NEXT_PUBLIC_ENABLE_BALLOT_SYNC ?? 'false',
   },
   reactStrictMode: true,
   serverExternalPackages: ['pino-pretty', 'encoding'],

@@ -1,12 +1,5 @@
 # Hardhat
 
-Deploy **Ballot** on localhost:
-
-```
-$ bun run start:node
-$ bunx hardhat ignition deploy ignition/modules/Ballot.ts --network localhost
-```
-
 Deploy **InvoiceRegistry** (mock World ID + test ERC-20) on the in-process network:
 
 ```

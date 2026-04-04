@@ -4,15 +4,7 @@
     "description": "Facturation B2B vérifiée on-chain avec World ID"
   },
   "nav": {
-    "mobileMenu": "Menu de navigation",
-    "projectName": "The Ballot Project",
-    "dashboard": "Tableau de bord",
-    "voters": "Électeurs",
-    "proposals": "Propositions",
-    "votes": "Votes",
-    "events": "Événements",
-    "home": "Accueil",
-    "notFound": "404"
+    "mobileMenu": "Menu de navigation"
   },
   "wallet": {
     "connect": "Connecter",
@@ -113,88 +105,6 @@
     "title": "Page introuvable",
     "description": "Cette page n'existe pas ou le lien est incorrect. Utilisez la navigation ou les raccourcis ci-dessous.",
     "backHome": "Retour à l'accueil"
-  },
-  "account": {
-    "title": "Vos droits",
-    "description": "Informations sur vos droits dans The Ballot Project.",
-    "registrationStatus": "Statut d'inscription",
-    "registered": "Inscrit",
-    "notRegistered": "Non inscrit",
-    "hasVoted": "A voté",
-    "yes": "Oui",
-    "no": "Non",
-    "voteWeight": "Poids de vote",
-    "delegation": "Délégation",
-    "voteProposal": "Proposition votée"
-  },
-  "chairPerson": {
-    "title": "Président du scrutin",
-    "description": "L'adresse propriétaire du projet The Ballot.",
-    "address": "Adresse"
-  },
-  "proposalsList": {
-    "title": "Propositions",
-    "description": "Liste des propositions disponibles au vote.",
-    "id": "ID",
-    "name": "Nom",
-    "voteCount": "Nombre de votes"
-  },
-  "votersCount": {
-    "title": "Nombre d'électeurs",
-    "description": "Nombre total d'électeurs inscrits dans The Ballot Project.",
-    "totalVoters": "Total des électeurs"
-  },
-  "winningProposal": {
-    "title": "Proposition gagnante",
-    "description": "La proposition qui a actuellement le plus de votes.",
-    "proposal": "Proposition"
-  },
-  "voteCard": {
-    "title": "Voter",
-    "description": "En tant qu'électeur inscrit, vous pouvez voter pour une proposition.",
-    "alreadyVoted": "Vous avez déjà voté pour ce scrutin.",
-    "proposalLabel": "Proposition",
-    "selectPlaceholder": "Choisir une proposition…",
-    "submit": "Voter"
-  },
-  "giveRight": {
-    "title": "Accorder le droit de vote",
-    "description": "En tant qu'administrateur, vous pouvez accorder le droit de vote à une autre adresse.",
-    "address": "Adresse",
-    "submit": "Accorder",
-    "placeholder": "0x…"
-  },
-  "delegate": {
-    "title": "Déléguer",
-    "description": "En tant qu'électeur inscrit, vous pouvez déléguer votre droit de vote à une autre adresse.",
-    "cannotDelegate": "Vous ne pouvez pas déléguer car vous avez déjà voté pour ce scrutin.",
-    "address": "Adresse",
-    "submit": "Déléguer",
-    "placeholder": "0x…"
-  },
-  "eventsTable": {
-    "recentTitle": "Événements récents",
-    "recentDescription": "Les cinq derniers événements du contrat de scrutin.",
-    "allTitle": "Tous les événements du contrat",
-    "allDescription": "Vue d'ensemble des événements récents du contrat de scrutin.",
-    "noEvents": "Aucun événement trouvé.",
-    "type": "Type",
-    "details": "Détails",
-    "block": "Bloc",
-    "transaction": "Transaction",
-    "na": "N/D",
-    "unknownEvent": "Événement inconnu",
-    "detailGiveRight": "L'électeur {{addr}} a été inscrit",
-    "detailDelegate": "{{from}} a délégué à {{to}}",
-    "detailVote": "L'électeur {{voter}} a voté pour la proposition {{proposal}}"
-  },
-  "voterEventsTable": {
-    "title": "Inscriptions des électeurs",
-    "description": "Événements récents d'inscription et de délégation du contrat de scrutin."
-  },
-  "voteEventsTable": {
-    "title": "Activité de vote",
-    "description": "Événements de vote récents du contrat de scrutin."
   },
   "theme": {
     "light": "Clair",
