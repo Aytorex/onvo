@@ -196,7 +196,12 @@ export async function generateInvoicePdf(
   });
 
   const docNoBlockText = `Document no.: ${docNo}`;
-  const docNoLines = wrapTextToWidth(docNoBlockText, CONTENT_W, fontRegular, 10);
+  const docNoLines = wrapTextToWidth(
+    docNoBlockText,
+    CONTENT_W,
+    fontRegular,
+    10,
+  );
   const docLineStep = 12;
   let docLineY = y - 18;
   for (const line of docNoLines) {

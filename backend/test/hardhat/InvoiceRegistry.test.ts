@@ -565,6 +565,13 @@ describe('InvoiceRegistry', () => {
     });
   });
 
+  describe('worldIdAddressFromNullifier', () => {
+    it('returns zero address when nullifier is zero', async () => {
+      const { registry } = await loadFixture(deployFixture);
+      expect(await registry.worldIdAddressFromNullifier(0n)).to.equal(ZERO);
+    });
+  });
+
   describe('bindWorldId', () => {
     it('registers nullifier for emitter and isWorldIdAuthorizedForEmitter is true', async () => {
       const { emitter, registry } = await loadFixture(deployFixture);
