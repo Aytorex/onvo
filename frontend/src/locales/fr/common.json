@@ -375,7 +375,10 @@
       "submitPreparingWorldId": "Préparation World ID…",
       "submitTransaction": "Transaction…",
       "submitGenerate": "Générer la facture",
-      "walletPlaceholder": "0x…"
+      "walletPlaceholder": "0x…",
+      "tabPrev": "Précédent",
+      "tabNext": "Suivant",
+      "tabValidate": "Valider"
     },
     "preview": {
       "brand": "Onvo",
@@ -398,7 +401,10 @@
       "totalVat": "Total TVA",
       "totalTtc": "Total TTC",
       "notes": "Notes",
-      "footer": "Document généré par Onvo — hash on-chain à l'émission."
+      "footer": "Document généré par Onvo — hash on-chain à l'émission.",
+      "footerPrefix": "Document généré par",
+      "footerSuffix": "— hash on-chain à l'émission.",
+      "pagination": "Page {{page}} / {{total}}"
     },
     "registerEmitter": {
       "title": "Enregistrement émetteur on-chain",
