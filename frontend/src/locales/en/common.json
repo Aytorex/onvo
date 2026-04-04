@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "The Ballot Project",
-    "description": "Ballot dApp dashboard"
+    "title": "Onvo",
+    "description": "B2B invoicing verified on-chain with World ID"
   },
   "nav": {
     "mobileMenu": "Navigation menu",
@@ -16,7 +16,31 @@
   },
   "wallet": {
     "connect": "Connect",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "connecting": "Connecting…"
+  },
+  "brand": {
+    "logoAria": "ONVO"
+  },
+  "errors": {
+    "rpSignatureFailed": "Failed to fetch RP signature",
+    "proofVerificationFailed": "Proof verification failed"
+  },
+  "ui": {
+    "close": "Close",
+    "paginationNav": "Pagination",
+    "goToPreviousPage": "Go to previous page",
+    "goToNextPage": "Go to next page",
+    "previous": "Previous",
+    "next": "Next",
+    "morePages": "More pages",
+    "breadcrumbNav": "Breadcrumb",
+    "breadcrumbMore": "More",
+    "carouselRole": "carousel",
+    "slideRole": "slide",
+    "carouselPrevious": "Previous slide",
+    "carouselNext": "Next slide",
+    "datePickerPick": "Pick a date"
   },
   "pay": {
     "title": "Pay invoice",
@@ -168,7 +192,8 @@
   "theme": {
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "Device",
+    "toggleAria": "Theme"
   },
   "language": {
     "label": "Language",
@@ -182,5 +207,266 @@
     "pendingDescription": "Transaction is being processed…",
     "successTitle": "Success",
     "successDescription": "Transaction succeeded."
+  },
+  "auth": {
+    "tagline": "B2B invoicing powered by World ID",
+    "verifyIntro": "Verify your identity with World ID to access the platform.",
+    "verifyButton": "Verify with World ID",
+    "initError": "Failed to initialize verification. Please try again.",
+    "verificationError": "Verification error: {{code}}",
+    "stagingNoteBefore": "Staging environment — use the",
+    "stagingNoteAfter": "for testing",
+    "simulatorLink": "World ID Simulator"
+  },
+  "emitterNav": {
+    "dashboard": "Dashboard",
+    "newInvoice": "New invoice",
+    "logOut": "Log out"
+  },
+  "invoice": {
+    "status": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Invoices issued from your wallet on Arc Testnet.",
+      "newInvoice": "New invoice",
+      "exportAllCsv": "Export all (CSV)",
+      "connectWalletHint": "Connect your wallet to see invoices linked to this address.",
+      "loading": "Loading…",
+      "emptyState": "No invoices stored locally. Create one or import IDs into storage.",
+      "colId": "ID",
+      "colRecipient": "Recipient",
+      "colAmountRaw": "Amount (raw)",
+      "colToken": "Token",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "view": "View",
+      "export": "Export",
+      "cancel": "Cancel",
+      "connectWorldIdLink": "Sign in with World ID",
+      "loadingSessionAria": "Loading session"
+    },
+    "detail": {
+      "worldIdRequired": "World ID required",
+      "invalidId": "Invalid ID.",
+      "loading": "Loading…",
+      "notFound": "Invoice not found on-chain (or wrong network).",
+      "invoiceLabel": "Invoice",
+      "hashPdf": "PDF hash",
+      "emitter": "Issuer",
+      "recipient": "Recipient",
+      "amountWei": "Amount (wei, smallest unit)",
+      "token": "Token",
+      "docNumber": "Document no.",
+      "registeredOffice": "Registered office (off-chain)",
+      "clientRegisteredOffice": "Client registered office (off-chain)",
+      "client": "Client",
+      "emitterWorldId": "Issuer World ID number",
+      "backDashboard": "Dashboard",
+      "payPage": "Payment page",
+      "downloadPdf": "Download PDF",
+      "downloadStarted": "Download started.",
+      "pdfUnavailable": "PDF not available locally.",
+      "loadingSessionAria": "Loading session"
+    },
+    "form": {
+      "accessDenied": "Access restricted —",
+      "accessDeniedLink": "sign in with World ID",
+      "accessDeniedSuffix": ".",
+      "successTitle": "Invoice saved",
+      "successSubtitle": "Share the payment link with your client.",
+      "backDashboard": "Back to dashboard",
+      "openPayPage": "Open payment page",
+      "title": "New invoice",
+      "subtitle": "Fill in the form — the preview updates (300 ms).",
+      "walletConnectHint": "Connect an issuer wallet to sign the transaction.",
+      "firstInvoiceHint": "First invoice with this wallet: when you click “Generate invoice”, the World ID orb opens to register your address on-chain, then the PDF and transaction follow.",
+      "sectionEmitter": "Issuer",
+      "sectionClient": "Client",
+      "sectionLines": "Line items",
+      "emitterName": "Name / Legal name",
+      "emitterStreet": "Street and number",
+      "emitterStreetPlaceholder": "e.g. 12 Example Street",
+      "emitterStreetLine2": "Address line 2 (optional)",
+      "emitterStreetLine2Placeholder": "Building, floor, suite…",
+      "emitterPostalCode": "Postal code",
+      "emitterCity": "City",
+      "emitterCountry": "Country (optional)",
+      "emitterCountryPlaceholder": "e.g. France",
+      "emitterSiretOptional": "SIRET (optional)",
+      "emitterEmail": "Email",
+      "clientName": "Name",
+      "clientStreet": "Street and number",
+      "clientStreetPlaceholder": "e.g. 45 Client Avenue",
+      "clientStreetLine2": "Address line 2 (optional)",
+      "clientStreetLine2Placeholder": "Building, floor, suite…",
+      "clientPostalCode": "Postal code",
+      "clientCity": "City",
+      "clientCountry": "Country (optional)",
+      "clientCountryPlaceholder": "e.g. France",
+      "clientEmailOptional": "Email (optional)",
+      "currency": "Currency (stablecoin)",
+      "invoiceNumber": "Invoice no.",
+      "invoiceNumberPlaceholder": "F-0x…-2026-04-0001",
+      "invoiceNumberLoading": "Fetching next on-chain invoice number…",
+      "invoiceNumberChainError": "Could not read the next ID — check Arc network and registry address, or enter a number manually.",
+      "issueDate": "Issue date",
+      "dueDate": "Due date",
+      "notesOptional": "Notes (optional)",
+      "description": "Description",
+      "qty": "Qty",
+      "unitPriceHt": "Unit price (excl. tax)",
+      "vatPercent": "VAT %",
+      "addLine": "+ Line",
+      "removeLine": "Remove",
+      "summary": "Summary",
+      "summaryLine": "Subtotal excl. tax: {{ht}} — VAT: {{vat}} — Total incl. tax: {{ttc}}",
+      "previewLabel": "Preview",
+      "submitPreparingWorldId": "Preparing World ID…",
+      "submitTransaction": "Transaction…",
+      "submitGenerate": "Generate invoice",
+      "walletPlaceholder": "0x…"
+    },
+    "preview": {
+      "brand": "Onvo",
+      "invoiceTitle": "Invoice",
+      "issuedOn": "Issued on",
+      "dueOn": "Due",
+      "emitter": "Issuer",
+      "worldIdNumber": "World ID number",
+      "client": "Client",
+      "siretPrefix": "SIRET",
+      "thDescription": "Description",
+      "thQty": "Qty",
+      "thUnitHt": "Unit excl. tax",
+      "thVatPct": "VAT %",
+      "thAmountHt": "Amount excl. tax",
+      "thVat": "VAT",
+      "thTotalTtc": "Total incl. tax",
+      "totalHt": "Subtotal excl. tax",
+      "totalVat": "Total VAT",
+      "totalTtc": "Total incl. tax",
+      "notes": "Notes",
+      "footer": "Document generated by Onvo — on-chain hash at issuance."
+    },
+    "registerEmitter": {
+      "title": "On-chain issuer registration",
+      "description": "A <code>registerWithWorldId</code> transaction links your wallet to World ID on Arc. Use the same wallet you use to sign invoices.",
+      "button": "Register my wallet with World ID"
+    },
+    "errors": {
+      "worldIdV3Expected": "Expected World ID v3 response (Orb legacy).",
+      "worldIdV4Expected": "Expected World ID v4 response.",
+      "worldIdV4IncompleteProof": "Incomplete v4 proof (expected at least 5 elements).",
+      "worldIdProofDecodeFailed": "Could not decode World ID proof.",
+      "worldIdProofFormatUnsupported": "Unsupported proof format (use Orb legacy or v4 without session)."
+    },
+    "validation": {
+      "lineDescriptionRequired": "Description is required",
+      "quantityPositive": "Quantity must be greater than 0",
+      "priceNonnegative": "Price must be ≥ 0",
+      "emitterNameRequired": "Name is required",
+      "emitterStreetRequired": "Street and number are required",
+      "emitterPostalCodeRequired": "Postal code is required",
+      "emitterCityRequired": "City is required",
+      "invalidEmail": "Invalid email address",
+      "clientRequired": "Client is required",
+      "clientStreetRequired": "Client street and number are required",
+      "clientPostalCodeRequired": "Client postal code is required",
+      "clientCityRequired": "Client city is required",
+      "minOneLine": "At least one line",
+      "invoiceNumberRequired": "Invoice number is required",
+      "issueDateRequired": "Issue date is required",
+      "dueDateRequired": "Due date is required"
+    },
+    "toast": {
+      "arcNetworkRequired": "Arc Testnet (5042002) required — switch network in your wallet.",
+      "cancelSent": "Cancellation submitted.",
+      "cancelFailed": "Could not cancel",
+      "pdfNotStored": "No PDF stored locally for this invoice.",
+      "walletIssuerRequired": "Connect your issuer wallet to sign the invoice.",
+      "previewUnavailable": "Preview unavailable.",
+      "tokenEnv": "Set NEXT_PUBLIC_TOKEN_USDC and NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).",
+      "receiptNoId": "Transaction OK but invoiceId not found in logs.",
+      "invoiceCreated": "Invoice created on-chain.",
+      "invoiceCreateFailed": "Could not create invoice.",
+      "worldIdRejected": "World ID verification rejected",
+      "walletRequiredShort": "Wallet required.",
+      "emitterOrInvoiceFailed": "Issuer registration or invoice failed.",
+      "verifyingOnChain": "On-chain check in progress, try again shortly.",
+      "worldIdInitRp": "Could not initialize World ID (RP).",
+      "worldIdCancelled": "World ID cancelled or error.",
+      "registerSuccess": "Address registered as verified issuer.",
+      "registerTxFailed": "registerWithWorldId transaction failed.",
+      "connectWalletFirst": "Connect your wallet first (same address as for invoices)."
+    }
+  },
+  "landing": {
+    "createInvoice": "Create my invoice",
+    "learnMore": "Learn more",
+    "poweredBy": "Powered by",
+    "hero": {
+      "eyebrow": "On-chain invoicing for Web3",
+      "titleBefore": "B2B Invoicing,",
+      "titleHighlight": "Verified On-Chain",
+      "subtitle": "Create certified invoices, prove your identity with World ID, and get paid in stablecoins — all secured on-chain."
+    },
+    "featuresSection": {
+      "eyebrow": "Why Onvo",
+      "title": "Trust at every step"
+    },
+    "features": {
+      "worldId": {
+        "title": "World ID",
+        "subtitle": "Proof of Humanity",
+        "description": "Every invoice issuer is verified as a real human via World ID 4.0. No bots, no fraud — only trusted identities can create invoices on Onvo."
+      },
+      "ledger": {
+        "title": "Ledger",
+        "subtitle": "Clear Signing",
+        "description": "Every transaction is signed securely with Ledger hardware wallets. See exactly what you sign before you sign it — full transparency, zero surprises."
+      },
+      "arc": {
+        "title": "Arc",
+        "subtitle": "Stablecoin Payments",
+        "description": "Pay invoices in EURC or USDC on Circle's Arc L1. Fast finality, low fees, and fully on-chain settlement for every transaction."
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "How it works",
+      "title": "Three steps to get paid"
+    },
+    "steps": {
+      "verify": {
+        "number": "01",
+        "title": "Verify your identity",
+        "description": "Prove you are a real human with World ID — one-time setup, privacy-preserving."
+      },
+      "create": {
+        "number": "02",
+        "title": "Create your invoice",
+        "description": "Fill in the details, preview in real-time, and certify on-chain with a SHA-256 hash."
+      },
+      "paid": {
+        "number": "03",
+        "title": "Get paid in stablecoins",
+        "description": "Share a unique payment link. Your client pays in EURC/USDC — settled instantly on Arc."
+      }
+    },
+    "sponsors": {
+      "world": { "label": "Identity" },
+      "arc": { "label": "Payments" },
+      "ledger": { "label": "Security" }
+    },
+    "finalCta": {
+      "title": "Ready to get started?",
+      "subtitle": "Join the future of B2B invoicing. Create your first verified invoice in minutes."
+    },
+    "footer": {
+      "builtFor": "Built for ETHGlobal Cannes 2026"
+    }
   }
 }

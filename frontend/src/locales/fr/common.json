@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "The Ballot Project",
-    "description": "Tableau de bord de la dApp de vote"
+    "title": "Onvo",
+    "description": "Facturation B2B vérifiée on-chain avec World ID"
   },
   "nav": {
     "mobileMenu": "Menu de navigation",
@@ -16,7 +16,31 @@
   },
   "wallet": {
     "connect": "Connecter",
-    "disconnect": "Déconnecter"
+    "disconnect": "Déconnecter",
+    "connecting": "Connexion…"
+  },
+  "brand": {
+    "logoAria": "ONVO"
+  },
+  "errors": {
+    "rpSignatureFailed": "Impossible de récupérer la signature RP",
+    "proofVerificationFailed": "Échec de la vérification de la preuve"
+  },
+  "ui": {
+    "close": "Fermer",
+    "paginationNav": "Pagination",
+    "goToPreviousPage": "Aller à la page précédente",
+    "goToNextPage": "Aller à la page suivante",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "morePages": "Plus de pages",
+    "breadcrumbNav": "Fil d'Ariane",
+    "breadcrumbMore": "Plus",
+    "carouselRole": "carrousel",
+    "slideRole": "diapositive",
+    "carouselPrevious": "Diapositive précédente",
+    "carouselNext": "Diapositive suivante",
+    "datePickerPick": "Choisir une date"
   },
   "pay": {
     "title": "Paiement de facture",
@@ -80,13 +104,13 @@
   },
   "notFound": {
     "title": "Page introuvable",
-    "description": "Cette page n’existe pas ou le lien est incorrect. Utilisez la navigation ou les raccourcis ci-dessous.",
-    "backHome": "Retour à l’accueil"
+    "description": "Cette page n'existe pas ou le lien est incorrect. Utilisez la navigation ou les raccourcis ci-dessous.",
+    "backHome": "Retour à l'accueil"
   },
   "account": {
     "title": "Vos droits",
     "description": "Informations sur vos droits dans The Ballot Project.",
-    "registrationStatus": "Statut d’inscription",
+    "registrationStatus": "Statut d'inscription",
     "registered": "Inscrit",
     "notRegistered": "Non inscrit",
     "hasVoted": "A voté",
@@ -98,7 +122,7 @@
   },
   "chairPerson": {
     "title": "Président du scrutin",
-    "description": "L’adresse propriétaire du projet The Ballot.",
+    "description": "L'adresse propriétaire du projet The Ballot.",
     "address": "Adresse"
   },
   "proposalsList": {
@@ -109,8 +133,8 @@
     "voteCount": "Nombre de votes"
   },
   "votersCount": {
-    "title": "Nombre d’électeurs",
-    "description": "Nombre total d’électeurs inscrits dans The Ballot Project.",
+    "title": "Nombre d'électeurs",
+    "description": "Nombre total d'électeurs inscrits dans The Ballot Project.",
     "totalVoters": "Total des électeurs"
   },
   "winningProposal": {
@@ -120,7 +144,7 @@
   },
   "voteCard": {
     "title": "Voter",
-    "description": "En tant qu’électeur inscrit, vous pouvez voter pour une proposition.",
+    "description": "En tant qu'électeur inscrit, vous pouvez voter pour une proposition.",
     "alreadyVoted": "Vous avez déjà voté pour ce scrutin.",
     "proposalLabel": "Proposition",
     "selectPlaceholder": "Choisir une proposition…",
@@ -128,14 +152,14 @@
   },
   "giveRight": {
     "title": "Accorder le droit de vote",
-    "description": "En tant qu’administrateur, vous pouvez accorder le droit de vote à une autre adresse.",
+    "description": "En tant qu'administrateur, vous pouvez accorder le droit de vote à une autre adresse.",
     "address": "Adresse",
     "submit": "Accorder",
     "placeholder": "0x…"
   },
   "delegate": {
     "title": "Déléguer",
-    "description": "En tant qu’électeur inscrit, vous pouvez déléguer votre droit de vote à une autre adresse.",
+    "description": "En tant qu'électeur inscrit, vous pouvez déléguer votre droit de vote à une autre adresse.",
     "cannotDelegate": "Vous ne pouvez pas déléguer car vous avez déjà voté pour ce scrutin.",
     "address": "Adresse",
     "submit": "Déléguer",
@@ -145,7 +169,7 @@
     "recentTitle": "Événements récents",
     "recentDescription": "Les cinq derniers événements du contrat de scrutin.",
     "allTitle": "Tous les événements du contrat",
-    "allDescription": "Vue d’ensemble des événements récents du contrat de scrutin.",
+    "allDescription": "Vue d'ensemble des événements récents du contrat de scrutin.",
     "noEvents": "Aucun événement trouvé.",
     "type": "Type",
     "details": "Détails",
@@ -153,13 +177,13 @@
     "transaction": "Transaction",
     "na": "N/D",
     "unknownEvent": "Événement inconnu",
-    "detailGiveRight": "L’électeur {{addr}} a été inscrit",
+    "detailGiveRight": "L'électeur {{addr}} a été inscrit",
     "detailDelegate": "{{from}} a délégué à {{to}}",
-    "detailVote": "L’électeur {{voter}} a voté pour la proposition {{proposal}}"
+    "detailVote": "L'électeur {{voter}} a voté pour la proposition {{proposal}}"
   },
   "voterEventsTable": {
     "title": "Inscriptions des électeurs",
-    "description": "Événements récents d’inscription et de délégation du contrat de scrutin."
+    "description": "Événements récents d'inscription et de délégation du contrat de scrutin."
   },
   "voteEventsTable": {
     "title": "Activité de vote",
@@ -168,7 +192,8 @@
   "theme": {
     "light": "Clair",
     "dark": "Sombre",
-    "system": "Système"
+    "system": "Appareil",
+    "toggleAria": "Thème"
   },
   "language": {
     "label": "Langue",
@@ -182,5 +207,266 @@
     "pendingDescription": "La transaction est en cours de traitement…",
     "successTitle": "Succès",
     "successDescription": "La transaction a réussi."
+  },
+  "auth": {
+    "tagline": "Facturation B2B avec World ID",
+    "verifyIntro": "Vérifiez votre identité avec World ID pour accéder à la plateforme.",
+    "verifyButton": "Vérifier avec World ID",
+    "initError": "Impossible d'initialiser la vérification. Réessayez.",
+    "verificationError": "Erreur de vérification : {{code}}",
+    "stagingNoteBefore": "Environnement de staging — utilisez le",
+    "stagingNoteAfter": "pour tester",
+    "simulatorLink": "simulateur World ID"
+  },
+  "emitterNav": {
+    "dashboard": "Tableau de bord",
+    "newInvoice": "Nouvelle facture",
+    "logOut": "Déconnexion"
+  },
+  "invoice": {
+    "status": {
+      "pending": "En attente",
+      "paid": "Payée",
+      "cancelled": "Annulée"
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "subtitle": "Factures émises par votre wallet sur Arc Testnet.",
+      "newInvoice": "Nouvelle facture",
+      "exportAllCsv": "Exporter tout (CSV)",
+      "connectWalletHint": "Connectez votre wallet pour voir les factures liées à cette adresse.",
+      "loading": "Chargement…",
+      "emptyState": "Aucune facture enregistrée localement. Créez-en une ou importez les IDs dans le stockage.",
+      "colId": "ID",
+      "colRecipient": "Destinataire",
+      "colAmountRaw": "Montant (brut)",
+      "colToken": "Token",
+      "colStatus": "Statut",
+      "colActions": "Actions",
+      "view": "Voir",
+      "export": "Exporter",
+      "cancel": "Annuler",
+      "connectWorldIdLink": "Connectez-vous avec World ID",
+      "loadingSessionAria": "Chargement de la session"
+    },
+    "detail": {
+      "worldIdRequired": "World ID requis",
+      "invalidId": "ID invalide.",
+      "loading": "Chargement…",
+      "notFound": "Facture introuvable on-chain (ou réseau incorrect).",
+      "invoiceLabel": "Facture",
+      "hashPdf": "Hash PDF",
+      "emitter": "Émetteur",
+      "recipient": "Destinataire",
+      "amountWei": "Montant (wei, plus petite unité)",
+      "token": "Token",
+      "docNumber": "N° pièce",
+      "registeredOffice": "Siège social (hors chaîne)",
+      "clientRegisteredOffice": "Siège social client (hors chaîne)",
+      "client": "Client",
+      "emitterWorldId": "Numéro World ID (émetteur)",
+      "backDashboard": "Tableau de bord",
+      "payPage": "Page paiement",
+      "downloadPdf": "Télécharger PDF",
+      "downloadStarted": "Téléchargement démarré.",
+      "pdfUnavailable": "PDF non disponible en local.",
+      "loadingSessionAria": "Chargement de la session"
+    },
+    "form": {
+      "accessDenied": "Accès réservé —",
+      "accessDeniedLink": "connectez-vous avec World ID",
+      "accessDeniedSuffix": ".",
+      "successTitle": "Facture enregistrée",
+      "successSubtitle": "Partagez le lien de paiement avec votre client.",
+      "backDashboard": "Retour au tableau de bord",
+      "openPayPage": "Ouvrir la page paiement",
+      "title": "Nouvelle facture",
+      "subtitle": "Remplissez le formulaire — l'aperçu se met à jour (300 ms).",
+      "walletConnectHint": "Connectez un wallet (émetteur) pour signer la transaction.",
+      "firstInvoiceHint": "Première facture avec ce wallet : au clic sur « Générer la facture », l'orb World ID s'ouvre pour enregistrer votre adresse on-chain, puis le PDF et la transaction suivent dans la foulée.",
+      "sectionEmitter": "Émetteur",
+      "sectionClient": "Client",
+      "sectionLines": "Lignes",
+      "emitterName": "Nom / Raison sociale",
+      "emitterStreet": "Rue et numéro",
+      "emitterStreetPlaceholder": "ex. 12 rue de la République",
+      "emitterStreetLine2": "Complément d'adresse (optionnel)",
+      "emitterStreetLine2Placeholder": "Bâtiment, étage, appartement…",
+      "emitterPostalCode": "Code postal",
+      "emitterCity": "Ville",
+      "emitterCountry": "Pays (optionnel)",
+      "emitterCountryPlaceholder": "ex. France",
+      "emitterSiretOptional": "SIRET (optionnel)",
+      "emitterEmail": "Email",
+      "clientName": "Nom",
+      "clientStreet": "Rue et numéro",
+      "clientStreetPlaceholder": "ex. 45 avenue du Client",
+      "clientStreetLine2": "Complément d'adresse (optionnel)",
+      "clientStreetLine2Placeholder": "Bâtiment, étage, appartement…",
+      "clientPostalCode": "Code postal",
+      "clientCity": "Ville",
+      "clientCountry": "Pays (optionnel)",
+      "clientCountryPlaceholder": "ex. France",
+      "clientEmailOptional": "Email (optionnel)",
+      "currency": "Devise (stablecoin)",
+      "invoiceNumber": "N° facture",
+      "invoiceNumberPlaceholder": "F-0x…-2026-04-0001",
+      "invoiceNumberLoading": "Lecture du prochain numéro on-chain…",
+      "invoiceNumberChainError": "Lecture impossible : vérifiez le réseau Arc et l'adresse du contrat, ou saisissez un numéro manuellement.",
+      "issueDate": "Date d'émission",
+      "dueDate": "Échéance",
+      "notesOptional": "Notes (optionnel)",
+      "description": "Description",
+      "qty": "Qté",
+      "unitPriceHt": "P.U. HT",
+      "vatPercent": "TVA %",
+      "addLine": "+ Ligne",
+      "removeLine": "Retirer",
+      "summary": "Résumé",
+      "summaryLine": "Total HT : {{ht}} — TVA : {{vat}} — Total TTC : {{ttc}}",
+      "previewLabel": "Aperçu",
+      "submitPreparingWorldId": "Préparation World ID…",
+      "submitTransaction": "Transaction…",
+      "submitGenerate": "Générer la facture",
+      "walletPlaceholder": "0x…"
+    },
+    "preview": {
+      "brand": "Onvo",
+      "invoiceTitle": "Facture",
+      "issuedOn": "Émis le",
+      "dueOn": "Échéance",
+      "emitter": "Émetteur",
+      "worldIdNumber": "Numéro World ID",
+      "client": "Client",
+      "siretPrefix": "SIRET",
+      "thDescription": "Description",
+      "thQty": "Qté",
+      "thUnitHt": "P.U. HT",
+      "thVatPct": "TVA %",
+      "thAmountHt": "Montant HT",
+      "thVat": "TVA",
+      "thTotalTtc": "Total TTC",
+      "totalHt": "Total HT",
+      "totalVat": "Total TVA",
+      "totalTtc": "Total TTC",
+      "notes": "Notes",
+      "footer": "Document généré par Onvo — hash on-chain à l'émission."
+    },
+    "registerEmitter": {
+      "title": "Enregistrement émetteur on-chain",
+      "description": "Une transaction <code>registerWithWorldId</code> lie votre wallet à World ID sur Arc. Utilisez le même wallet que pour signer les factures.",
+      "button": "Enregistrer mon wallet avec World ID"
+    },
+    "errors": {
+      "worldIdV3Expected": "Réponse World ID v3 attendue (Orb legacy).",
+      "worldIdV4Expected": "Réponse World ID v4 attendue.",
+      "worldIdV4IncompleteProof": "Preuve v4 incomplète (au moins 5 éléments attendus).",
+      "worldIdProofDecodeFailed": "Impossible de décoder la preuve World ID.",
+      "worldIdProofFormatUnsupported": "Format de preuve non pris en charge (utilisez Orb legacy ou v4 hors session)."
+    },
+    "validation": {
+      "lineDescriptionRequired": "Description requise",
+      "quantityPositive": "Quantité > 0",
+      "priceNonnegative": "Prix ≥ 0",
+      "emitterNameRequired": "Nom requis",
+      "emitterStreetRequired": "Rue et numéro requis",
+      "emitterPostalCodeRequired": "Code postal requis",
+      "emitterCityRequired": "Ville requise",
+      "invalidEmail": "Adresse email invalide",
+      "clientRequired": "Client requis",
+      "clientStreetRequired": "Rue et numéro (client) requis",
+      "clientPostalCodeRequired": "Code postal (client) requis",
+      "clientCityRequired": "Ville (client) requise",
+      "minOneLine": "Au moins une ligne",
+      "invoiceNumberRequired": "N° de facture requis",
+      "issueDateRequired": "Date d'émission requise",
+      "dueDateRequired": "Échéance requise"
+    },
+    "toast": {
+      "arcNetworkRequired": "Arc Testnet (5042002) requis — changez de réseau dans le wallet.",
+      "cancelSent": "Annulation envoyée.",
+      "cancelFailed": "Annulation impossible",
+      "pdfNotStored": "PDF non stocké localement pour cette facture.",
+      "walletIssuerRequired": "Connectez le wallet émetteur pour signer la facture.",
+      "previewUnavailable": "Aperçu indisponible.",
+      "tokenEnv": "Configurez NEXT_PUBLIC_TOKEN_USDC et NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).",
+      "receiptNoId": "Transaction OK mais invoiceId introuvable dans les logs.",
+      "invoiceCreated": "Facture créée on-chain.",
+      "invoiceCreateFailed": "Échec de la création de la facture.",
+      "worldIdRejected": "Vérification World ID refusée",
+      "walletRequiredShort": "Wallet requis.",
+      "emitterOrInvoiceFailed": "Échec inscription émetteur ou facture.",
+      "verifyingOnChain": "Vérification on-chain en cours, réessayez dans un instant.",
+      "worldIdInitRp": "Impossible d'initialiser World ID (RP).",
+      "worldIdCancelled": "World ID annulé ou erreur.",
+      "registerSuccess": "Adresse enregistrée comme émetteur vérifié.",
+      "registerTxFailed": "Transaction registerWithWorldId échouée.",
+      "connectWalletFirst": "Connectez d'abord votre wallet (même adresse que pour les factures)."
+    }
+  },
+  "landing": {
+    "createInvoice": "Créer ma facture",
+    "learnMore": "En savoir plus",
+    "poweredBy": "Propulsé par",
+    "hero": {
+      "eyebrow": "Facturation on-chain pour le Web3",
+      "titleBefore": "Facturation B2B,",
+      "titleHighlight": "Vérifiée on-chain",
+      "subtitle": "Créez des factures certifiées, prouvez votre identité avec World ID et soyez payé en stablecoins — le tout sécurisé on-chain."
+    },
+    "featuresSection": {
+      "eyebrow": "Pourquoi Onvo",
+      "title": "La confiance à chaque étape"
+    },
+    "features": {
+      "worldId": {
+        "title": "World ID",
+        "subtitle": "Preuve d'humanité",
+        "description": "Chaque émetteur de facture est vérifié comme un humain réel via World ID 4.0. Pas de bots ni de fraude — seules des identités de confiance peuvent créer des factures sur Onvo."
+      },
+      "ledger": {
+        "title": "Ledger",
+        "subtitle": "Clear Signing",
+        "description": "Chaque transaction est signée en toute sécurité avec un portefeuille matériel Ledger. Voyez exactement ce que vous signez avant de signer — transparence totale, aucune surprise."
+      },
+      "arc": {
+        "title": "Arc",
+        "subtitle": "Paiements en stablecoins",
+        "description": "Payez les factures en EURC ou USDC sur l'Arc L1 de Circle. Finalité rapide, frais réduits et règlement entièrement on-chain pour chaque transaction."
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "Comment ça marche",
+      "title": "Trois étapes pour être payé"
+    },
+    "steps": {
+      "verify": {
+        "number": "01",
+        "title": "Vérifiez votre identité",
+        "description": "Prouvez que vous êtes un humain réel avec World ID — configuration unique, respect de la vie privée."
+      },
+      "create": {
+        "number": "02",
+        "title": "Créez votre facture",
+        "description": "Renseignez les détails, prévisualisez en temps réel et certifiez on-chain avec un hash SHA-256."
+      },
+      "paid": {
+        "number": "03",
+        "title": "Soyez payé en stablecoins",
+        "description": "Partagez un lien de paiement unique. Votre client paie en EURC/USDC — réglé instantanément sur Arc."
+      }
+    },
+    "sponsors": {
+      "world": { "label": "Identité" },
+      "arc": { "label": "Paiements" },
+      "ledger": { "label": "Sécurité" }
+    },
+    "finalCta": {
+      "title": "Prêt à commencer ?",
+      "subtitle": "Rejoignez l'avenir de la facturation B2B. Créez votre première facture vérifiée en quelques minutes."
+    },
+    "footer": {
+      "builtFor": "Conçu pour ETHGlobal Cannes 2026"
+    }
   }
 }

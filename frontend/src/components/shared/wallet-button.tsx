@@ -38,7 +38,7 @@ export function WalletButton() {
       disabled={isPending || !injected}
       onClick={() => injected && connect({ connector: injected })}
     >
-      {isPending ? '…' : t('wallet.connect')}
+      {isPending ? t('wallet.connecting') : t('wallet.connect')}
     </Button>
   );
 }

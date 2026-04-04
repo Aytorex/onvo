@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/dashboard', '/invoice'];
-const PUBLIC_PREFIXES = ['/pay', '/api', '/_next', '/favicon.ico'];
+const PUBLIC_PREFIXES = ['/pay', '/auth', '/api', '/_next', '/favicon.ico'];
 const SESSION_COOKIE = 'onvo_worldid_session';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === '/') return NextResponse.next();

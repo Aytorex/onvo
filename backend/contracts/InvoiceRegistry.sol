@@ -20,11 +20,15 @@ interface IWorldIdRouter {
 
 /// @title InvoiceRegistry
 /// @notice On-chain invoice hash registry with World ID–gated emitters and ERC-20 settlement.
+/// @dev Invoice IDs are packed `uint256` values encoding `F-<emitter>-<year>-<month>-<seq>` (human form off-chain).
+///      Layout: address (160 bits) << 96 | year (16) << 80 | month (8) << 72 | sequence (40 low bits).
 /// @custom:clear-signing ERC-7730 v2 descriptor: `contracts/erc7730/invoice-registry.erc7730.json` (see https://eips.ethereum.org/EIPS/eip-7730).
 /// After deployment, run `bun run erc7730:bindings` with `INVOICE_REGISTRY_ADDRESS` (and optional `CHAIN_ID`) so wallets can bind `context.contract.deployments`.
 /// After ABI changes, run `bun run erc7730:sync` to verify `display.formats` selectors still match the contract.
 contract InvoiceRegistry is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    uint256 private constant _SEQ_MASK = (1 << 40) - 1;
 
     enum Status {
         Pending,
@@ -41,12 +45,14 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         Status status;
     }
 
-    uint256 private _nextInvoiceId;
     mapping(uint256 => Invoice) private _invoices;
     mapping(bytes32 => bool) private _hashUsed;
     mapping(address => bool) public isEmitterVerified;
     mapping(uint256 => bool) private _nullifierUsed;
     mapping(address => bool) public allowedToken;
+    /// @dev Count of invoices already minted for `emitter` in calendar month `year * 100 + month`.
+    mapping(address => mapping(uint256 => uint256))
+        private _invoiceCountByEmitterMonth;
 
     address public immutable worldIdRouter;
     uint256 public immutable externalNullifierHash;
@@ -121,12 +127,127 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         );
     }
 
+    /// @notice Decodes a packed invoice id (same packing as {packInvoiceId}).
+    function parseInvoiceId(
+        uint256 invoiceId
+    )
+        external
+        pure
+        returns (
+            address emitter_,
+            uint256 year,
+            uint256 month,
+            uint256 sequence
+        )
+    {
+        return _parseInvoiceId(invoiceId);
+    }
+
+    function _parseInvoiceId(
+        uint256 invoiceId
+    )
+        internal
+        pure
+        returns (
+            address emitter_,
+            uint256 year,
+            uint256 month,
+            uint256 sequence
+        )
+    {
+        emitter_ = address(uint160(invoiceId >> 96));
+        year = (invoiceId >> 80) & 0xffff;
+        month = (invoiceId >> 72) & 0xff;
+        sequence = invoiceId & _SEQ_MASK;
+    }
+
+    /// @notice Packs emitter, calendar year/month, and per-month sequence into the on-chain invoice id.
+    function packInvoiceId(
+        address emitter_,
+        uint256 year,
+        uint256 month,
+        uint256 sequence
+    ) public pure returns (uint256 invoiceId) {
+        require(year <= type(uint16).max, "InvoiceRegistry: year overflow");
+        require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
+        require(
+            sequence > 0 && sequence <= _SEQ_MASK,
+            "InvoiceRegistry: invalid sequence"
+        );
+        invoiceId =
+            (uint256(uint160(emitter_)) << 96) |
+            ((year & 0xffff) << 80) |
+            ((month & 0xff) << 72) |
+            (sequence & _SEQ_MASK);
+    }
+
+    function _yearMonthKey(
+        uint256 year,
+        uint256 month
+    ) internal pure returns (uint256) {
+        return year * 100 + month;
+    }
+
+    /// @notice Next 1-based sequence number for `emitter` in the given calendar month (what the next invoice will use).
+    function getNextInvoiceSequence(
+        address emitter_,
+        uint256 year,
+        uint256 month
+    ) public view returns (uint256) {
+        require(year >= 2000 && year <= 9999, "InvoiceRegistry: invalid year");
+        require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
+        uint256 ym = _yearMonthKey(year, month);
+        return _invoiceCountByEmitterMonth[emitter_][ym] + 1;
+    }
+
+    /// @notice Packed id the next `createInvoice` must pass for this emitter and month (human label: `F-<emitter>-<y>-<mm>-<seq>` off-chain).
+    function getNextInvoiceId(
+        address emitter_,
+        uint256 year,
+        uint256 month
+    ) external view returns (uint256) {
+        uint256 seq = getNextInvoiceSequence(emitter_, year, month);
+        return packInvoiceId(emitter_, year, month, seq);
+    }
+
+    function _validateNewInvoiceId(
+        uint256 invoiceId,
+        address emitter,
+        uint256 year,
+        uint256 month
+    ) internal view {
+        (
+            address idEmitter,
+            uint256 yId,
+            uint256 mId,
+            uint256 seq
+        ) = _parseInvoiceId(invoiceId);
+        require(idEmitter == emitter, "InvoiceRegistry: id emitter mismatch");
+        require(
+            yId == year && mId == month,
+            "InvoiceRegistry: id period mismatch"
+        );
+        uint256 ym = _yearMonthKey(year, month);
+        require(
+            seq == _invoiceCountByEmitterMonth[emitter][ym] + 1,
+            "InvoiceRegistry: id sequence mismatch"
+        );
+        require(
+            _invoices[invoiceId].emitter == address(0),
+            "InvoiceRegistry: id already used"
+        );
+    }
+
+    /// @param invoiceId Packed id; must equal {getNextInvoiceId}(`emitter`, `year`, `month`) and encode `emitter` as the issuer wallet.
     function createInvoice(
+        uint256 invoiceId,
         bytes32 invoiceHash_,
         address emitter,
         address recipient,
         uint256 amount,
-        address token
+        address token,
+        uint256 year,
+        uint256 month
     ) external {
         require(msg.sender == emitter, "InvoiceRegistry: not emitter");
         require(
@@ -137,9 +258,15 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         require(allowedToken[token], "InvoiceRegistry: token not allowed");
         require(amount > 0, "InvoiceRegistry: zero amount");
         require(!_hashUsed[invoiceHash_], "InvoiceRegistry: hash used");
+        require(year >= 2000 && year <= 9999, "InvoiceRegistry: invalid year");
+        require(month >= 1 && month <= 12, "InvoiceRegistry: invalid month");
+
+        _validateNewInvoiceId(invoiceId, emitter, year, month);
 
         _hashUsed[invoiceHash_] = true;
-        uint256 invoiceId = ++_nextInvoiceId;
+        uint256 ym = _yearMonthKey(year, month);
+        _invoiceCountByEmitterMonth[emitter][ym] =
+            _invoiceCountByEmitterMonth[emitter][ym] + 1;
         _invoices[invoiceId] = Invoice({
             invoiceHash: invoiceHash_,
             emitter: emitter,
@@ -209,10 +336,8 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     function _requireInvoice(
         uint256 invoiceId
     ) internal view returns (Invoice storage) {
-        require(
-            invoiceId > 0 && invoiceId <= _nextInvoiceId,
-            "InvoiceRegistry: invalid id"
-        );
-        return _invoices[invoiceId];
+        Invoice storage inv = _invoices[invoiceId];
+        require(inv.emitter != address(0), "InvoiceRegistry: invalid id");
+        return inv;
     }
 }

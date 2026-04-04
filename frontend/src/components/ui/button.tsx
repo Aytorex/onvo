@@ -27,6 +27,14 @@ const buttonVariants = cva(
         icon: 'h-10 w-10 rounded-full',
       },
     },
+    compoundVariants: [
+      {
+        variant: 'outline',
+        size: 'icon',
+        class:
+          'relative rounded-md border border-input shadow-sm hover:bg-accent hover:text-accent-foreground',
+      },
+    ],
     defaultVariants: {
       variant: 'default',
       size: 'default',

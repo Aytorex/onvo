@@ -234,6 +234,11 @@ export const invoiceRegistryContract = {
     {
       inputs: [
         {
+          internalType: 'uint256',
+          name: 'invoiceId',
+          type: 'uint256',
+        },
+        {
           internalType: 'bytes32',
           name: 'invoiceHash_',
           type: 'bytes32',
@@ -258,10 +263,146 @@ export const invoiceRegistryContract = {
           name: 'token',
           type: 'address',
         },
+        {
+          internalType: 'uint256',
+          name: 'year',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'month',
+          type: 'uint256',
+        },
       ],
       name: 'createInvoice',
       outputs: [],
       stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'emitter_',
+          type: 'address',
+        },
+        {
+          internalType: 'uint256',
+          name: 'year',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'month',
+          type: 'uint256',
+        },
+      ],
+      name: 'getNextInvoiceId',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: '',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'emitter_',
+          type: 'address',
+        },
+        {
+          internalType: 'uint256',
+          name: 'year',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'month',
+          type: 'uint256',
+        },
+      ],
+      name: 'getNextInvoiceSequence',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: '',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'emitter_',
+          type: 'address',
+        },
+        {
+          internalType: 'uint256',
+          name: 'year',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'month',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'sequence',
+          type: 'uint256',
+        },
+      ],
+      name: 'packInvoiceId',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: 'invoiceId',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'pure',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'uint256',
+          name: 'invoiceId',
+          type: 'uint256',
+        },
+      ],
+      name: 'parseInvoiceId',
+      outputs: [
+        {
+          internalType: 'address',
+          name: 'emitter_',
+          type: 'address',
+        },
+        {
+          internalType: 'uint256',
+          name: 'year',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'month',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint256',
+          name: 'sequence',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'pure',
       type: 'function',
     },
     {
@@ -429,3 +570,7 @@ export const invoiceRegistryContract = {
     },
   ] as const,
 };
+
+/** Dev 1 ABI / address — aliases for `import { INVOICE_REGISTRY_ABI } from '@/lib/contract'`. */
+export const INVOICE_REGISTRY_ADDRESS = invoiceRegistryContract.address;
+export const INVOICE_REGISTRY_ABI = invoiceRegistryContract.abi;

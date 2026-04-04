@@ -33,10 +33,15 @@
           }
         ]
       },
-      "createInvoice(bytes32 invoiceHash_,address emitter,address recipient,uint256 amount,address token)": {
+      "createInvoice(uint256 invoiceId,bytes32 invoiceHash_,address emitter,address recipient,uint256 amount,address token,uint256 year,uint256 month)": {
         "intent": "Register verified invoice on-chain",
-        "interpolatedIntent": "Invoice registration — total {amount} · client {recipient} · pay to {emitter} · ref {invoiceHash_}",
+        "interpolatedIntent": "Invoice {year}-{month} — id {invoiceId} · total {amount} · client {recipient} · pay to {emitter} · ref {invoiceHash_}",
         "fields": [
+          {
+            "path": "invoiceId",
+            "label": "Packed invoice ID (F-…-YYYY-MM-seq)",
+            "format": "raw"
+          },
           {
             "path": "invoiceHash_",
             "label": "Payment reference (PDF hash)",
@@ -64,6 +69,16 @@
             "path": "token",
             "label": "Currency (settlement token)",
             "format": "addressName"
+          },
+          {
+            "path": "year",
+            "label": "Invoice year (calendar)",
+            "format": "raw"
+          },
+          {
+            "path": "month",
+            "label": "Invoice month (1–12)",
+            "format": "raw"
           }
         ]
       },

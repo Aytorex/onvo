@@ -4,7 +4,7 @@ import hardhatToolboxMochaEthers from '@nomicfoundation/hardhat-toolbox-mocha-et
 
 const {
   ETHERSCAN_API_KEY = '',
-  ARCSCAN_API_KEY = '',
+  ARCSCAN_API_KEY = 'proapi_cf3E2OPkgbuqbegbTxZMiClbKyWmkXP6ifSsbVAMp7hDEsogKSyywBOHsH7Pn269r_eFbfka',
   ALCHEMY_ENDPOINT_URL_ARC_TESTNET = '',
   ALCHEMY_API_KEY = '',
   ARC_TESTNET_RPC_URL = 'https://rpc.testnet.arc.network',

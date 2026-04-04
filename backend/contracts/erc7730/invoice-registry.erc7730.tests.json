@@ -2,10 +2,11 @@
   "$schema": "https://raw.githubusercontent.com/LedgerHQ/clear-signing-erc7730-registry/master/specs/erc7730-tests.schema.json",
   "tests": [
     {
-      "description": "createInvoice: on-chain fields only. Human-readable issuer_name, client_name, items_summary, timestamp, EUR label are NOT in calldata — only PDF hash (binds off-chain PDF incl. summary), issuer wallet, client wallet, token amount, token address. items_summary for this vector was hashed into payment reference (INV-2026-03|Acme|3 services IT - Mars 2026).",
-      "rawTx": "0x02f90113827a6980843b9aca008504a817c800830dbba0945fbdb2315678afecb367f032d93f642f64180aa380b8a4d65413b5e91d2dc6d2f85c28aa0ebc60805a50e71a1e8504d939a7838f5d95d5e28b3ba6000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8000000000000000000000000000000000000000000000000000000000016e3600000000000000000000000003600000000000000000000000000000000000000c080a00437b30d07ad279ca33f6854e19b11bd4390d3a2110bf3518d39ee48f445318ea02a01b8e0e1c90ba8f878ef3747e84c0fc4449ad8c822fdab51a3a301d2701dbd",
+      "description": "createInvoice: packed invoice id + calendar year/month + PDF hash, issuer, client, amount, token (same logical vector as pre–invoice-id schema; year/month 2026/4, seq 1).",
+      "rawTx": "0x02f90174827a6980843b9aca008504a817c800830dbba0945fbdb2315678afecb367f032d93f642f64180aa380b901046b0fb2eaf39fd6e51aad88f6f4ce6ab8827279cfffb9226607ea04000000000000000001e91d2dc6d2f85c28aa0ebc60805a50e71a1e8504d939a7838f5d95d5e28b3ba6000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8000000000000000000000000000000000000000000000000000000000016e360000000000000000000000000360000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007ea0000000000000000000000000000000000000000000000000000000000000004c001a04d9eb0b5df4df22b622abe70abdf6693dfc4813799ad481b68e755b7038d0fd4a0580c08d59d8218573e56884d96b4d085a570518710ff9fe159b48fc7533d9fb4",
       "expectedTexts": [
         "Register verified invoice on-chain",
+        "Packed invoice ID (F-…-YYYY-MM-seq)",
         "Payment reference (PDF hash)",
         "e91d2dc6d2f85c28aa0ebc60805a50e71a1e8504d939a7838f5d95d5e28b3ba6",
         "Issuer wallet (receives funds)",
@@ -14,7 +15,9 @@
         "70997970C51812dc3A010C7d01b50e0d17dc79C8",
         "Total amount (TTC, token units)",
         "Currency (settlement token)",
-        "3600000000000000000000000000000000000000"
+        "3600000000000000000000000000000000000000",
+        "Invoice year (calendar)",
+        "Invoice month (1–12)"
       ]
     },
     {

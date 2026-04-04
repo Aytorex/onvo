@@ -37,9 +37,10 @@
     "picomatch": "4.0.4"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-foundry": "^3.0.0",
+    "@cspell/dict-fr-fr": "^2.3.2",
     "@nomicfoundation/hardhat-ethers": "^4.0.6",
     "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.0",
+    "@nomicfoundation/hardhat-foundry": "^3.0.0",
     "@nomicfoundation/hardhat-ignition": "^3.1.0",
     "@nomicfoundation/hardhat-ignition-ethers": "^3.1.0",
     "@nomicfoundation/hardhat-keystore": "^3.0.0",
@@ -52,8 +53,8 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.19.0",
     "chai": "^5.2.0",
-    "@cspell/dict-fr-fr": "^2.3.2",
     "cspell": "^9.7.0",
+    "dotenv": "^17.4.0",
     "ethers": "^6.14.0",
     "hardhat": "^3.2.0",
     "mocha": "^11.0.0",
