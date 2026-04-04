@@ -38,12 +38,14 @@ export function PayInvoiceWorldIdCard({
         'relative overflow-hidden rounded-3xl border shadow-sm',
         'border-onvo-purple/20 bg-gradient-to-br from-card via-card to-onvo-purple/[0.07]',
         'dark:border-onvo-purple/30 dark:to-onvo-cyan/[0.05]',
-        compact ? 'p-4 sm:p-5' : 'p-5 sm:p-6',
+        compact ? 'p-3 sm:p-4' : 'p-5 sm:p-6',
       )}
     >
       <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/10 blur-3xl" />
 
-      <div className="relative flex flex-col gap-4">
+      <div
+        className={cn('relative flex flex-col', compact ? 'gap-3' : 'gap-4')}
+      >
         <header className="flex min-w-0 flex-1 items-center gap-3">
           <div className="relative h-8 shrink-0 w-[5.5rem]">
             <Image

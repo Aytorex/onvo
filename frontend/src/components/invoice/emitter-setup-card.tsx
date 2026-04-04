@@ -1,47 +1,19 @@
 'use client';
 
 import { BindWorldIdWidget } from '@/components/invoice/bind-world-id-widget';
+import { DynamicConnectButton } from '@/components/shared/dynamic-connect-button';
 import { Button } from '@/components/ui/button';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { cn } from '@/lib/utils';
-import {
-  Check,
-  CheckCircle2,
-  Lock,
-  Orbit,
-  Sparkles,
-  Wallet,
-} from 'lucide-react';
+import { Check, CheckCircle2, Lock, Orbit, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 
 type Props = {
   onRegistered?: () => void;
 };
 
 type StepState = 'complete' | 'current' | 'upcoming';
-
-function EmitterSetupConnectButton() {
-  const { t } = useTranslation('common');
-  const { connect, connectors, isPending } = useConnect();
-  const injected = connectors.find(
-    (c) => c.type === 'injected' || c.id === 'injected',
-  );
-
-  return (
-    <Button
-      type="button"
-      variant="default"
-      size="lg"
-      className="gap-2 text-base shadow-lg shadow-primary/25"
-      disabled={isPending || !injected}
-      onClick={() => injected && connect({ connector: injected })}
-    >
-      <Wallet className="size-5 shrink-0 opacity-90" aria-hidden />
-      {isPending ? t('wallet.connecting') : t('wallet.connect')}
-    </Button>
-  );
-}
 
 function StepMarker({ state, step }: { state: StepState; step: number }) {
   return (
@@ -171,7 +143,10 @@ export function EmitterSetupCard({ onRegistered }: Props) {
                         {t('invoice.dashboard.walletConnected')}
                       </Button>
                     ) : (
-                      <EmitterSetupConnectButton />
+                      <DynamicConnectButton
+                        size="lg"
+                        className="text-base shadow-lg shadow-[#4779FF]/30"
+                      />
                     )}
                   </div>
                 </div>

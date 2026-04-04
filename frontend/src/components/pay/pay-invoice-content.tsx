@@ -40,7 +40,7 @@ export function PayInvoiceContent({
     <div className="space-y-5 sm:space-y-6 lg:space-y-8">
       <PayInvoiceStatusAlerts invoice={invoice} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch lg:gap-10">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
         <div className="min-w-0 lg:col-span-7">
           <PayInvoiceDocumentColumn
             invoice={invoice}

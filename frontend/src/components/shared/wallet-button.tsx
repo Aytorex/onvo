@@ -10,15 +10,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { DynamicContext, DynamicWidget } from '@dynamic-labs/sdk-react-core';
+import { DynamicConnectButton } from '@/components/shared/dynamic-connect-button';
 import { EurcIcon, UsdcIcon } from '@/components/shared/stablecoin-icons';
 import { arcTestnet } from '@/lib/arc-chain';
 import { getTokenAddress, tokenDecimals } from '@/lib/invoice-tokens';
 import { LogOut, Wallet } from 'lucide-react';
-import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { erc20Abi, formatUnits } from 'viem';
-import { useAccount, useDisconnect, useReadContract } from 'wagmi';
+import { useWalletDisconnect } from '@/hooks/use-wallet-disconnect';
+import { useAccount, useReadContract } from 'wagmi';
 
 function shortAddr(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -59,9 +59,8 @@ function balanceSegment(
 
 export function WalletButton() {
   const { t, i18n } = useTranslation('common');
-  const dynamicCtx = useContext(DynamicContext);
   const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
+  const disconnectWallet = useWalletDisconnect();
   const [addressCopied, setAddressCopied] = useState(false);
   const [addressTooltipOpen, setAddressTooltipOpen] = useState(false);
   const copyFeedbackActiveRef = useRef(false);
@@ -291,7 +290,7 @@ export function WalletButton() {
                 size="icon"
                 className="h-7 w-7 shrink-0 rounded-full text-muted-foreground hover:bg-background/80 hover:text-foreground"
                 aria-label={t('wallet.disconnect')}
-                onClick={() => disconnect()}
+                onClick={() => void disconnectWallet()}
               >
                 <LogOut className="h-3.5 w-3.5" aria-hidden />
               </Button>
@@ -305,14 +304,5 @@ export function WalletButton() {
     );
   }
 
-  if (dynamicCtx?.sdkHasLoaded) {
-    return <DynamicWidget />;
-  }
-
-  return (
-    <Button variant="default" size="sm" className="gap-1.5" disabled>
-      <Wallet className="h-3.5 w-3.5 opacity-80" aria-hidden />
-      {t('wallet.connect')}
-    </Button>
-  );
+  return <DynamicConnectButton size="sm" />;
 }

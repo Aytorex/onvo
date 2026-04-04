@@ -48,7 +48,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-table": "^8.21.3",
-    "@wagmi/connectors": "^8.0.0",
+    "@wagmi/connectors": "^6.2.0",
     "@worldcoin/idkit": "^4.0.11",
     "@worldcoin/idkit-core": "^4.1.0",
     "@worldcoin/idkit-server": "^1.1.0",
