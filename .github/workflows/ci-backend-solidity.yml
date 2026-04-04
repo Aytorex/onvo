@@ -64,3 +64,16 @@ jobs:
           # SF: paths are relative to backend/. very_good_coverage splits `exclude` on spaces (not commas).
           # Mocks are exercised only as test doubles; production contracts are Ballot + InvoiceRegistry (Foundry tests).
           exclude: "lib/** contracts/mocks/**"
+
+      - name: Hardhat tests with coverage
+        run: |
+          cd backend
+          bun run test:hardhat:coverage
+
+      - name: Code coverage at 100% (Hardhat)
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: "./backend/coverage/lcov.info"
+          min_coverage: 100
+          # Same as ci-backend.yml: OpenZeppelin under lib/ is not part of our coverage target.
+          exclude: "lib/**"

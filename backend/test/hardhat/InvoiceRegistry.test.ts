@@ -450,6 +450,65 @@ describe('InvoiceRegistry', () => {
     });
   });
 
+  describe('invoice id helpers', () => {
+    it('parseInvoiceId decodes a packed id (external wrapper)', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      const packed = await registry.packInvoiceId(
+        emitter.address,
+        INV_YEAR,
+        INV_MONTH,
+        7n,
+      );
+      const [e, y, m, s] = await registry.parseInvoiceId(packed);
+      expect(e).to.equal(emitter.address);
+      expect(y).to.equal(INV_YEAR);
+      expect(m).to.equal(INV_MONTH);
+      expect(s).to.equal(7n);
+    });
+
+    it('getNextInvoiceSequence reflects count before and after createInvoice', async () => {
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
+      expect(
+        await registry.getNextInvoiceSequence(
+          emitter.address,
+          INV_YEAR,
+          INV_MONTH,
+        ),
+      ).to.equal(1n);
+      await registry
+        .connect(emitter)
+        .registerWithWorldId(1n, 1n, 901n, DUMMY_PROOF);
+      expect(
+        await registry.getNextInvoiceSequence(
+          emitter.address,
+          INV_YEAR,
+          INV_MONTH,
+        ),
+      ).to.equal(1n);
+      const id = await nextInvoiceId(registry, emitter.address);
+      await registry
+        .connect(emitter)
+        .createInvoice(
+          id,
+          ethers.keccak256(ethers.toUtf8Bytes('seq-hh')),
+          emitter.address,
+          payer.address,
+          1n,
+          token,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      expect(
+        await registry.getNextInvoiceSequence(
+          emitter.address,
+          INV_YEAR,
+          INV_MONTH,
+        ),
+      ).to.equal(2n);
+    });
+  });
+
   describe('constructor', () => {
     it('reverts when worldId router is zero', async () => {
       const [owner] = await ethers.getSigners();
