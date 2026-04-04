@@ -20,6 +20,8 @@ const nextConfig = {
     NEXT_PUBLIC_WORLD_RP_ID: process.env.NEXT_PUBLIC_WORLD_RP_ID ?? '',
     NEXT_PUBLIC_TOKEN_USDC: process.env.NEXT_PUBLIC_TOKEN_USDC ?? '',
     NEXT_PUBLIC_TOKEN_EURC: process.env.NEXT_PUBLIC_TOKEN_EURC ?? '',
+    NEXT_PUBLIC_WORLD_ID_GROUP_ID:
+      process.env.NEXT_PUBLIC_WORLD_ID_GROUP_ID ?? '1',
   },
   reactStrictMode: true,
   serverExternalPackages: ['pino-pretty', 'encoding'],

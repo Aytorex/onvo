@@ -19,17 +19,18 @@ import {
   getInvoicePdfBase64,
   getStoredInvoiceIds,
 } from '@/lib/invoice-storage';
+import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
+import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { useWorldID } from '@/lib/worldid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { arcTestnet } from 'viem/chains';
 import {
   useAccount,
-  useChainId,
   usePublicClient,
+  useReadContract,
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
@@ -65,16 +66,24 @@ export function DashboardClient() {
   const router = useRouter();
   const { authReady, isVerified } = useWorldID();
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
-  const chainId = useChainId();
+  const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync, isPending: isCancelPending } = useWriteContract();
+
+  const { data: emitterVerified, refetch: refetchEmitterVerified } =
+    useReadContract({
+      address: invoiceRegistryContract.address,
+      abi: invoiceRegistryContract.abi,
+      functionName: 'isEmitterVerified',
+      args: address ? [address] : undefined,
+      query: { enabled: !!address && isConnected },
+    });
 
   const [rows, setRows] = useState<InvoiceRowView[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!address || !publicClient) {
+    if (!address || !publicClientArc) {
       setRows([]);
       setLoading(false);
       return;
@@ -83,7 +92,7 @@ export function DashboardClient() {
     const next: InvoiceRowView[] = [];
     for (const id of ids) {
       try {
-        const inv = await readInvoice(publicClient, id);
+        const inv = await readInvoice(publicClientArc, id);
         if (inv.emitter.toLowerCase() !== address.toLowerCase()) continue;
         const meta = getInvoiceMeta(id);
         next.push({
@@ -103,7 +112,7 @@ export function DashboardClient() {
     next.sort((a, b) => (a.invoiceId < b.invoiceId ? 1 : -1));
     setRows(next);
     setLoading(false);
-  }, [address, publicClient]);
+  }, [address, publicClientArc]);
 
   useEffect(() => {
     void load();
@@ -116,13 +125,11 @@ export function DashboardClient() {
 
   const onCancel = async (invoiceId: bigint) => {
     if (!address) return;
-    if (chainId !== arcTestnet.id) {
-      try {
-        await switchChainAsync({ chainId: arcTestnet.id });
-      } catch {
-        toast.error('Arc Testnet requis.');
-        return;
-      }
+    try {
+      await switchWalletToArcTestnet(switchChainAsync);
+    } catch {
+      toast.error('Arc Testnet (5042002) requis — changez de réseau dans le wallet.');
+      return;
     }
     try {
       await writeContractAsync({
@@ -131,6 +138,7 @@ export function DashboardClient() {
         functionName: 'cancelInvoice',
         args: [invoiceId],
         chainId: arcTestnet.id,
+        chain: arcTestnet,
       });
       toast.success('Annulation envoyée.');
       await load();
@@ -195,6 +203,12 @@ export function DashboardClient() {
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
           Connectez votre wallet pour voir les factures liées à cette adresse.
         </p>
+      ) : null}
+
+      {isConnected && emitterVerified === false ? (
+        <RegisterEmitterWidget
+          onRegistered={() => void refetchEmitterVerified()}
+        />
       ) : null}
 
       {loading ? (

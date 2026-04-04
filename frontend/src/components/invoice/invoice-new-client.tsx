@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import type { InvoiceFormValues, InvoiceMetaRecord } from '@/lib/invoice-types';
@@ -29,7 +30,15 @@ import {
   generatePdfBlobFromElement,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
-import { useWorldID } from '@/lib/worldid';
+import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
+import {
+  fetchRpContext,
+  useWorldID,
+  verifyProof,
+  WORLD_ID_CONFIG,
+} from '@/lib/worldid';
+import type { IDKitResult, RpContext } from '@worldcoin/idkit';
+import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
@@ -37,11 +46,9 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { arcTestnet } from 'viem/chains';
 import { isAddress, parseUnits } from 'viem';
 import {
   useAccount,
-  useChainId,
   usePublicClient,
   useReadContract,
   useSwitchChain,
@@ -82,15 +89,18 @@ export function InvoiceNewClient() {
   const previewRef = useRef<HTMLDivElement>(null);
   const { authReady, isVerified } = useWorldID();
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
-  const publicClient = usePublicClient();
+  const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
 
   const [debouncedPreview, setDebouncedPreview] =
     useState<InvoiceFormValues>(defaultForm);
   const [successId, setSuccessId] = useState<bigint | null>(null);
   const [stepSubmitting, setStepSubmitting] = useState(false);
+  const [rpContext, setRpContext] = useState<RpContext | null>(null);
+  const [idKitOpen, setIdKitOpen] = useState(false);
+  const [loadingRpForSubmit, setLoadingRpForSubmit] = useState(false);
+  const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
@@ -135,17 +145,176 @@ export function InvoiceNewClient() {
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
 
-  const { data: emitterVerified } = useReadContract({
-    address: invoiceRegistryContract.address,
-    abi: invoiceRegistryContract.abi,
-    functionName: 'isEmitterVerified',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  });
+  const { data: emitterVerified, refetch: refetchEmitterVerified } =
+    useReadContract({
+      address: invoiceRegistryContract.address,
+      abi: invoiceRegistryContract.abi,
+      functionName: 'isEmitterVerified',
+      args: address ? [address] : undefined,
+      query: { enabled: !!address },
+    });
 
   const totals = useMemo(
     () => computeTotalsFromLines(debouncedPreview.lines),
     [debouncedPreview.lines],
+  );
+
+  const createInvoiceFromVerifiedForm = useCallback(
+    async (data: InvoiceFormValues) => {
+      if (!address || !isAddress(data.clientWallet)) {
+        toast.error('Connectez votre wallet et vérifiez l’adresse client.');
+        return;
+      }
+      try {
+        await switchWalletToArcTestnet(switchChainAsync);
+      } catch {
+        toast.error(
+          'Passez sur Arc Testnet (chain 5042002) dans le wallet pour continuer.',
+        );
+        return;
+      }
+      const el = previewRef.current;
+      if (!el) {
+        toast.error('Aperçu indisponible.');
+        return;
+      }
+
+      const lineTotals = computeTotalsFromLines(data.lines);
+
+      setStepSubmitting(true);
+      try {
+        const pdfBlob = await generatePdfBlobFromElement(el);
+        const invoiceHash = await pdfBlobToBytes32(pdfBlob);
+        const base64 = await blobToBase64(pdfBlob);
+
+        const decimals = tokenDecimals();
+        const amount = parseUnits(
+          lineTotals.totalTtc.toFixed(decimals),
+          decimals,
+        );
+        const token = getTokenAddress(data.currency);
+
+        if (token === '0x0000000000000000000000000000000000000000') {
+          toast.error(
+            'Configurez NEXT_PUBLIC_TOKEN_USDC et NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).',
+          );
+          return;
+        }
+
+        const hash = await writeContractAsync({
+          address: invoiceRegistryContract.address,
+          abi: invoiceRegistryContract.abi,
+          functionName: 'createInvoice',
+          args: [
+            invoiceHash,
+            address,
+            data.clientWallet as `0x${string}`,
+            amount,
+            token,
+          ],
+          chainId: arcTestnet.id,
+          chain: arcTestnet,
+        });
+
+        const receipt = await publicClientArc!.waitForTransactionReceipt({
+          hash,
+        });
+        const newId = parseInvoiceCreatedInvoiceId(receipt);
+        if (newId === undefined) {
+          toast.error('Transaction OK mais invoiceId introuvable dans les logs.');
+          return;
+        }
+
+        setInvoicePdfBase64(newId, base64);
+        appendInvoiceId(address, newId);
+
+        const meta: InvoiceMetaRecord = {
+          invoiceId: newId.toString(),
+          invoiceNumber: data.invoiceNumber,
+          emitterName: data.emitterName,
+          emitterAddress: data.emitterAddress,
+          emitterSiret: data.emitterSiret,
+          emitterEmail: data.emitterEmail,
+          clientName: data.clientName,
+          clientWallet: data.clientWallet,
+          clientEmail: data.clientEmail,
+          lines: data.lines,
+          subtotal: lineTotals.totalHt,
+          totalHt: lineTotals.totalHt,
+          tvaAmount: lineTotals.tvaAmount,
+          totalTtc: lineTotals.totalTtc,
+          currency: data.currency,
+          issueDate: data.issueDate,
+          dueDate: data.dueDate,
+          notes: data.notes,
+          invoiceHash,
+          createdAt: Date.now(),
+        };
+        setInvoiceMeta(newId, meta);
+
+        setSuccessId(newId);
+        toast.success('Facture créée on-chain.');
+      } catch (e) {
+        console.error(e);
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : 'Échec de la création de la facture.',
+        );
+      } finally {
+        setStepSubmitting(false);
+      }
+    },
+    [address, publicClientArc, switchChainAsync, writeContractAsync],
+  );
+
+  const handleVerifyForInvoice = useCallback(async (result: IDKitResult) => {
+    const ok = await verifyProof(result);
+    if (!ok) throw new Error('Vérification World ID refusée');
+  }, []);
+
+  const handleRegisterSuccessFromSubmit = useCallback(
+    async (result: IDKitResult) => {
+      if (!address) {
+        toast.error('Wallet requis.');
+        pendingFormDataRef.current = null;
+        setIdKitOpen(false);
+        return;
+      }
+      const data = pendingFormDataRef.current;
+      if (!data) {
+        setIdKitOpen(false);
+        return;
+      }
+      try {
+        await registerEmitterOnChain(result, {
+          switchChainAsync,
+          writeContractAsync,
+          publicClientArc,
+        });
+        await refetchEmitterVerified();
+        pendingFormDataRef.current = null;
+        setIdKitOpen(false);
+        await createInvoiceFromVerifiedForm(data);
+      } catch (e) {
+        console.error(e);
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : 'Échec inscription émetteur ou facture.',
+        );
+        pendingFormDataRef.current = null;
+        setIdKitOpen(false);
+      }
+    },
+    [
+      address,
+      createInvoiceFromVerifiedForm,
+      publicClientArc,
+      refetchEmitterVerified,
+      switchChainAsync,
+      writeContractAsync,
+    ],
   );
 
   const onSubmit = form.handleSubmit(async (data) => {
@@ -153,101 +322,31 @@ export function InvoiceNewClient() {
       toast.error('Connectez votre wallet et vérifiez l’adresse client.');
       return;
     }
-    if (chainId !== arcTestnet.id) {
+
+    if (address && emitterVerified === undefined) {
+      toast.error(
+        'Vérification on-chain en cours, réessayez dans un instant.',
+      );
+      return;
+    }
+
+    if (emitterVerified === false) {
+      pendingFormDataRef.current = data;
+      setLoadingRpForSubmit(true);
       try {
-        await switchChainAsync({ chainId: arcTestnet.id });
+        const ctx = await fetchRpContext();
+        setRpContext(ctx);
+        setIdKitOpen(true);
       } catch {
-        toast.error('Passez sur Arc Testnet pour continuer.');
-        return;
+        toast.error('Impossible d’initialiser World ID (RP).');
+        pendingFormDataRef.current = null;
+      } finally {
+        setLoadingRpForSubmit(false);
       }
-    }
-    if (!emitterVerified) {
-      toast.error(
-        'Émetteur non vérifié on-chain — appelez registerWithWorldId sur le contrat d’abord.',
-      );
-      return;
-    }
-    const el = previewRef.current;
-    if (!el) {
-      toast.error('Aperçu indisponible.');
       return;
     }
 
-    setStepSubmitting(true);
-    try {
-      const pdfBlob = await generatePdfBlobFromElement(el);
-      const invoiceHash = await pdfBlobToBytes32(pdfBlob);
-      const base64 = await blobToBase64(pdfBlob);
-
-      const decimals = tokenDecimals();
-      const amount = parseUnits(totals.totalTtc.toFixed(decimals), decimals);
-      const token = getTokenAddress(data.currency);
-
-      if (token === '0x0000000000000000000000000000000000000000') {
-        toast.error(
-          'Configurez NEXT_PUBLIC_TOKEN_USDC et NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).',
-        );
-        return;
-      }
-
-      const hash = await writeContractAsync({
-        address: invoiceRegistryContract.address,
-        abi: invoiceRegistryContract.abi,
-        functionName: 'createInvoice',
-        args: [
-          invoiceHash,
-          address,
-          data.clientWallet as `0x${string}`,
-          amount,
-          token,
-        ],
-        chainId: arcTestnet.id,
-      });
-
-      const receipt = await publicClient!.waitForTransactionReceipt({ hash });
-      const newId = parseInvoiceCreatedInvoiceId(receipt);
-      if (newId === undefined) {
-        toast.error('Transaction OK mais invoiceId introuvable dans les logs.');
-        return;
-      }
-
-      setInvoicePdfBase64(newId, base64);
-      appendInvoiceId(address, newId);
-
-      const meta: InvoiceMetaRecord = {
-        invoiceId: newId.toString(),
-        invoiceNumber: data.invoiceNumber,
-        emitterName: data.emitterName,
-        emitterAddress: data.emitterAddress,
-        emitterSiret: data.emitterSiret,
-        emitterEmail: data.emitterEmail,
-        clientName: data.clientName,
-        clientWallet: data.clientWallet,
-        clientEmail: data.clientEmail,
-        lines: data.lines,
-        subtotal: totals.totalHt,
-        totalHt: totals.totalHt,
-        tvaAmount: totals.tvaAmount,
-        totalTtc: totals.totalTtc,
-        currency: data.currency,
-        issueDate: data.issueDate,
-        dueDate: data.dueDate,
-        notes: data.notes,
-        invoiceHash,
-        createdAt: Date.now(),
-      };
-      setInvoiceMeta(newId, meta);
-
-      setSuccessId(newId);
-      toast.success('Facture créée on-chain.');
-    } catch (e) {
-      console.error(e);
-      toast.error(
-        e instanceof Error ? e.message : 'Échec de la création de la facture.',
-      );
-    } finally {
-      setStepSubmitting(false);
-    }
+    await createInvoiceFromVerifiedForm(data);
   });
 
   const addLine = useCallback(() => {
@@ -312,6 +411,7 @@ export function InvoiceNewClient() {
   }
 
   return (
+    <>
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
       <form onSubmit={onSubmit} className="space-y-8">
         <div>
@@ -330,11 +430,10 @@ export function InvoiceNewClient() {
         ) : null}
 
         {isConnected && emitterVerified === false ? (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
-            Votre adresse n&apos;est pas enregistrée comme émetteur vérifié
-            on-chain. Appelez{' '}
-            <code className="text-xs">registerWithWorldId</code> sur le contrat
-            avant de créer une facture.
+          <p className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+            Première facture avec ce wallet : au clic sur « Générer la facture
+            », l’orb World ID s’ouvre pour enregistrer votre adresse on-chain,
+            puis le PDF et la transaction suivent dans la foulée.
           </p>
         ) : null}
 
@@ -531,13 +630,16 @@ export function InvoiceNewClient() {
           disabled={
             stepSubmitting ||
             isWritePending ||
+            loadingRpForSubmit ||
             !isConnected ||
-            emitterVerified === false
+            (address !== undefined && emitterVerified === undefined)
           }
         >
-          {stepSubmitting || isWritePending
-            ? 'Transaction…'
-            : 'Générer la facture'}
+          {loadingRpForSubmit
+            ? 'Préparation World ID…'
+            : stepSubmitting || isWritePending
+              ? 'Transaction…'
+              : 'Générer la facture'}
         </Button>
       </form>
 
@@ -551,5 +653,29 @@ export function InvoiceNewClient() {
         />
       </div>
     </div>
+
+    {rpContext && address ? (
+      <IDKitRequestWidget
+        open={idKitOpen}
+        onOpenChange={(open) => {
+          setIdKitOpen(open);
+          if (!open) pendingFormDataRef.current = null;
+        }}
+        app_id={WORLD_ID_CONFIG.app_id}
+        action={WORLD_ID_CONFIG.action}
+        rp_context={rpContext}
+        allow_legacy_proofs={true}
+        preset={orbLegacy({ signal: address })}
+        environment={WORLD_ID_CONFIG.environment}
+        handleVerify={handleVerifyForInvoice}
+        onSuccess={(r) => void handleRegisterSuccessFromSubmit(r)}
+        onError={() => {
+          toast.error('World ID annulé ou erreur.');
+          pendingFormDataRef.current = null;
+          setIdKitOpen(false);
+        }}
+      />
+    ) : null}
+    </>
   );
 }
