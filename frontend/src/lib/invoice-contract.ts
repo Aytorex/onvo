@@ -1,8 +1,8 @@
 import { invoiceRegistryContract } from '@/lib/contract';
 import {
-    parseEventLogs,
-    type PublicClient,
-    type TransactionReceipt,
+  parseEventLogs,
+  type PublicClient,
+  type TransactionReceipt,
 } from 'viem';
 
 /** Decimal string for display (matches typical World IDKit nullifier formatting). */
@@ -92,6 +92,46 @@ export async function readInvoice(
     worldIdNullifierHash,
     status: status as 0 | 1 | 2,
   };
+}
+
+/** Nombre de factures on-chain pour cet émetteur (séquences 1..n). */
+export async function readInvoiceCountForEmitter(
+  client: PublicClient,
+  emitter: `0x${string}`,
+): Promise<bigint> {
+  return (await client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'getInvoiceCountForEmitter',
+    args: [emitter],
+  })) as bigint;
+}
+
+/** Dernier `invoiceId` créé pour cet émetteur, ou `0n` si aucune facture. Pour les précédents : `packInvoiceId` avec `seq - 1` (voir `@/lib/invoice-id`) ou multicall `getInvoice`. */
+export async function readLastInvoiceIdForEmitter(
+  client: PublicClient,
+  emitter: `0x${string}`,
+): Promise<bigint> {
+  return (await client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'getLastInvoiceIdForEmitter',
+    args: [emitter],
+  })) as bigint;
+}
+
+/** On-chain registration: nullifier lié à l’émetteur via `bindWorldId` (plusieurs nullifiers possibles par wallet). */
+export async function readWorldIdAuthorizedForEmitter(
+  client: PublicClient,
+  emitter: `0x${string}`,
+  nullifierHash: bigint,
+): Promise<boolean> {
+  return (await client.readContract({
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'isWorldIdAuthorizedForEmitter',
+    args: [emitter, nullifierHash],
+  })) as boolean;
 }
 
 export function parseInvoiceCreatedInvoiceId(

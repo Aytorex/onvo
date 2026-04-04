@@ -2,6 +2,15 @@
 const SEQ_MASK = (1n << 96n) - 1n;
 const EMITTER_MASK = (1n << 160n) - 1n;
 
+/** Build invoice id on-chain layout: `(uint160(emitter) << 96) | seq` (same as `InvoiceRegistry.packInvoiceId`). */
+export function packInvoiceId(emitter: `0x${string}`, seq: bigint): bigint {
+  if (seq <= 0n || seq > (1n << 96n) - 1n) {
+    throw new Error('packInvoiceId: invalid seq');
+  }
+  const addr = BigInt(emitter);
+  return (addr << 96n) | seq;
+}
+
 /** Decode on-chain `uint256` invoice id: high 160 bits = emitter, low 96 bits = sequence. */
 export function unpackPackedInvoiceId(invoiceId: bigint): {
   emitter: `0x${string}`;

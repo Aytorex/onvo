@@ -38,7 +38,8 @@ async function deployFixture() {
 describe('InvoiceRegistry', () => {
   describe('createInvoice', () => {
     it('creates pending invoice and emits InvoiceCreated', async () => {
-      const { emitter, payer, registry, token } = await loadFixture(deployFixture);
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pdf-hash-1'));
       const amount = 1000n;
       const id = await nextInvoiceId(registry, emitter.address);
@@ -126,7 +127,8 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when amount is zero', async () => {
-      const { emitter, payer, registry, token } = await loadFixture(deployFixture);
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h4'));
       const id = await nextInvoiceId(registry, emitter.address);
       await expect(
@@ -146,7 +148,8 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when VAT number exceeds max length', async () => {
-      const { emitter, payer, registry, token } = await loadFixture(deployFixture);
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h-vat'));
       const id = await nextInvoiceId(registry, emitter.address);
       const tooLong = 'X'.repeat(65);
@@ -167,7 +170,8 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts on duplicate invoice hash', async () => {
-      const { emitter, payer, registry, token } = await loadFixture(deployFixture);
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('dup'));
       const id1 = await nextInvoiceId(registry, emitter.address);
       await registry
@@ -200,7 +204,8 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when id sequence does not match next', async () => {
-      const { emitter, payer, registry, token } = await loadFixture(deployFixture);
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('seq'));
       const wrongId = await registry.packInvoiceId(emitter.address, 99n);
       await expect(
@@ -492,7 +497,8 @@ describe('InvoiceRegistry', () => {
     });
 
     it('getNextInvoiceId increments per emitter', async () => {
-      const { emitter, payer, registry, token } = await loadFixture(deployFixture);
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
       const id1 = await nextInvoiceId(registry, emitter.address);
       await registry
         .connect(emitter)
@@ -511,6 +517,109 @@ describe('InvoiceRegistry', () => {
       const [, s1] = await registry.parseInvoiceId(id1);
       const [, s2] = await registry.parseInvoiceId(id2);
       expect(s1 + 1n).to.equal(s2);
+    });
+  });
+
+  describe('getLastInvoiceIdForEmitter', () => {
+    it('returns 0 when no invoices', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      expect(
+        await registry.getInvoiceCountForEmitter(emitter.address),
+      ).to.equal(0n);
+      expect(
+        await registry.getLastInvoiceIdForEmitter(emitter.address),
+      ).to.equal(0n);
+    });
+
+    it('returns last packed id matching count', async () => {
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
+      const id = await nextInvoiceId(registry, emitter.address);
+      await registry
+        .connect(emitter)
+        .createInvoice(
+          id,
+          ethers.keccak256(ethers.toUtf8Bytes('one')),
+          emitter.address,
+          payer.address,
+          1n,
+          token,
+          EMPTY_VAT_NUMBER,
+          0n,
+        );
+      expect(
+        await registry.getInvoiceCountForEmitter(emitter.address),
+      ).to.equal(1n);
+      expect(
+        await registry.getLastInvoiceIdForEmitter(emitter.address),
+      ).to.equal(id);
+    });
+
+    it('returns 0 for zero address', async () => {
+      const { registry } = await loadFixture(deployFixture);
+      expect(await registry.getLastInvoiceIdForEmitter(ZERO)).to.equal(0n);
+    });
+  });
+
+  describe('bindWorldId', () => {
+    it('registers nullifier for emitter and isWorldIdAuthorizedForEmitter is true', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      const h = 4242n;
+      await expect(registry.connect(emitter).bindWorldId(h))
+        .to.emit(registry, 'WorldIdBound')
+        .withArgs(emitter.address, h);
+      expect(
+        await registry.isWorldIdAuthorizedForEmitter(emitter.address, h),
+      ).to.equal(true);
+    });
+
+    it('allows several nullifiers for the same emitter', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      await registry.connect(emitter).bindWorldId(1n);
+      await registry.connect(emitter).bindWorldId(2n);
+      expect(
+        await registry.isWorldIdAuthorizedForEmitter(emitter.address, 1n),
+      ).to.equal(true);
+      expect(
+        await registry.isWorldIdAuthorizedForEmitter(emitter.address, 2n),
+      ).to.equal(true);
+    });
+
+    it('reverts when nullifier is zero', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(emitter).bindWorldId(0n),
+      ).to.be.revertedWith('InvoiceRegistry: zero nullifier');
+    });
+
+    it('allows the same nullifier to be registered by several emitters', async () => {
+      const { emitter, payer, registry } = await loadFixture(deployFixture);
+      const h = 999n;
+      await registry.connect(emitter).bindWorldId(h);
+      await registry.connect(payer).bindWorldId(h);
+      expect(
+        await registry.isWorldIdAuthorizedForEmitter(emitter.address, h),
+      ).to.equal(true);
+      expect(
+        await registry.isWorldIdAuthorizedForEmitter(payer.address, h),
+      ).to.equal(true);
+    });
+
+    it('isWorldIdAuthorizedForEmitter returns false for zero nullifier', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      expect(
+        await registry.isWorldIdAuthorizedForEmitter(emitter.address, 0n),
+      ).to.equal(false);
+    });
+
+    it('idempotent second bind does not emit twice', async () => {
+      const { emitter, registry } = await loadFixture(deployFixture);
+      const h = 77n;
+      await registry.connect(emitter).bindWorldId(h);
+      await expect(registry.connect(emitter).bindWorldId(h)).to.not.emit(
+        registry,
+        'WorldIdBound',
+      );
     });
   });
 

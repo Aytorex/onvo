@@ -375,16 +375,12 @@ export function InvoiceNewClient() {
 
       setStepSubmitting(true);
       try {
-        const issue = new Date(data.issueDate);
-        const invYear = BigInt(issue.getFullYear());
-        const invMonth = BigInt(issue.getMonth() + 1);
-
-        const nextInvoiceId = await publicClientArc!.readContract({
+        const nextInvoiceId = (await publicClientArc!.readContract({
           address: invoiceRegistryContract.address,
           abi: invoiceRegistryContract.abi,
           functionName: 'getNextInvoiceId',
-          args: [nullifierBn, invYear, invMonth],
-        });
+          args: [address],
+        })) as bigint;
         const documentLabel = formatOnvoInvoiceLabel(nextInvoiceId);
 
         const pdfBlob = await generateInvoicePdf(
@@ -406,13 +402,6 @@ export function InvoiceNewClient() {
           toast.error(t('invoice.toast.tokenEnv'));
           return;
         }
-
-        const nextInvoiceId = await publicClientArc!.readContract({
-          address: invoiceRegistryContract.address,
-          abi: invoiceRegistryContract.abi,
-          functionName: 'getNextInvoiceId',
-          args: [address],
-        });
 
         const onChainRecipient = address;
         const vatNumberOnChain = data.emitterVatNumber.trim().slice(0, 64);
@@ -681,7 +670,7 @@ export function InvoiceNewClient() {
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
           {isConnected &&
-          emitterVerified === false &&
+          worldIdNullifierBn === null &&
           !firstInvoiceHintDismissed ? (
             <Alert
               className="shrink-0 border-primary/25 bg-primary/5 py-3 text-muted-foreground"
@@ -710,6 +699,17 @@ export function InvoiceNewClient() {
               </p>
             ) : null}
 
+              <form
+                onSubmit={handleFormSubmit}
+                className="flex min-h-0 flex-1 flex-col"
+              >
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) =>
+                  setStepIndex(INVOICE_TABS.indexOf(v as InvoiceTab))
+                }
+                className="flex min-h-0 flex-1 flex-col"
+              >
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
                     {/* ── Tab: Issuer ── */}
                     <TabsContent value="issuer" className="mt-4 space-y-4">
@@ -1137,7 +1137,6 @@ export function InvoiceNewClient() {
                     </TabsContent>
                   </div>
                 </Tabs>
-              </form>
 
               <div className="flex shrink-0 items-center justify-between border-t border-border/60 py-3">
                 <Button
@@ -1191,6 +1190,7 @@ export function InvoiceNewClient() {
                   )}
                 </div>
               </div>
+              </form>
             </div>
 
             {/* ── Right panel: invoice preview (60% ≥ lg) ── */}

@@ -15,15 +15,11 @@ $ bun run deploy:invoice:localhost
 
 Deploy on **Arc Testnet** (needs `PRIVATE_KEY`, RPC via `ALCHEMY_ENDPOINT_URL_ARC_TESTNET` + `ALCHEMY_API_KEY` or `ARC_TESTNET_RPC_URL` — see [`hardhat.config.ts`](hardhat.config.ts)):
 
-1. Copy the Ignition parameter template and edit addresses:
+1. Edit `ignition/parameters/invoice-registry.arc.json`: set `initialOwner`, `commissionRecipient` (Onvo treasury wallet), and optionally `allowedTokens` (defaults to Arc USDC + EURC in the Ignition module). The repo ships a valid JSON template (Anvil-style placeholder addresses); you can also start from `invoice-registry.arc.example.json` if you prefer a separate local file.
 
-   ```
-   $ cp ignition/parameters/invoice-registry.arc.example.json ignition/parameters/invoice-registry.arc.json
-   ```
+   If `hardhat ignition deploy` fails with **HHE10113** (“Could not parse parameters”), the file is not valid JSON/JSON5: remove trailing garbage, use straight ASCII quotes `"`, and ensure there is no `.env`-style `KEY=value` content inside the file.
 
-2. Edit `ignition/parameters/invoice-registry.arc.json` (gitignored, start from the example): set `initialOwner`, `commissionRecipient` (Onvo treasury wallet), and optionally `allowedTokens` (defaults to Arc USDC + EURC in the Ignition module).
-
-3. Deploy:
+2. Deploy:
 
    ```
    $ bun run deploy:invoice:arc
@@ -31,7 +27,9 @@ Deploy on **Arc Testnet** (needs `PRIVATE_KEY`, RPC via `ALCHEMY_ENDPOINT_URL_AR
 
    This runs Hardhat Ignition with `--parameters ignition/parameters/invoice-registry.arc.json` (see [`package.json`](package.json)).
 
-Verify on ArcScan (uses `ARCSCAN_API_KEY` in [`hardhat.config.ts`](hardhat.config.ts)). Constructor arguments are read from the same `ignition/parameters/invoice-registry.arc.json` as deploy via [`scripts/verify/invoice-registry.constructor-args.ts`](scripts/verify/invoice-registry.constructor-args.ts):
+   Si le déploiement échoue avec une erreur de **réconciliation** (ex. constructeur modifié par rapport à un ancien déploiement enregistré localement), supprime le dossier d’état Arc puis relance : `rm -rf ignition/deployments/chain-5042002`, ou bien `bun run deploy:invoice:arc -- --reset` (équivalent ; confirmation requise, `HARDHAT_IGNITION_CONFIRM_RESET=1` en CI). Cela ne supprime rien on-chain ; le prochain déploiement crée un **nouveau** contrat.
+
+Verify on ArcScan (uses `ARCSCAN_API_KEY` in [`hardhat.config.ts`](hardhat.config.ts)). Constructor arguments are read from the same `ignition/parameters/invoice-registry.arc.json` as deploy via [`scripts/verify/invoice-registry.constructor-args.ts`](scripts/verify/invoice-registry.constructor-args.ts). Hardhat exige l’adresse du contrat en **premier argument** après `--` :
 
 ```
 $ bun run verify:invoice:arc -- 0xYourDeployedInvoiceRegistry

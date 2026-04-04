@@ -44,6 +44,7 @@ contract InvoiceRegistryTest is Test {
     event CommissionBpsUpdated(uint256 newCommissionBps);
     event CommissionRecipientUpdated(address indexed newRecipient);
     event InvoiceCancelled(uint256 indexed invoiceId, address indexed emitter_);
+    event WorldIdBound(address indexed emitter, uint256 indexed nullifierHash);
 
     function setUp() public {
         owner = makeAddr("owner");
@@ -606,6 +607,80 @@ contract InvoiceRegistryTest is Test {
         );
         (bytes32 invoiceHash_, , , , , , , ) = registry.getInvoice(id);
         assertEq(invoiceHash_, hash);
+    }
+
+    /* getLastInvoiceIdForEmitter */
+
+    function testGetLastInvoiceIdForEmitterNone() public view {
+        assertEq(registry.getInvoiceCountForEmitter(emitter), 0);
+        assertEq(registry.getLastInvoiceIdForEmitter(emitter), 0);
+    }
+
+    function testGetLastInvoiceIdForEmitterAfterCreates() public {
+        vm.startPrank(emitter);
+        for (uint256 i = 0; i < 3; i++) {
+            uint256 id = _nextInvoiceId(emitter);
+            registry.createInvoice(
+                id,
+                keccak256(abi.encodePacked("h", i)),
+                emitter,
+                payer,
+                10,
+                address(token),
+                "",
+                0
+            );
+        }
+        vm.stopPrank();
+        assertEq(registry.getInvoiceCountForEmitter(emitter), 3);
+        assertEq(
+            registry.getLastInvoiceIdForEmitter(emitter),
+            registry.packInvoiceId(emitter, 3)
+        );
+    }
+
+    function testGetLastInvoiceIdForEmitterZeroAddress() public view {
+        assertEq(registry.getLastInvoiceIdForEmitter(address(0)), 0);
+    }
+
+    /* bindWorldId */
+
+    function testBindWorldIdAndIsAuthorized() public {
+        uint256 h = 4242;
+        vm.prank(emitter);
+        vm.expectEmit(true, true, false, true);
+        emit WorldIdBound(emitter, h);
+        registry.bindWorldId(h);
+        assertTrue(registry.isWorldIdAuthorizedForEmitter(emitter, h));
+    }
+
+    function testBindSeveralNullifiersPerEmitter() public {
+        vm.startPrank(emitter);
+        registry.bindWorldId(1);
+        registry.bindWorldId(2);
+        vm.stopPrank();
+        assertTrue(registry.isWorldIdAuthorizedForEmitter(emitter, 1));
+        assertTrue(registry.isWorldIdAuthorizedForEmitter(emitter, 2));
+    }
+
+    function testRevertBindWorldIdZero() public {
+        vm.prank(emitter);
+        vm.expectRevert("InvoiceRegistry: zero nullifier");
+        registry.bindWorldId(0);
+    }
+
+    function testSameNullifierOnSeveralEmitters() public {
+        uint256 h = 999;
+        vm.prank(emitter);
+        registry.bindWorldId(h);
+        vm.prank(payer);
+        registry.bindWorldId(h);
+        assertTrue(registry.isWorldIdAuthorizedForEmitter(emitter, h));
+        assertTrue(registry.isWorldIdAuthorizedForEmitter(payer, h));
+    }
+
+    function testIsWorldIdAuthorizedZeroNullifier() public view {
+        assertFalse(registry.isWorldIdAuthorizedForEmitter(emitter, 0));
     }
 
     /* constructor */

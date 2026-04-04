@@ -18,9 +18,6 @@ lcov.info
 # Hardhat Ignition default folder for deployments against a local node
 ignition/deployments/chain-31337
 
-# Arc deploy params (copy from invoice-registry.arc.example.json)
-ignition/parameters/invoice-registry.arc.json
-
 # Foundry files
 /out
 /cache_forge

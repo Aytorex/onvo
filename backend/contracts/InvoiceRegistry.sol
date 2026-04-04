@@ -40,6 +40,9 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @dev Number of invoices already created by this emitter (used for next sequence).
     mapping(address => uint256) private _invoiceCountByEmitter;
 
+    /// @dev Emitter → nullifier hash → registered via `bindWorldId` (off-chain verified). Same nullifier may appear on several emitters; no global exclusivity.
+    mapping(address => mapping(uint256 => bool)) private _worldIdRegistered;
+
     /// @dev Basis points denominator (100% = 10_000). Default commission is 10 bps = 0.1%.
     uint256 public constant COMMISSION_BPS_DENOMINATOR = 10_000;
 
@@ -70,6 +73,7 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         uint256 commissionAmount
     );
     event InvoiceCancelled(uint256 indexed invoiceId, address indexed emitter);
+    event WorldIdBound(address indexed emitter, uint256 indexed nullifierHash);
 
     constructor(
         address initialOwner,
@@ -120,6 +124,25 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
         allowedToken[token] = true;
     }
 
+    /// @notice Registers a World ID nullifier hash for `msg.sender` as emitter (signal off-chain; Arc has no World ID router).
+    /// @dev Several nullifiers per emitter; the same nullifier can also be registered by other emitters. No on-chain proof — product trust + API verification.
+    function bindWorldId(uint256 nullifierHash) external {
+        require(nullifierHash != 0, "InvoiceRegistry: zero nullifier");
+        if (!_worldIdRegistered[msg.sender][nullifierHash]) {
+            _worldIdRegistered[msg.sender][nullifierHash] = true;
+            emit WorldIdBound(msg.sender, nullifierHash);
+        }
+    }
+
+    /// @notice Returns true if this nullifier was registered for `emitter` via `bindWorldId`.
+    function isWorldIdAuthorizedForEmitter(
+        address emitter,
+        uint256 nullifierHash
+    ) external view returns (bool) {
+        if (nullifierHash == 0) return false;
+        return _worldIdRegistered[emitter][nullifierHash];
+    }
+
     /// @notice Packs emitter address and sequence into the on-chain invoice id (96-bit sequence per emitter).
     function packInvoiceId(address emitter, uint256 seq) public pure returns (uint256 invoiceId) {
         require(emitter != address(0), "InvoiceRegistry: zero emitter");
@@ -136,6 +159,19 @@ contract InvoiceRegistry is Ownable, ReentrancyGuard {
     /// @notice Next invoice id for `emitter` (sequential per wallet).
     function getNextInvoiceId(address emitter) external view returns (uint256) {
         return packInvoiceId(emitter, _invoiceCountByEmitter[emitter] + 1);
+    }
+
+    /// @notice Number of invoices created by `emitter` (sequences `1` .. count).
+    function getInvoiceCountForEmitter(address emitter) external view returns (uint256) {
+        return _invoiceCountByEmitter[emitter];
+    }
+
+    /// @notice Last created invoice id for `emitter`, or `0` if none. Previous ids: `packInvoiceId(emitter, seq - 1)` down to seq 1 (or multicall `getInvoice`).
+    function getLastInvoiceIdForEmitter(address emitter) external view returns (uint256) {
+        if (emitter == address(0)) return 0;
+        uint256 count = _invoiceCountByEmitter[emitter];
+        if (count == 0) return 0;
+        return packInvoiceId(emitter, count);
     }
 
     /// @notice Creates an invoice; `invoiceId` must equal {getNextInvoiceId}(emitter) (emitter in high 160 bits, seq in low 96).
