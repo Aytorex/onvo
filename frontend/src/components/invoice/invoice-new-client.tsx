@@ -15,7 +15,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { invoiceRegistryContract } from '@/lib/contract';
-import { computeLineSubtotal, computeTotals } from '@/lib/invoice-calculations';
+import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import type { InvoiceFormValues, InvoiceMetaRecord } from '@/lib/invoice-types';
 import {
   appendInvoiceId,
@@ -66,9 +66,9 @@ function defaultForm(): InvoiceFormValues {
         description: '',
         quantity: 1,
         unitPrice: 0,
+        vatPercent: 20,
       },
     ],
-    vatPercent: 20,
     invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`,
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -80,7 +80,7 @@ function defaultForm(): InvoiceFormValues {
 export function InvoiceNewClient() {
   const router = useRouter();
   const previewRef = useRef<HTMLDivElement>(null);
-  const { isVerified } = useWorldID();
+  const { authReady, isVerified } = useWorldID();
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
@@ -108,8 +108,17 @@ export function InvoiceNewClient() {
   useEffect(() => {
     const t = setTimeout(() => {
       const merged = { ...defaultForm(), ...watched } as InvoiceFormValues;
-      if (watched?.lines?.length)
-        merged.lines = watched.lines as InvoiceFormValues['lines'];
+      if (watched?.lines?.length) {
+        merged.lines = (watched.lines as InvoiceFormValues['lines']).map(
+          (l) => ({
+            ...l,
+            vatPercent:
+              typeof l.vatPercent === 'number' && !Number.isNaN(l.vatPercent)
+                ? l.vatPercent
+                : 20,
+          }),
+        );
+      }
       setDebouncedPreview(merged);
     }, 300);
     return () => clearTimeout(t);
@@ -122,8 +131,9 @@ export function InvoiceNewClient() {
   }, [address, form]);
 
   useEffect(() => {
+    if (!authReady) return;
     if (!isVerified) router.replace('/');
-  }, [isVerified, router]);
+  }, [authReady, isVerified, router]);
 
   const { data: emitterVerified } = useReadContract({
     address: invoiceRegistryContract.address,
@@ -133,13 +143,9 @@ export function InvoiceNewClient() {
     query: { enabled: !!address },
   });
 
-  const subtotal = useMemo(
-    () => computeLineSubtotal(debouncedPreview.lines),
-    [debouncedPreview.lines],
-  );
   const totals = useMemo(
-    () => computeTotals(subtotal, debouncedPreview.vatPercent),
-    [subtotal, debouncedPreview.vatPercent],
+    () => computeTotalsFromLines(debouncedPreview.lines),
+    [debouncedPreview.lines],
   );
 
   const onSubmit = form.handleSubmit(async (data) => {
@@ -219,8 +225,7 @@ export function InvoiceNewClient() {
         clientWallet: data.clientWallet,
         clientEmail: data.clientEmail,
         lines: data.lines,
-        vatPercent: data.vatPercent,
-        subtotal,
+        subtotal: totals.totalHt,
         totalHt: totals.totalHt,
         tvaAmount: totals.tvaAmount,
         totalTtc: totals.totalTtc,
@@ -254,8 +259,19 @@ export function InvoiceNewClient() {
       description: '',
       quantity: 1,
       unitPrice: 0,
+      vatPercent: 20,
     });
   }, [append, fields.length]);
+
+  if (!authReady) {
+    return (
+      <div
+        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
+        aria-busy
+        aria-label="Chargement session"
+      />
+    );
+  }
 
   if (!isVerified) {
     return (
@@ -408,7 +424,7 @@ export function InvoiceNewClient() {
                 key={field.id}
                 className="grid gap-3 rounded-lg border border-border/80 p-4 sm:grid-cols-12"
               >
-                <div className="sm:col-span-5">
+                <div className="sm:col-span-4">
                   <Label>Description</Label>
                   <Input
                     {...form.register(`lines.${index}.description` as const)}
@@ -422,12 +438,24 @@ export function InvoiceNewClient() {
                     {...form.register(`lines.${index}.quantity` as const)}
                   />
                 </div>
-                <div className="sm:col-span-3">
-                  <Label>Prix unitaire</Label>
+                <div className="sm:col-span-2">
+                  <Label>P.U. HT</Label>
                   <Input
                     type="number"
                     step="0.01"
                     {...form.register(`lines.${index}.unitPrice` as const)}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>TVA %</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    max={100}
+                    {...form.register(`lines.${index}.vatPercent`, {
+                      valueAsNumber: true,
+                    })}
                   />
                 </div>
                 <div className="flex items-end sm:col-span-2">
@@ -449,14 +477,6 @@ export function InvoiceNewClient() {
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>TVA %</Label>
-            <Input
-              type="number"
-              step="0.1"
-              {...form.register('vatPercent', { valueAsNumber: true })}
-            />
-          </div>
           <div className="space-y-2">
             <Label>Devise (stablecoin)</Label>
             <Select
@@ -496,7 +516,7 @@ export function InvoiceNewClient() {
         <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
           <p className="font-medium">Résumé</p>
           <p className="mt-2 text-muted-foreground">
-            Sous-total HT : {subtotal.toFixed(2)} — TVA :{' '}
+            Total HT : {totals.totalHt.toFixed(2)} — TVA :{' '}
             {totals.tvaAmount.toFixed(2)} —{' '}
             <span className="font-semibold text-foreground">
               Total TTC : {totals.totalTtc.toFixed(2)}

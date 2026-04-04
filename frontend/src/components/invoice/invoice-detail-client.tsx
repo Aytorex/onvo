@@ -27,7 +27,7 @@ export function InvoiceDetailClient() {
   const idStr = typeof params.id === 'string' ? params.id : '';
   const invoiceId = idStr ? BigInt(idStr) : undefined;
 
-  const { isVerified } = useWorldID();
+  const { authReady, isVerified } = useWorldID();
   const publicClient = usePublicClient();
   const [data, setData] = useState<Awaited<
     ReturnType<typeof readInvoice>
@@ -48,8 +48,19 @@ export function InvoiceDetailClient() {
   const meta = invoiceId ? getInvoiceMeta(invoiceId) : null;
 
   useEffect(() => {
+    if (!authReady) return;
     if (!isVerified) router.replace('/');
-  }, [isVerified, router]);
+  }, [authReady, isVerified, router]);
+
+  if (!authReady) {
+    return (
+      <div
+        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
+        aria-busy
+        aria-label="Chargement session"
+      />
+    );
+  }
 
   if (!isVerified) {
     return (

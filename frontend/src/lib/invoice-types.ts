@@ -7,6 +7,8 @@ export interface InvoiceLine {
   description: string;
   quantity: number;
   unitPrice: number;
+  /** TVA applicable à cette ligne (0–100). */
+  vatPercent: number;
 }
 
 export interface InvoiceFormValues {
@@ -18,7 +20,6 @@ export interface InvoiceFormValues {
   clientWallet: string;
   clientEmail: string;
   lines: InvoiceLine[];
-  vatPercent: number;
   invoiceNumber: string;
   issueDate: string;
   dueDate: string;
@@ -37,7 +38,6 @@ export interface InvoiceMetaRecord {
   clientWallet: string;
   clientEmail: string;
   lines: InvoiceLine[];
-  vatPercent: number;
   subtotal: number;
   totalHt: number;
   tvaAmount: number;

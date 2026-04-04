@@ -6,6 +6,7 @@ const lineSchema = z.object({
   description: z.string().min(1, 'Description requise'),
   quantity: z.coerce.number().positive('Quantité > 0'),
   unitPrice: z.coerce.number().nonnegative('Prix ≥ 0'),
+  vatPercent: z.coerce.number().min(0).max(100),
 });
 
 export const invoiceFormSchema = z.object({
@@ -20,7 +21,6 @@ export const invoiceFormSchema = z.object({
     .refine((v) => isAddress(v), { message: 'Adresse Ethereum invalide' }),
   clientEmail: z.union([z.literal(''), z.string().email()]),
   lines: z.array(lineSchema).min(1, 'Au moins une ligne'),
-  vatPercent: z.coerce.number().min(0).max(100),
   invoiceNumber: z.string().min(1),
   issueDate: z.string().min(1),
   dueDate: z.string().min(1),

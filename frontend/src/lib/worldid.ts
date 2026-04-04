@@ -52,6 +52,7 @@ function setMemoryProof(next: WorldIDProof | null): void {
 
 function setStoredProof(proof: WorldIDProof): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(proof));
+  setMemoryProof(proof);
 }
 
 function clearStoredProof(): void {
@@ -122,9 +123,7 @@ export function useWorldID() {
   );
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
   /** False until client has synced `localStorage` (avoids SSR/hydration redirect flicker). */
-  const [authReady, setAuthReady] = useState(
-    typeof window === 'undefined',
-  );
+  const [authReady, setAuthReady] = useState(false);
 
   useLayoutEffect(() => {
     const stored = getStoredProof();
@@ -158,7 +157,6 @@ export function useWorldID() {
       };
 
       setStoredProof(proofData);
-      setMemoryProof(proofData);
       setSessionCookie(nullifier || 'verified');
       setProof(proofData);
       setIsWidgetOpen(false);
@@ -176,6 +174,7 @@ export function useWorldID() {
   }, [router]);
 
   return {
+    authReady,
     isVerified,
     worldAddress,
     nullifier,

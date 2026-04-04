@@ -63,7 +63,7 @@ function shortAddr(a: string) {
 
 export function DashboardClient() {
   const router = useRouter();
-  const { isVerified } = useWorldID();
+  const { authReady, isVerified } = useWorldID();
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const chainId = useChainId();
@@ -110,8 +110,9 @@ export function DashboardClient() {
   }, [load]);
 
   useEffect(() => {
+    if (!authReady) return;
     if (!isVerified) router.replace('/');
-  }, [isVerified, router]);
+  }, [authReady, isVerified, router]);
 
   const onCancel = async (invoiceId: bigint) => {
     if (!address) return;
@@ -146,6 +147,16 @@ export function DashboardClient() {
     }
     downloadBase64Pdf(b64, `invoice-${invoiceId.toString()}.pdf`);
   };
+
+  if (!authReady) {
+    return (
+      <div
+        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
+        aria-busy
+        aria-label="Chargement session"
+      />
+    );
+  }
 
   if (!isVerified) {
     return (
