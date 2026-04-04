@@ -14,9 +14,10 @@ export async function readInvoice(
   recipient: `0x${string}`;
   amount: bigint;
   token: `0x${string}`;
+  vatNumber: string;
   status: 0 | 1 | 2;
 }> {
-  const [invoiceHash, emitter, recipient, amount, token, status] =
+  const [invoiceHash, emitter, recipient, amount, token, vatNumber, status] =
     await client.readContract({
       address: invoiceRegistryContract.address,
       abi: invoiceRegistryContract.abi,
@@ -29,6 +30,7 @@ export async function readInvoice(
     recipient,
     amount,
     token,
+    vatNumber,
     status: status as 0 | 1 | 2,
   };
 }

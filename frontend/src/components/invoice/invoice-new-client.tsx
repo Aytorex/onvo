@@ -69,6 +69,7 @@ function defaultForm(): InvoiceFormValues {
     emitterCity: '',
     emitterCountry: '',
     emitterSiret: '',
+    emitterVatNumber: '',
     emitterEmail: '',
     clientName: '',
     clientStreet: '',
@@ -290,6 +291,7 @@ export function InvoiceNewClient() {
 
         // `recipient` must be non-zero on-chain ; payment still settles to the emitter.
         const onChainRecipient = address;
+        const vatNumberOnChain = data.emitterVatNumber.trim().slice(0, 64);
 
         const hash = await writeContractAsync({
           address: invoiceRegistryContract.address,
@@ -302,6 +304,7 @@ export function InvoiceNewClient() {
             onChainRecipient,
             amount,
             token,
+            vatNumberOnChain,
             invYear,
             invMonth,
           ],
@@ -331,6 +334,7 @@ export function InvoiceNewClient() {
           emitterCity: data.emitterCity,
           emitterCountry: data.emitterCountry,
           emitterSiret: data.emitterSiret,
+          emitterVatNumber: data.emitterVatNumber.trim(),
           emitterEmail: data.emitterEmail,
           ...(emitterWorldIdForDoc
             ? { emitterWorldIdNullifier: emitterWorldIdForDoc }
@@ -660,6 +664,16 @@ export function InvoiceNewClient() {
                   {t('invoice.form.emitterSiret')}
                 </Label>
                 <Input id="emitterSiret" {...form.register('emitterSiret')} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="emitterVatNumber">
+                  {t('invoice.form.emitterVatNumber')}
+                </Label>
+                <Input
+                  id="emitterVatNumber"
+                  placeholder={t('invoice.form.emitterVatNumberPlaceholder')}
+                  {...form.register('emitterVatNumber')}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emitterEmail">

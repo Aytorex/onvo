@@ -132,6 +132,12 @@ export const invoiceRegistryContract = {
           name: 'token',
           type: 'address',
         },
+        {
+          indexed: false,
+          internalType: 'string',
+          name: 'vatNumber',
+          type: 'string',
+        },
       ],
       name: 'InvoiceCreated',
       type: 'event',
@@ -262,6 +268,11 @@ export const invoiceRegistryContract = {
           internalType: 'address',
           name: 'token',
           type: 'address',
+        },
+        {
+          internalType: 'string',
+          name: 'vatNumber',
+          type: 'string',
         },
         {
           internalType: 'uint256',
@@ -452,6 +463,11 @@ export const invoiceRegistryContract = {
           internalType: 'address',
           name: 'token',
           type: 'address',
+        },
+        {
+          internalType: 'string',
+          name: 'vatNumber',
+          type: 'string',
         },
         {
           internalType: 'enum InvoiceRegistry.Status',

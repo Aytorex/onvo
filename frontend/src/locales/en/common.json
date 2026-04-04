@@ -210,6 +210,7 @@
       "clientRegisteredOffice": "Client registered office (off-chain)",
       "client": "Client",
       "emitterWorldId": "Issuer World ID number",
+      "vatNumber": "VAT number (on-chain)",
       "backDashboard": "Dashboard",
       "payPage": "Payment page",
       "downloadPdf": "Download PDF",
@@ -242,6 +243,8 @@
       "emitterCountry": "Country",
       "emitterCountryPlaceholder": "e.g. France",
       "emitterSiret": "SIRET",
+      "emitterVatNumber": "VAT number",
+      "emitterVatNumberPlaceholder": "e.g. FR85939527636",
       "emitterEmail": "Email",
       "clientName": "Name",
       "clientStreet": "Street and number",
@@ -284,6 +287,7 @@
       "worldIdNumber": "World ID number",
       "client": "Client",
       "siretPrefix": "SIRET",
+      "vatNumberLabel": "VAT NUMBER",
       "thDescription": "Description",
       "thQty": "Qty",
       "thUnitHt": "Unit excl. tax",
@@ -325,7 +329,8 @@
       "minOneLine": "At least one line",
       "invoiceNumberRequired": "Invoice number is required",
       "issueDateRequired": "Issue date is required",
-      "dueDateRequired": "Due date is required"
+      "dueDateRequired": "Due date is required",
+      "emitterVatNumberMax": "At most 64 characters"
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) required — switch network in your wallet.",

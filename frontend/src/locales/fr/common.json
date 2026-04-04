@@ -210,6 +210,7 @@
       "clientRegisteredOffice": "Siège social client (hors chaîne)",
       "client": "Client",
       "emitterWorldId": "Numéro World ID (émetteur)",
+      "vatNumber": "Numéro de TVA (on-chain)",
       "backDashboard": "Tableau de bord",
       "payPage": "Page paiement",
       "downloadPdf": "Télécharger PDF",
@@ -242,6 +243,8 @@
       "emitterCountry": "Pays",
       "emitterCountryPlaceholder": "ex. France",
       "emitterSiret": "SIRET",
+      "emitterVatNumber": "Numéro de TVA",
+      "emitterVatNumberPlaceholder": "ex. FR85939527636",
       "emitterEmail": "Email",
       "clientName": "Nom",
       "clientStreet": "Rue et numéro",
@@ -284,6 +287,7 @@
       "worldIdNumber": "Numéro World ID",
       "client": "Client",
       "siretPrefix": "SIRET",
+      "vatNumberLabel": "NUMÉRO DE TVA",
       "thDescription": "Description",
       "thQty": "Qté",
       "thUnitHt": "P.U. HT",
@@ -325,7 +329,8 @@
       "minOneLine": "Au moins une ligne",
       "invoiceNumberRequired": "N° de facture requis",
       "issueDateRequired": "Date d'émission requise",
-      "dueDateRequired": "Échéance requise"
+      "dueDateRequired": "Échéance requise",
+      "emitterVatNumberMax": "64 caractères maximum"
     },
     "toast": {
       "arcNetworkRequired": "Arc Testnet (5042002) requis — changez de réseau dans le wallet.",

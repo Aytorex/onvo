@@ -19,6 +19,8 @@ export interface InvoiceFormValues {
   emitterCity: string;
   emitterCountry: string;
   emitterSiret: string;
+  /** Numéro de TVA intracommunautaire (émetteur), ex. FR85939527636. */
+  emitterVatNumber: string;
   emitterEmail: string;
   clientName: string;
   clientStreet: string;
@@ -47,6 +49,7 @@ export interface InvoiceMetaRecord {
   emitterCity?: string;
   emitterCountry?: string;
   emitterSiret: string;
+  emitterVatNumber?: string;
   emitterEmail: string;
   /** Nullifier World ID de l'émetteur (identifiant unique côté app), figé au moment du PDF. */
   emitterWorldIdNullifier?: string;

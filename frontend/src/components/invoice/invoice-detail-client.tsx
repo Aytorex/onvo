@@ -151,6 +151,16 @@ export function InvoiceDetailClient() {
           <dt className="text-muted-foreground">{t('invoice.detail.token')}</dt>
           <dd className="mt-1 font-mono text-xs">{data.token}</dd>
         </div>
+        {data.vatNumber.trim() || meta?.emitterVatNumber?.trim() ? (
+          <div>
+            <dt className="text-muted-foreground">
+              {t('invoice.detail.vatNumber')}
+            </dt>
+            <dd className="mt-1 font-mono text-sm">
+              {(data.vatNumber.trim() || meta?.emitterVatNumber?.trim()) ?? ''}
+            </dd>
+          </div>
+        ) : null}
         {meta ? (
           <>
             <div>

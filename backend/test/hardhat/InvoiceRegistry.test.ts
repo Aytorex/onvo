@@ -24,6 +24,9 @@ const DUMMY_PROOF = Array.from({ length: 8 }, () => 0n) as [
 /** Calendar period for deterministic packed invoice ids (matches Foundry tests). */
 const INV_YEAR = 2026n;
 const INV_MONTH = 4n;
+/** Sample emitter VAT ID (EU-style). */
+const SAMPLE_VAT_NUMBER = 'FR85939527636';
+const EMPTY_VAT_NUMBER = '';
 
 async function nextInvoiceId(
   registry: InvoiceRegistry,
@@ -106,12 +109,21 @@ describe('InvoiceRegistry', () => {
             payer.address,
             amount,
             token,
+            SAMPLE_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH,
           ),
       )
         .to.emit(registry, 'InvoiceCreated')
-        .withArgs(id, hash, emitter.address, payer.address, amount, token);
+        .withArgs(
+          id,
+          hash,
+          emitter.address,
+          payer.address,
+          amount,
+          token,
+          SAMPLE_VAT_NUMBER,
+        );
 
       const inv = await registry.getInvoice(id);
       expect(inv.invoiceHash_).to.equal(hash);
@@ -119,6 +131,7 @@ describe('InvoiceRegistry', () => {
       expect(inv.recipient).to.equal(payer.address);
       expect(inv.amount).to.equal(amount);
       expect(inv.token).to.equal(await token.getAddress());
+      expect(inv.vatNumber).to.equal(SAMPLE_VAT_NUMBER);
       expect(inv.status).to.equal(0n);
     });
 
@@ -140,6 +153,7 @@ describe('InvoiceRegistry', () => {
             payer.address,
             1n,
             token,
+            EMPTY_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH,
           ),
@@ -161,6 +175,7 @@ describe('InvoiceRegistry', () => {
             payer.address,
             1n,
             token,
+            EMPTY_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH,
           ),
@@ -189,6 +204,7 @@ describe('InvoiceRegistry', () => {
             payer.address,
             1n,
             otherToken,
+            EMPTY_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH,
           ),
@@ -213,10 +229,37 @@ describe('InvoiceRegistry', () => {
             payer.address,
             0n,
             token,
+            EMPTY_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH,
           ),
       ).to.be.revertedWith('InvoiceRegistry: zero amount');
+    });
+
+    it('reverts when VAT number exceeds max length', async () => {
+      const { emitter, payer, registry, token } =
+        await loadFixture(deployFixture);
+      await registry
+        .connect(emitter)
+        .registerWithWorldId(1n, 1n, 450n, DUMMY_PROOF);
+      const hash = ethers.keccak256(ethers.toUtf8Bytes('h-vat'));
+      const id = await nextInvoiceId(registry, emitter.address);
+      const tooLong = 'X'.repeat(65);
+      await expect(
+        registry
+          .connect(emitter)
+          .createInvoice(
+            id,
+            hash,
+            emitter.address,
+            payer.address,
+            1n,
+            token,
+            tooLong,
+            INV_YEAR,
+            INV_MONTH,
+          ),
+      ).to.be.revertedWith('InvoiceRegistry: vat number too long');
     });
 
     it('reverts on duplicate invoice hash', async () => {
@@ -236,6 +279,7 @@ describe('InvoiceRegistry', () => {
           payer.address,
           10n,
           token,
+          EMPTY_VAT_NUMBER,
           INV_YEAR,
           INV_MONTH,
         );
@@ -250,6 +294,7 @@ describe('InvoiceRegistry', () => {
             payer.address,
             20n,
             token,
+            EMPTY_VAT_NUMBER,
             INV_YEAR,
             INV_MONTH,
           ),
@@ -276,6 +321,7 @@ describe('InvoiceRegistry', () => {
           payer.address,
           amount,
           token,
+          EMPTY_VAT_NUMBER,
           INV_YEAR,
           INV_MONTH,
         );
@@ -355,6 +401,7 @@ describe('InvoiceRegistry', () => {
           payer.address,
           100n,
           token,
+          EMPTY_VAT_NUMBER,
           INV_YEAR,
           INV_MONTH,
         );
@@ -442,6 +489,7 @@ describe('InvoiceRegistry', () => {
           payer.address,
           1n,
           newToken,
+          EMPTY_VAT_NUMBER,
           INV_YEAR,
           INV_MONTH,
         );
@@ -496,6 +544,7 @@ describe('InvoiceRegistry', () => {
           payer.address,
           1n,
           token,
+          EMPTY_VAT_NUMBER,
           INV_YEAR,
           INV_MONTH,
         );

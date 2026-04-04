@@ -101,6 +101,17 @@ export function InvoicePreviewDocument({
               {t('invoice.preview.siretPrefix')} {values.emitterSiret}
             </p>
           ) : null}
+          {values.emitterVatNumber?.trim() ? (
+            <p className="mt-1 text-sm text-zinc-500">
+              <span className="font-medium uppercase tracking-wide text-zinc-600">
+                {t('invoice.preview.vatNumberLabel')}
+              </span>
+              <br />
+              <span className="font-mono text-zinc-400">
+                {values.emitterVatNumber.trim()}
+              </span>
+            </p>
+          ) : null}
           {values.emitterEmail ? (
             <p className="text-sm text-zinc-500">{values.emitterEmail}</p>
           ) : null}
