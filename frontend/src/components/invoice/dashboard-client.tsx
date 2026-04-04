@@ -15,6 +15,7 @@ import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
   downloadBase64Pdf,
@@ -244,7 +245,7 @@ export function DashboardClient() {
               {rows.map((r) => (
                 <TableRow key={r.invoiceId.toString()}>
                   <TableCell className="font-mono text-xs">
-                    #{r.invoiceId.toString()}
+                    {formatOnvoInvoiceLabel(r.invoiceId)}
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {shortAddr(r.recipient)}

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import { use } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,7 +12,18 @@ export default function PayPage({
   const { token } = use(params);
   const { t } = useTranslation('common');
 
-  if (!token?.trim()) {
+  const trimmedToken = token?.trim() ?? '';
+
+  let packedLabel: string | null = null;
+  if (trimmedToken !== '') {
+    try {
+      packedLabel = formatOnvoInvoiceLabel(BigInt(trimmedToken));
+    } catch {
+      packedLabel = null;
+    }
+  }
+
+  if (!trimmedToken) {
     return (
       <section
         className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8"
@@ -44,8 +56,11 @@ export default function PayPage({
       <p className="mt-2 text-sm font-semibold text-foreground">
         {t('pay.tokenReceived')}
       </p>
+      {packedLabel ? (
+        <p className="mt-3 font-mono text-sm text-foreground">{packedLabel}</p>
+      ) : null}
       <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all rounded-xl border border-border bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground">
-        {token}
+        {trimmedToken}
       </pre>
     </section>
   );

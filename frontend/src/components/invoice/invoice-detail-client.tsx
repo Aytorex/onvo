@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { readInvoice } from '@/lib/invoice-contract';
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import {
   downloadBase64Pdf,
   getInvoiceMeta,
@@ -99,7 +100,12 @@ export function InvoiceDetailClient() {
           <p className="text-sm text-muted-foreground">
             {t('invoice.detail.invoiceLabel')}
           </p>
-          <h1 className="text-2xl font-semibold">#{invoiceId.toString()}</h1>
+          <h1 className="text-2xl font-semibold">
+            {formatOnvoInvoiceLabel(invoiceId)}
+          </h1>
+          <p className="mt-1 font-mono text-xs text-muted-foreground break-all">
+            {invoiceId.toString()}
+          </p>
         </div>
         <Badge variant="outline">{statusLabel(data.status, t)}</Badge>
       </div>

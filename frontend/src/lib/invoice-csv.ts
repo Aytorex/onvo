@@ -1,6 +1,7 @@
 'use client';
 
 import i18n from '@/lib/i18n/client';
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import type { InvoiceMetaRecord, InvoiceRowView } from '@/lib/invoice-types';
 
 function escapeCsvCell(s: string): string {
@@ -16,7 +17,8 @@ function statusLabel(s: InvoiceRowView['status']): string {
 
 export function exportInvoicesCSV(rows: InvoiceRowView[]): void {
   const headers = [
-    'invoiceId',
+    'invoicePackedId',
+    'invoiceLabel',
     'status',
     'recipient',
     'amountRaw',
@@ -37,6 +39,7 @@ export function exportInvoicesCSV(rows: InvoiceRowView[]): void {
     const m: InvoiceMetaRecord | null = r.meta;
     lines.push([
       r.invoiceId.toString(),
+      formatOnvoInvoiceLabel(r.invoiceId),
       statusLabel(r.status),
       r.recipient,
       r.amount.toString(),

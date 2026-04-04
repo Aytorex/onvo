@@ -25,6 +25,7 @@ import {
 } from '@/lib/invoice-storage';
 import { getTokenAddress, tokenDecimals } from '@/lib/invoice-tokens';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import {
   blobToBase64,
   generatePdfBlobFromElement,
@@ -47,7 +48,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { isAddress, parseUnits } from 'viem';
+import { isAddress, parseUnits, zeroAddress } from 'viem';
 import {
   useAccount,
   usePublicClient,
@@ -77,7 +78,7 @@ function defaultForm(): InvoiceFormValues {
         vatPercent: 20,
       },
     ],
-    invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`,
+    invoiceNumber: '',
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     currency: 'USDC',
@@ -118,6 +119,57 @@ export function InvoiceNewClient() {
   });
 
   const watched = useWatch({ control: form.control });
+  const issueDateWatched = useWatch({
+    control: form.control,
+    name: 'issueDate',
+  });
+
+  const registryDeployed =
+    invoiceRegistryContract.address.toLowerCase() !== zeroAddress.toLowerCase();
+
+  const nextIdArgs = useMemo(() => {
+    if (!address || !issueDateWatched?.trim()) return undefined;
+    const d = new Date(issueDateWatched);
+    if (Number.isNaN(d.getTime())) return undefined;
+    return [
+      address,
+      BigInt(d.getFullYear()),
+      BigInt(d.getMonth() + 1),
+    ] as const;
+  }, [address, issueDateWatched]);
+
+  const {
+    data: nextPackedInvoiceId,
+    isPending: isNextInvoiceIdPending,
+    isFetching: isNextInvoiceIdFetching,
+    isError: isNextInvoiceIdError,
+  } = useReadContract({
+    chainId: arcTestnet.id,
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'getNextInvoiceId',
+    args: nextIdArgs,
+    query: {
+      enabled: Boolean(
+        registryDeployed && nextIdArgs && isConnected && publicClientArc,
+      ),
+    },
+  });
+
+  const nextInvoiceFromChainLoading =
+    registryDeployed &&
+    !!nextIdArgs &&
+    (isNextInvoiceIdPending || isNextInvoiceIdFetching) &&
+    !isNextInvoiceIdError;
+
+  useEffect(() => {
+    if (typeof nextPackedInvoiceId !== 'bigint') return;
+    const label = formatOnvoInvoiceLabel(nextPackedInvoiceId);
+    form.setValue('invoiceNumber', label, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+  }, [nextPackedInvoiceId, form]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -201,16 +253,30 @@ export function InvoiceNewClient() {
           return;
         }
 
+        const issue = new Date(data.issueDate);
+        const invYear = BigInt(issue.getFullYear());
+        const invMonth = BigInt(issue.getMonth() + 1);
+
+        const nextInvoiceId = await publicClientArc!.readContract({
+          address: invoiceRegistryContract.address,
+          abi: invoiceRegistryContract.abi,
+          functionName: 'getNextInvoiceId',
+          args: [address, invYear, invMonth],
+        });
+
         const hash = await writeContractAsync({
           address: invoiceRegistryContract.address,
           abi: invoiceRegistryContract.abi,
           functionName: 'createInvoice',
           args: [
+            nextInvoiceId,
             invoiceHash,
             address,
             data.clientWallet as `0x${string}`,
             amount,
             token,
+            invYear,
+            invMonth,
           ],
           chainId: arcTestnet.id,
           chain: arcTestnet,
@@ -395,6 +461,9 @@ export function InvoiceNewClient() {
         <p className="text-sm text-muted-foreground">
           {t('invoice.form.successSubtitle')}
         </p>
+        <p className="font-mono text-sm text-foreground">
+          {formatOnvoInvoiceLabel(successId)}
+        </p>
         <div className="rounded-lg bg-muted/50 p-4 font-mono text-sm break-all">
           {typeof window !== 'undefined'
             ? `${window.location.origin}/pay/${successId.toString()}`
@@ -557,7 +626,7 @@ export function InvoiceNewClient() {
                     <Label>{t('invoice.form.qty')}</Label>
                     <Input
                       type="number"
-                      step="0.01"
+                      step={1}
                       {...form.register(`lines.${index}.quantity` as const)}
                     />
                   </div>
@@ -621,7 +690,26 @@ export function InvoiceNewClient() {
               <Label htmlFor="invoiceNumber">
                 {t('invoice.form.invoiceNumber')}
               </Label>
-              <Input id="invoiceNumber" {...form.register('invoiceNumber')} />
+              <Input
+                id="invoiceNumber"
+                placeholder={t('invoice.form.invoiceNumberPlaceholder')}
+                readOnly={nextInvoiceFromChainLoading}
+                aria-busy={nextInvoiceFromChainLoading}
+                {...form.register('invoiceNumber')}
+              />
+              {nextInvoiceFromChainLoading ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('invoice.form.invoiceNumberLoading')}
+                </p>
+              ) : null}
+              {registryDeployed &&
+              nextIdArgs &&
+              !nextInvoiceFromChainLoading &&
+              isNextInvoiceIdError ? (
+                <p className="text-xs text-amber-600 dark:text-amber-500">
+                  {t('invoice.form.invoiceNumberChainError')}
+                </p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="issueDate">{t('invoice.form.issueDate')}</Label>
@@ -662,7 +750,8 @@ export function InvoiceNewClient() {
               isWritePending ||
               loadingRpForSubmit ||
               !isConnected ||
-              (address !== undefined && emitterVerified === undefined)
+              (address !== undefined && emitterVerified === undefined) ||
+              nextInvoiceFromChainLoading
             }
           >
             {loadingRpForSubmit

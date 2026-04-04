@@ -5,8 +5,6 @@ import type {
   MockERC20,
   WorldIdRouterMock,
 } from '@/typechain-types';
-import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
-
 const { ethers, networkHelpers } = await network.connect();
 const { loadFixture } = networkHelpers;
 
@@ -22,6 +20,17 @@ const DUMMY_PROOF = Array.from({ length: 8 }, () => 0n) as [
   bigint,
   bigint,
 ];
+
+/** Calendar period for deterministic packed invoice ids (matches Foundry tests). */
+const INV_YEAR = 2026n;
+const INV_MONTH = 4n;
+
+async function nextInvoiceId(
+  registry: InvoiceRegistry,
+  emitterAddr: string,
+): Promise<bigint> {
+  return registry.getNextInvoiceId(emitterAddr, INV_YEAR, INV_MONTH);
+}
 
 async function deployFixture() {
   const [owner, emitter, payer, stranger] = await ethers.getSigners();
@@ -86,15 +95,25 @@ describe('InvoiceRegistry', () => {
         .registerWithWorldId(1n, 1n, 100n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pdf-hash-1'));
       const amount = 1000n;
+      const id = await nextInvoiceId(registry, emitter.address);
       await expect(
         registry
           .connect(emitter)
-          .createInvoice(hash, emitter.address, payer.address, amount, token),
+          .createInvoice(
+            id,
+            hash,
+            emitter.address,
+            payer.address,
+            amount,
+            token,
+            INV_YEAR,
+            INV_MONTH,
+          ),
       )
         .to.emit(registry, 'InvoiceCreated')
-        .withArgs(1n, hash, emitter.address, payer.address, amount, token);
+        .withArgs(id, hash, emitter.address, payer.address, amount, token);
 
-      const inv = await registry.getInvoice(1n);
+      const inv = await registry.getInvoice(id);
       expect(inv.invoiceHash_).to.equal(hash);
       expect(inv.emitter).to.equal(emitter.address);
       expect(inv.recipient).to.equal(payer.address);
@@ -110,10 +129,20 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 200n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h'));
+      const id = await nextInvoiceId(registry, emitter.address);
       await expect(
         registry
           .connect(stranger)
-          .createInvoice(hash, emitter.address, payer.address, 1n, token),
+          .createInvoice(
+            id,
+            hash,
+            emitter.address,
+            payer.address,
+            1n,
+            token,
+            INV_YEAR,
+            INV_MONTH,
+          ),
       ).to.be.revertedWith('InvoiceRegistry: not emitter');
     });
 
@@ -121,10 +150,20 @@ describe('InvoiceRegistry', () => {
       const { emitter, payer, registry, token } =
         await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h2'));
+      const id = await nextInvoiceId(registry, emitter.address);
       await expect(
         registry
           .connect(emitter)
-          .createInvoice(hash, emitter.address, payer.address, 1n, token),
+          .createInvoice(
+            id,
+            hash,
+            emitter.address,
+            payer.address,
+            1n,
+            token,
+            INV_YEAR,
+            INV_MONTH,
+          ),
       ).to.be.revertedWith('InvoiceRegistry: emitter not verified');
     });
 
@@ -139,10 +178,20 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 300n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h3'));
+      const id = await nextInvoiceId(registry, emitter.address);
       await expect(
         registry
           .connect(emitter)
-          .createInvoice(hash, emitter.address, payer.address, 1n, otherToken),
+          .createInvoice(
+            id,
+            hash,
+            emitter.address,
+            payer.address,
+            1n,
+            otherToken,
+            INV_YEAR,
+            INV_MONTH,
+          ),
       ).to.be.revertedWith('InvoiceRegistry: token not allowed');
     });
 
@@ -153,10 +202,20 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 400n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h4'));
+      const id = await nextInvoiceId(registry, emitter.address);
       await expect(
         registry
           .connect(emitter)
-          .createInvoice(hash, emitter.address, payer.address, 0n, token),
+          .createInvoice(
+            id,
+            hash,
+            emitter.address,
+            payer.address,
+            0n,
+            token,
+            INV_YEAR,
+            INV_MONTH,
+          ),
       ).to.be.revertedWith('InvoiceRegistry: zero amount');
     });
 
@@ -167,13 +226,33 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 500n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('dup'));
+      const id1 = await nextInvoiceId(registry, emitter.address);
       await registry
         .connect(emitter)
-        .createInvoice(hash, emitter.address, payer.address, 10n, token);
+        .createInvoice(
+          id1,
+          hash,
+          emitter.address,
+          payer.address,
+          10n,
+          token,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      const id2 = await nextInvoiceId(registry, emitter.address);
       await expect(
         registry
           .connect(emitter)
-          .createInvoice(hash, emitter.address, payer.address, 20n, token),
+          .createInvoice(
+            id2,
+            hash,
+            emitter.address,
+            payer.address,
+            20n,
+            token,
+            INV_YEAR,
+            INV_MONTH,
+          ),
       ).to.be.revertedWith('InvoiceRegistry: hash used');
     });
   });
@@ -187,21 +266,32 @@ describe('InvoiceRegistry', () => {
         .registerWithWorldId(1n, 1n, 600n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pay'));
       const amount = 50_000n;
+      const invoiceId = await nextInvoiceId(registry, emitter.address);
       await registry
         .connect(emitter)
-        .createInvoice(hash, emitter.address, payer.address, amount, token);
-      return { ...ctx, amount };
+        .createInvoice(
+          invoiceId,
+          hash,
+          emitter.address,
+          payer.address,
+          amount,
+          token,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      return { ...ctx, amount, invoiceId };
     }
 
     it('transfers token and sets Paid', async () => {
-      const { emitter, payer, registry, token, amount } = await setupPaidFlow();
+      const { emitter, payer, registry, token, amount, invoiceId } =
+        await setupPaidFlow();
       const regAddr = await registry.getAddress();
       await token.connect(payer).approve(regAddr, amount);
-      await expect(registry.connect(payer).payInvoice(1n))
+      await expect(registry.connect(payer).payInvoice(invoiceId))
         .to.emit(registry, 'InvoicePaid')
-        .withArgs(1n, payer.address, amount, token);
+        .withArgs(invoiceId, payer.address, amount, token);
 
-      const inv = await registry.getInvoice(1n);
+      const inv = await registry.getInvoice(invoiceId);
       expect(inv.status).to.equal(1n);
       expect(await token.balanceOf(emitter.address)).to.equal(
         1_000_000n + amount,
@@ -219,28 +309,30 @@ describe('InvoiceRegistry', () => {
     });
 
     it('reverts when already paid', async () => {
-      const { payer, registry, token, amount } = await setupPaidFlow();
+      const { payer, registry, token, amount, invoiceId } =
+        await setupPaidFlow();
       await token.connect(payer).approve(await registry.getAddress(), amount);
-      await registry.connect(payer).payInvoice(1n);
+      await registry.connect(payer).payInvoice(invoiceId);
       await token.connect(payer).approve(await registry.getAddress(), amount);
-      await expect(registry.connect(payer).payInvoice(1n)).to.be.revertedWith(
-        'InvoiceRegistry: not pending',
-      );
+      await expect(
+        registry.connect(payer).payInvoice(invoiceId),
+      ).to.be.revertedWith('InvoiceRegistry: not pending');
     });
 
     it('reverts when cancelled', async () => {
-      const { emitter, payer, registry, token, amount } = await setupPaidFlow();
-      await registry.connect(emitter).cancelInvoice(1n);
+      const { emitter, payer, registry, token, amount, invoiceId } =
+        await setupPaidFlow();
+      await registry.connect(emitter).cancelInvoice(invoiceId);
       await token.connect(payer).approve(await registry.getAddress(), amount);
-      await expect(registry.connect(payer).payInvoice(1n)).to.be.revertedWith(
-        'InvoiceRegistry: not pending',
-      );
+      await expect(
+        registry.connect(payer).payInvoice(invoiceId),
+      ).to.be.revertedWith('InvoiceRegistry: not pending');
     });
 
     it('reverts when allowance insufficient', async () => {
-      const { payer, registry, token } = await setupPaidFlow();
+      const { payer, registry, token, invoiceId } = await setupPaidFlow();
       await expect(
-        registry.connect(payer).payInvoice(1n),
+        registry.connect(payer).payInvoice(invoiceId),
       ).to.be.revertedWithCustomError(token, 'ERC20InsufficientAllowance');
     });
   });
@@ -253,42 +345,53 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 700n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('cancel'));
+      const invoiceId = await nextInvoiceId(registry, emitter.address);
       await registry
         .connect(emitter)
-        .createInvoice(hash, emitter.address, payer.address, 100n, token);
-      return ctx;
+        .createInvoice(
+          invoiceId,
+          hash,
+          emitter.address,
+          payer.address,
+          100n,
+          token,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      return { ...ctx, invoiceId };
     }
 
     it('cancels when emitter and pending', async () => {
-      const { emitter, registry } = await setupInvoice();
-      await expect(registry.connect(emitter).cancelInvoice(1n))
+      const { emitter, registry, invoiceId } = await setupInvoice();
+      await expect(registry.connect(emitter).cancelInvoice(invoiceId))
         .to.emit(registry, 'InvoiceCancelled')
-        .withArgs(1n, emitter.address);
-      const inv = await registry.getInvoice(1n);
+        .withArgs(invoiceId, emitter.address);
+      const inv = await registry.getInvoice(invoiceId);
       expect(inv.status).to.equal(2n);
     });
 
     it('reverts when not emitter', async () => {
-      const { stranger, registry } = await setupInvoice();
+      const { stranger, registry, invoiceId } = await setupInvoice();
       await expect(
-        registry.connect(stranger).cancelInvoice(1n),
+        registry.connect(stranger).cancelInvoice(invoiceId),
       ).to.be.revertedWith('InvoiceRegistry: not emitter');
     });
 
     it('reverts when already paid', async () => {
-      const { emitter, payer, registry, token } = await setupInvoice();
+      const { emitter, payer, registry, token, invoiceId } =
+        await setupInvoice();
       await token.connect(payer).approve(await registry.getAddress(), 100n);
-      await registry.connect(payer).payInvoice(1n);
+      await registry.connect(payer).payInvoice(invoiceId);
       await expect(
-        registry.connect(emitter).cancelInvoice(1n),
+        registry.connect(emitter).cancelInvoice(invoiceId),
       ).to.be.revertedWith('InvoiceRegistry: not pending');
     });
 
     it('reverts on double cancel', async () => {
-      const { emitter, registry } = await setupInvoice();
-      await registry.connect(emitter).cancelInvoice(1n);
+      const { emitter, registry, invoiceId } = await setupInvoice();
+      await registry.connect(emitter).cancelInvoice(invoiceId);
       await expect(
-        registry.connect(emitter).cancelInvoice(1n),
+        registry.connect(emitter).cancelInvoice(invoiceId),
       ).to.be.revertedWith('InvoiceRegistry: not pending');
     });
   });
@@ -329,10 +432,20 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 800n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('newInvoice'));
+      const id = await nextInvoiceId(registry, emitter.address);
       await registry
         .connect(emitter)
-        .createInvoice(hash, emitter.address, payer.address, 1n, newToken);
-      const inv = await registry.getInvoice(1n);
+        .createInvoice(
+          id,
+          hash,
+          emitter.address,
+          payer.address,
+          1n,
+          newToken,
+          INV_YEAR,
+          INV_MONTH,
+        );
+      const inv = await registry.getInvoice(id);
       expect(inv.invoiceHash_).to.equal(hash);
     });
   });
