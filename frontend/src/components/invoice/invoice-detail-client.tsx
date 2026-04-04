@@ -23,7 +23,7 @@ import {
   getInvoicePdfBase64,
 } from '@/lib/invoice-storage';
 import { useWorldID } from '@/lib/worldid';
-import { Copy } from 'lucide-react';
+import { ArrowLeft, Copy, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -133,11 +133,20 @@ export function InvoiceDetailClient() {
     <div className="p-4 space-y-8">
       <div className="flex w-full items-center justify-between gap-2">
         <Button asChild variant="secondary">
-          <Link href="/dashboard/invoices">{t('invoice.detail.back')}</Link>
+          <Link href="/dashboard/invoices" className="gap-2">
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            {t('invoice.detail.back')}
+          </Link>
         </Button>
         <div className="flex items-center gap-4">
           <Button variant="default" asChild>
-            <Link href={`/pay/${invoiceIdToUrlSegment(invoiceId)}`}>
+            <Link
+              href={`/pay/${invoiceIdToUrlSegment(invoiceId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="gap-2"
+            >
+              <CreditCard className="h-4 w-4 shrink-0" aria-hidden />
               {t('invoice.detail.payPage')}
             </Link>
           </Button>
