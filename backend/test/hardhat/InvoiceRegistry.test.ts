@@ -30,9 +30,9 @@ const EMPTY_VAT_NUMBER = '';
 
 async function nextInvoiceId(
   registry: InvoiceRegistry,
-  emitterAddr: string,
+  worldIdNullifier: bigint,
 ): Promise<bigint> {
-  return registry.getNextInvoiceId(emitterAddr, INV_YEAR, INV_MONTH);
+  return registry.getNextInvoiceId(worldIdNullifier, INV_YEAR, INV_MONTH);
 }
 
 async function deployFixture() {
@@ -116,7 +116,7 @@ describe('InvoiceRegistry', () => {
       expect(await registry.emitterWorldIdNullifier(emitter.address)).to.equal(
         222n,
       );
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 222n);
       await registry
         .connect(emitter)
         .createInvoice(
@@ -144,7 +144,7 @@ describe('InvoiceRegistry', () => {
         .registerWithWorldId(1n, 1n, 100n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pdf-hash-1'));
       const amount = 1000n;
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 100n);
       await expect(
         registry
           .connect(emitter)
@@ -190,7 +190,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 200n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h'));
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 200n);
       await expect(
         registry
           .connect(stranger)
@@ -212,7 +212,7 @@ describe('InvoiceRegistry', () => {
       const { emitter, payer, registry, token } =
         await loadFixture(deployFixture);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h2'));
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 1n);
       await expect(
         registry
           .connect(emitter)
@@ -241,7 +241,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 300n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h3'));
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 300n);
       await expect(
         registry
           .connect(emitter)
@@ -266,7 +266,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 400n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h4'));
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 400n);
       await expect(
         registry
           .connect(emitter)
@@ -291,7 +291,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 450n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('h-vat'));
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 450n);
       const tooLong = 'X'.repeat(65);
       await expect(
         registry
@@ -317,7 +317,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 500n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('dup'));
-      const id1 = await nextInvoiceId(registry, emitter.address);
+      const id1 = await nextInvoiceId(registry, 500n);
       await registry
         .connect(emitter)
         .createInvoice(
@@ -331,7 +331,7 @@ describe('InvoiceRegistry', () => {
           INV_YEAR,
           INV_MONTH,
         );
-      const id2 = await nextInvoiceId(registry, emitter.address);
+      const id2 = await nextInvoiceId(registry, 500n);
       await expect(
         registry
           .connect(emitter)
@@ -359,7 +359,7 @@ describe('InvoiceRegistry', () => {
         .registerWithWorldId(1n, 1n, 600n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('pay'));
       const amount = 50_000n;
-      const invoiceId = await nextInvoiceId(registry, emitter.address);
+      const invoiceId = await nextInvoiceId(registry, 600n);
       await registry
         .connect(emitter)
         .createInvoice(
@@ -454,7 +454,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 700n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('cancel'));
-      const invoiceId = await nextInvoiceId(registry, emitter.address);
+      const invoiceId = await nextInvoiceId(registry, 700n);
       await registry
         .connect(emitter)
         .createInvoice(
@@ -586,7 +586,7 @@ describe('InvoiceRegistry', () => {
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 800n, DUMMY_PROOF);
       const hash = ethers.keccak256(ethers.toUtf8Bytes('newInvoice'));
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 800n);
       await registry
         .connect(emitter)
         .createInvoice(
@@ -608,15 +608,11 @@ describe('InvoiceRegistry', () => {
 
   describe('invoice id helpers', () => {
     it('parseInvoiceId decodes a packed id (external wrapper)', async () => {
-      const { emitter, registry } = await loadFixture(deployFixture);
-      const packed = await registry.packInvoiceId(
-        emitter.address,
-        INV_YEAR,
-        INV_MONTH,
-        7n,
-      );
-      const [e, y, m, s] = await registry.parseInvoiceId(packed);
-      expect(e).to.equal(emitter.address);
+      const { registry } = await loadFixture(deployFixture);
+      const wid = await registry.worldIdNullifierToPacked160(42n);
+      const packed = await registry.packInvoiceId(wid, INV_YEAR, INV_MONTH, 7n);
+      const [wp, y, m, s] = await registry.parseInvoiceId(packed);
+      expect(wp).to.equal(wid);
       expect(y).to.equal(INV_YEAR);
       expect(m).to.equal(INV_MONTH);
       expect(s).to.equal(7n);
@@ -626,23 +622,15 @@ describe('InvoiceRegistry', () => {
       const { emitter, payer, registry, token } =
         await loadFixture(deployFixture);
       expect(
-        await registry.getNextInvoiceSequence(
-          emitter.address,
-          INV_YEAR,
-          INV_MONTH,
-        ),
+        await registry.getNextInvoiceSequence(901n, INV_YEAR, INV_MONTH),
       ).to.equal(1n);
       await registry
         .connect(emitter)
         .registerWithWorldId(1n, 1n, 901n, DUMMY_PROOF);
       expect(
-        await registry.getNextInvoiceSequence(
-          emitter.address,
-          INV_YEAR,
-          INV_MONTH,
-        ),
+        await registry.getNextInvoiceSequence(901n, INV_YEAR, INV_MONTH),
       ).to.equal(1n);
-      const id = await nextInvoiceId(registry, emitter.address);
+      const id = await nextInvoiceId(registry, 901n);
       await registry
         .connect(emitter)
         .createInvoice(
@@ -657,11 +645,7 @@ describe('InvoiceRegistry', () => {
           INV_MONTH,
         );
       expect(
-        await registry.getNextInvoiceSequence(
-          emitter.address,
-          INV_YEAR,
-          INV_MONTH,
-        ),
+        await registry.getNextInvoiceSequence(901n, INV_YEAR, INV_MONTH),
       ).to.equal(2n);
     });
   });

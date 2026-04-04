@@ -383,6 +383,7 @@
     "preview": {
       "brand": "Onvo",
       "invoiceTitle": "Facture",
+      "documentNo": "N° de document",
       "issuedOn": "Émis le",
       "dueOn": "Échéance",
       "emitter": "Émetteur",
@@ -452,6 +453,7 @@
       "walletRequiredShort": "Wallet requis.",
       "emitterOrInvoiceFailed": "Échec inscription émetteur ou facture.",
       "verifyingOnChain": "Vérification on-chain en cours, réessayez dans un instant.",
+      "worldIdRequiredForInvoiceId": "World ID est requis pour réserver le numéro de facture on-chain.",
       "worldIdInitRp": "Impossible d'initialiser World ID (RP).",
       "worldIdCancelled": "World ID annulé ou erreur.",
       "registerSuccess": "Adresse enregistrée comme émetteur vérifié.",

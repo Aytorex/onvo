@@ -89,8 +89,10 @@ contract InvoiceRegistryTest is Test {
         registry.registerWithWorldId(1, 1, 777, dummyProof);
     }
 
-    function _nextInvoiceId(address emitter_) internal view returns (uint256) {
-        return registry.getNextInvoiceId(emitter_, INV_YEAR, INV_MONTH);
+    function _nextInvoiceId(
+        uint256 worldIdNullifier
+    ) internal view returns (uint256) {
+        return registry.getNextInvoiceId(worldIdNullifier, INV_YEAR, INV_MONTH);
     }
 
     /* registerWithWorldId */
@@ -125,7 +127,7 @@ contract InvoiceRegistryTest is Test {
         assertEq(registry.emitterWorldIdNullifier(emitter), 222);
         vm.stopPrank();
 
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(222);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -150,7 +152,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pdf-hash-1");
         uint256 amount = 1000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         vm.expectEmit(true, true, true, true);
         emit InvoiceCreated(
@@ -197,7 +199,7 @@ contract InvoiceRegistryTest is Test {
 
     function testGetNextInvoiceIdIncrementsPerMonth() public {
         _registerEmitter();
-        uint256 id1 = _nextInvoiceId(emitter);
+        uint256 id1 = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id1,
@@ -210,7 +212,7 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-        uint256 id2 = _nextInvoiceId(emitter);
+        uint256 id2 = _nextInvoiceId(777);
         assertTrue(id2 != id1);
         (, , , uint256 seq1) = registry.parseInvoiceId(id1);
         (, , , uint256 seq2) = registry.parseInvoiceId(id2);
@@ -219,16 +221,10 @@ contract InvoiceRegistryTest is Test {
 
     /// @dev External call to `getNextInvoiceSequence` so forge coverage counts that entry point (not only via `getNextInvoiceId`).
     function testGetNextInvoiceSequencePublicView() public {
-        assertEq(
-            registry.getNextInvoiceSequence(emitter, INV_YEAR, INV_MONTH),
-            1
-        );
+        assertEq(registry.getNextInvoiceSequence(777, INV_YEAR, INV_MONTH), 1);
         _registerEmitter();
-        assertEq(
-            registry.getNextInvoiceSequence(emitter, INV_YEAR, INV_MONTH),
-            1
-        );
-        uint256 id = _nextInvoiceId(emitter);
+        assertEq(registry.getNextInvoiceSequence(777, INV_YEAR, INV_MONTH), 1);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -241,34 +237,28 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-        assertEq(
-            registry.getNextInvoiceSequence(emitter, INV_YEAR, INV_MONTH),
-            2
-        );
+        assertEq(registry.getNextInvoiceSequence(777, INV_YEAR, INV_MONTH), 2);
     }
 
     /// @dev Full tuple decode via external `parseInvoiceId` (ABI / coverage).
     function testParseInvoiceIdExternalDecodesPackedId() public view {
-        uint256 id = registry.packInvoiceId(emitter, INV_YEAR, INV_MONTH, 7);
-        (address e, uint256 y, uint256 m, uint256 s) = registry.parseInvoiceId(
+        uint160 wid = registry.worldIdNullifierToPacked160(777);
+        uint256 id = registry.packInvoiceId(wid, INV_YEAR, INV_MONTH, 7);
+        (uint160 wp, uint256 y, uint256 m, uint256 s) = registry.parseInvoiceId(
             id
         );
-        assertEq(e, emitter);
+        assertEq(uint256(wp), uint256(wid));
         assertEq(y, INV_YEAR);
         assertEq(m, INV_MONTH);
         assertEq(s, 7);
     }
 
-    function testRevertWhenCreateInvoiceIdEmitterMismatch() public {
+    function testRevertWhenCreateInvoiceIdWorldIdMismatch() public {
         _registerEmitter();
-        uint256 badId = registry.packInvoiceId(
-            stranger,
-            INV_YEAR,
-            INV_MONTH,
-            1
-        );
+        uint160 wrong = registry.worldIdNullifierToPacked160(999);
+        uint256 badId = registry.packInvoiceId(wrong, INV_YEAR, INV_MONTH, 1);
         vm.prank(emitter);
-        vm.expectRevert("InvoiceRegistry: id emitter mismatch");
+        vm.expectRevert("InvoiceRegistry: id world id mismatch");
         registry.createInvoice(
             badId,
             keccak256("x"),
@@ -284,12 +274,8 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenCreateInvoiceIdSequenceMismatch() public {
         _registerEmitter();
-        uint256 badId = registry.packInvoiceId(
-            emitter,
-            INV_YEAR,
-            INV_MONTH,
-            99
-        );
+        uint160 wid = registry.worldIdNullifierToPacked160(777);
+        uint256 badId = registry.packInvoiceId(wid, INV_YEAR, INV_MONTH, 99);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: id sequence mismatch");
         registry.createInvoice(
@@ -307,7 +293,7 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenCreateInvoiceIdPeriodMismatch() public {
         _registerEmitter();
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: id period mismatch");
         registry.createInvoice(
@@ -326,7 +312,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCreateInvoiceNotEmitter() public {
         _registerEmitter();
         bytes32 hash = keccak256("h");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(stranger);
         vm.expectRevert("InvoiceRegistry: not emitter");
         registry.createInvoice(
@@ -344,7 +330,7 @@ contract InvoiceRegistryTest is Test {
 
     function testRevertWhenCreateInvoiceEmitterNotVerified() public {
         bytes32 hash = keccak256("h2");
-        uint256 id = registry.getNextInvoiceId(emitter, INV_YEAR, INV_MONTH);
+        uint256 id = registry.getNextInvoiceId(1, INV_YEAR, INV_MONTH);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: emitter not verified");
         registry.createInvoice(
@@ -365,7 +351,7 @@ contract InvoiceRegistryTest is Test {
         vm.prank(emitter);
         registry.registerWithWorldId(1, 1, 300, dummyProof);
         bytes32 hash = keccak256("h3");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(300);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: token not allowed");
         registry.createInvoice(
@@ -384,7 +370,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCreateInvoiceZeroAmount() public {
         _registerEmitter();
         bytes32 hash = keccak256("h4");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: zero amount");
         registry.createInvoice(
@@ -403,7 +389,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCreateInvoiceVatNumberTooLong() public {
         _registerEmitter();
         bytes32 hash = keccak256("h-vat");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         // 65 bytes > 64 max
         string memory tooLong =
             "012345678901234567890123456789012345678901234567890123456789012345";
@@ -426,7 +412,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("dup");
         vm.startPrank(emitter);
-        uint256 id1 = _nextInvoiceId(emitter);
+        uint256 id1 = _nextInvoiceId(777);
         registry.createInvoice(
             id1,
             hash,
@@ -438,7 +424,7 @@ contract InvoiceRegistryTest is Test {
             INV_YEAR,
             INV_MONTH
         );
-        uint256 id2 = _nextInvoiceId(emitter);
+        uint256 id2 = _nextInvoiceId(777);
         vm.expectRevert("InvoiceRegistry: hash used");
         registry.createInvoice(
             id2,
@@ -457,7 +443,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCreateInvoiceZeroRecipient() public {
         _registerEmitter();
         bytes32 hash = keccak256("zero-recipient");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         vm.expectRevert("InvoiceRegistry: zero recipient");
         registry.createInvoice(
@@ -479,7 +465,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -515,7 +501,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenPayInvoiceInvalidId() public {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -542,7 +528,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -571,7 +557,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay-zero-fee");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -599,7 +585,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -629,7 +615,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -660,7 +646,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -689,7 +675,7 @@ contract InvoiceRegistryTest is Test {
         _registerEmitter();
         bytes32 hash = keccak256("pay");
         uint256 amount = 50_000;
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -718,7 +704,7 @@ contract InvoiceRegistryTest is Test {
     function testCancelInvoicePending() public {
         _registerEmitter();
         bytes32 hash = keccak256("cancel");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -744,7 +730,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCancelInvoiceNotEmitter() public {
         _registerEmitter();
         bytes32 hash = keccak256("cancel");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -766,7 +752,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCancelInvoiceAlreadyPaid() public {
         _registerEmitter();
         bytes32 hash = keccak256("cancel");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -793,7 +779,7 @@ contract InvoiceRegistryTest is Test {
     function testRevertWhenCancelInvoiceDoubleCancel() public {
         _registerEmitter();
         bytes32 hash = keccak256("cancel");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(777);
         vm.prank(emitter);
         registry.createInvoice(
             id,
@@ -895,7 +881,7 @@ contract InvoiceRegistryTest is Test {
         registry.registerWithWorldId(1, 1, 800, dummyProof);
 
         bytes32 hash = keccak256("newInvoice");
-        uint256 id = _nextInvoiceId(emitter);
+        uint256 id = _nextInvoiceId(800);
         vm.prank(emitter);
         registry.createInvoice(
             id,

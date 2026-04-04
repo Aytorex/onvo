@@ -20,6 +20,19 @@ import { invoiceRegistryContract } from '@/lib/contract';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+
+function parseWorldIdNullifierToBigInt(
+  s: string | null | undefined,
+): bigint | null {
+  const t = s?.trim();
+  if (!t) return null;
+  try {
+    if (t.startsWith('0x') || t.startsWith('0X')) return BigInt(t);
+    return BigInt(t);
+  } catch {
+    return null;
+  }
+}
 import {
   appendInvoiceId,
   setInvoiceMeta,
@@ -205,16 +218,23 @@ export function InvoiceNewClient() {
   const registryDeployed =
     invoiceRegistryContract.address.toLowerCase() !== zeroAddress.toLowerCase();
 
+  const worldIdNullifierBn = useMemo(() => {
+    const s =
+      idKitWorldIdNullifier?.trim() || sessionWorldIdNullifier?.trim() || null;
+    return parseWorldIdNullifierToBigInt(s);
+  }, [idKitWorldIdNullifier, sessionWorldIdNullifier]);
+
   const nextIdArgs = useMemo(() => {
-    if (!address || !issueDateWatched?.trim()) return undefined;
+    if (worldIdNullifierBn === null || !issueDateWatched?.trim())
+      return undefined;
     const d = new Date(issueDateWatched);
     if (Number.isNaN(d.getTime())) return undefined;
     return [
-      address,
+      worldIdNullifierBn,
       BigInt(d.getFullYear()),
       BigInt(d.getMonth() + 1),
     ] as const;
-  }, [address, issueDateWatched]);
+  }, [worldIdNullifierBn, issueDateWatched]);
 
   const {
     data: nextPackedInvoiceId,
@@ -230,7 +250,11 @@ export function InvoiceNewClient() {
     args: nextIdArgs,
     query: {
       enabled: Boolean(
-        registryDeployed && nextIdArgs && isConnected && publicClientArc,
+        registryDeployed &&
+        nextIdArgs &&
+        isConnected &&
+        publicClientArc &&
+        worldIdNullifierBn !== null,
       ),
     },
   });
@@ -340,6 +364,14 @@ export function InvoiceNewClient() {
         sessionWorldIdNullifier?.trim() ||
         undefined;
 
+      const nullifierBn = parseWorldIdNullifierToBigInt(
+        worldIdNullifierOverride ?? sessionWorldIdNullifier,
+      );
+      if (nullifierBn === null) {
+        toast.error(t('invoice.toast.worldIdRequiredForInvoiceId'));
+        return;
+      }
+
       const lineTotals = computeTotalsFromLines(data.lines);
 
       setStepSubmitting(true);
@@ -368,7 +400,7 @@ export function InvoiceNewClient() {
           address: invoiceRegistryContract.address,
           abi: invoiceRegistryContract.abi,
           functionName: 'getNextInvoiceId',
-          args: [address, invYear, invMonth],
+          args: [nullifierBn, invYear, invMonth],
         });
 
         const onChainRecipient = address;
@@ -402,7 +434,7 @@ export function InvoiceNewClient() {
         }
 
         setInvoicePdfBase64(newId, base64);
-        appendInvoiceId(address, newId);
+        appendInvoiceId(address, newId, emitterWorldIdForDoc ?? null);
 
         const meta: InvoiceMetaRecord = {
           invoiceId: newId.toString(),

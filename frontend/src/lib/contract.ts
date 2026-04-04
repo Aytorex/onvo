@@ -378,9 +378,9 @@ export const invoiceRegistryContract = {
     {
       inputs: [
         {
-          internalType: 'address',
-          name: 'emitter_',
-          type: 'address',
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash',
+          type: 'uint256',
         },
         {
           internalType: 'uint256',
@@ -407,9 +407,9 @@ export const invoiceRegistryContract = {
     {
       inputs: [
         {
-          internalType: 'address',
-          name: 'emitter_',
-          type: 'address',
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash',
+          type: 'uint256',
         },
         {
           internalType: 'uint256',
@@ -436,9 +436,9 @@ export const invoiceRegistryContract = {
     {
       inputs: [
         {
-          internalType: 'address',
-          name: 'emitter_',
-          type: 'address',
+          internalType: 'uint160',
+          name: 'worldIdPacked_',
+          type: 'uint160',
         },
         {
           internalType: 'uint256',
@@ -478,9 +478,9 @@ export const invoiceRegistryContract = {
       name: 'parseInvoiceId',
       outputs: [
         {
-          internalType: 'address',
-          name: 'emitter_',
-          type: 'address',
+          internalType: 'uint160',
+          name: 'worldIdPacked_',
+          type: 'uint160',
         },
         {
           internalType: 'uint256',
@@ -496,6 +496,25 @@ export const invoiceRegistryContract = {
           internalType: 'uint256',
           name: 'sequence',
           type: 'uint256',
+        },
+      ],
+      stateMutability: 'pure',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'uint256',
+          name: 'worldIdNullifierHash',
+          type: 'uint256',
+        },
+      ],
+      name: 'worldIdNullifierToPacked160',
+      outputs: [
+        {
+          internalType: 'uint160',
+          name: '',
+          type: 'uint160',
         },
       ],
       stateMutability: 'pure',

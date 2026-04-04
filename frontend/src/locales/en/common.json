@@ -383,6 +383,7 @@
     "preview": {
       "brand": "Onvo",
       "invoiceTitle": "Invoice",
+      "documentNo": "Document no.",
       "issuedOn": "Issued on",
       "dueOn": "Due",
       "emitter": "Issuer",
@@ -452,6 +453,7 @@
       "walletRequiredShort": "Wallet required.",
       "emitterOrInvoiceFailed": "Issuer registration or invoice failed.",
       "verifyingOnChain": "On-chain check in progress, try again shortly.",
+      "worldIdRequiredForInvoiceId": "World ID is required to reserve the on-chain invoice number.",
       "worldIdInitRp": "Could not initialize World ID (RP).",
       "worldIdCancelled": "World ID cancelled or error.",
       "registerSuccess": "Address registered as verified issuer.",
