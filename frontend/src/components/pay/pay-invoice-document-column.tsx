@@ -1,28 +1,21 @@
 'use client';
 
-import { useChainId } from 'wagmi';
 import { useTranslation } from 'react-i18next';
 
-import { chains } from '@/lib/wagmi.config';
 import {
   formatInvoiceAmount,
   invoiceStatusI18nKey,
-  shortAddress,
   type InvoiceView,
 } from '@/lib/pay-invoice';
 
 import { PayInvoiceCopyHashButton } from '@/components/pay/pay-invoice-copy-hash-button';
 import { PayInvoiceLegalCard } from '@/components/pay/pay-invoice-legal-card';
 import { PayInvoiceStatusBadge } from '@/components/pay/pay-invoice-status-badge';
-import { PayInvoiceWorldIdCard } from '@/components/pay/pay-invoice-world-id-card';
 
 export function PayInvoiceDocumentColumn({
   invoice,
 }: Readonly<{ invoice: InvoiceView }>) {
   const { t } = useTranslation('common');
-  const chainId = useChainId();
-  const chainName =
-    chains.find((c) => c.id === chainId)?.name ?? `Chain ${chainId}`;
   const { formatted, symbol } = formatInvoiceAmount(
     invoice.amount,
     invoice.token,
@@ -35,8 +28,8 @@ export function PayInvoiceDocumentColumn({
         className="rounded-3xl border border-border/80 bg-card p-6 shadow-md sm:p-8"
         aria-labelledby="pay-invoice-heading"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
             <h1
               id="pay-invoice-heading"
               className="text-xl font-bold tracking-tight text-heading sm:text-2xl"
@@ -72,41 +65,7 @@ export function PayInvoiceDocumentColumn({
         </div>
       </section>
 
-      <section className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {t('pay.partiesTitle')}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border/70 bg-muted/15 p-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {t('pay.emitter')}
-            </p>
-            <p className="mt-2 font-mono text-sm text-foreground">
-              {shortAddress(invoice.emitter, 8)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-muted/15 p-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {t('pay.recipient')}
-            </p>
-            <p className="mt-2 font-mono text-sm text-foreground">
-              {shortAddress(invoice.recipient, 8)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-muted/15 p-4 sm:col-span-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {t('pay.network')}
-            </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
-              {chainName}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <PayInvoiceWorldIdCard issuerWorldId={invoice.issuerWorldId} />
-
-      <PayInvoiceLegalCard invoice={invoice} embedded />
+      <PayInvoiceLegalCard invoice={invoice} />
 
       <section
         className="rounded-3xl border border-dashed border-border/70 bg-muted/10 p-6 sm:p-8"

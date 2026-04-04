@@ -1,4 +1,10 @@
-import { getAddress, isAddress, isHex } from 'viem';
+import {
+  getAddress,
+  isAddress,
+  isAddressEqual,
+  isHex,
+  zeroAddress,
+} from 'viem';
 
 import { INVOICE_STATUS, type InvoiceStatus, type InvoiceView } from './types';
 
@@ -71,8 +77,8 @@ export function parseGetInvoiceResult(
   invoiceId: bigint,
   data: unknown,
 ): InvoiceView {
-  if (!Array.isArray(data) || data.length !== 6) {
-    throw new TypeError('getInvoice: expected tuple of length 6');
+  if (!Array.isArray(data) || data.length !== 8) {
+    throw new TypeError('getInvoice: expected tuple of length 8');
   }
 
   const [
@@ -81,6 +87,8 @@ export function parseGetInvoiceResult(
     recipientRaw,
     amountRaw,
     tokenRaw,
+    vatNumberRaw,
+    issuerWorldIdRaw,
     statusRaw,
   ] = data;
 
@@ -100,8 +108,20 @@ export function parseGetInvoiceResult(
     throw new TypeError('getInvoice: invalid address field');
   }
 
+  if (typeof vatNumberRaw !== 'string') {
+    throw new TypeError('getInvoice: invalid vatNumber');
+  }
+
+  if (!isAddress(issuerWorldIdRaw)) {
+    throw new TypeError('getInvoice: invalid issuerWorldId');
+  }
+
   const amount = toBigIntStrict(amountRaw);
   const status = normalizeInvoiceStatus(statusRaw);
+  const issuerAddr = issuerWorldIdRaw as `0x${string}`;
+  const issuerWorldId = isAddressEqual(issuerAddr, zeroAddress)
+    ? ''
+    : getAddress(issuerAddr);
 
   return {
     invoiceId,
@@ -111,6 +131,7 @@ export function parseGetInvoiceResult(
     amount,
     token: getAddress(tokenRaw),
     status,
-    issuerWorldId: '',
+    vatNumber: vatNumberRaw,
+    issuerWorldId,
   };
 }

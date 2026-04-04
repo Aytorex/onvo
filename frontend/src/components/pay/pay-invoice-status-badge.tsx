@@ -13,7 +13,7 @@ export function PayInvoiceStatusBadge({
     <Badge
       variant="outline"
       className={cn(
-        'font-semibold',
+        'shrink-0 rounded-xl px-4 py-2 text-base font-bold tracking-tight sm:px-5 sm:py-2.5 sm:text-lg',
         status === INVOICE_STATUS.Pending &&
           'border-amber-500/50 bg-amber-500/15 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200',
         status === INVOICE_STATUS.Paid &&
