@@ -248,6 +248,9 @@ export function InvoiceDetailClient() {
           values={previewValues}
           previewRef={previewRef}
           emitterWorldIdNullifier={worldIdForPreview || null}
+          publishedDocumentNo={
+            meta?.invoiceNumber?.trim() || formatOnvoInvoiceLabel(invoiceId)
+          }
         />
       ) : (
         <>

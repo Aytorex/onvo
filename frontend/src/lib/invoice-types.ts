@@ -30,7 +30,6 @@ export interface InvoiceFormValues {
   clientCountry: string;
   clientEmail: string;
   lines: InvoiceLine[];
-  invoiceNumber: string;
   issueDate: string;
   dueDate: string;
   currency: StableCurrency;

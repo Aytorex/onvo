@@ -14,6 +14,7 @@ import type { InvoiceFormValues, InvoiceLine } from '@/lib/invoice-types';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { enUS, fr } from 'date-fns/locale';
 import { format } from 'date-fns';
+import type { TFunction } from 'i18next';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -43,20 +44,59 @@ function chunkLines(lines: InvoiceLine[]): InvoiceLine[][] {
   return pages;
 }
 
+/** Aperçu création : numéro issu de `getNextInvoiceId` (contrat). */
+export type InvoiceDraftDocumentNo =
+  | { kind: 'chain'; label: string }
+  | { kind: 'chainLoading' }
+  | { kind: 'chainError' }
+  | { kind: 'chainUnavailable' };
+
+function draftDocumentNoText(
+  draft: InvoiceDraftDocumentNo | undefined,
+  publishedDocumentNo: string | null | undefined,
+  t: TFunction<'common'>,
+): string {
+  if (draft) {
+    switch (draft.kind) {
+      case 'chain':
+        return draft.label;
+      case 'chainLoading':
+        return t('invoice.preview.documentNoLoading');
+      case 'chainError':
+        return t('invoice.preview.documentNoChainError');
+      case 'chainUnavailable':
+        return t('invoice.preview.documentNoChainUnavailable');
+    }
+  }
+  if (publishedDocumentNo?.trim()) return publishedDocumentNo.trim();
+  return t('invoice.preview.documentNoPending');
+}
+
 export function InvoicePreviewDocument({
   values,
   previewRef,
   emitterWorldIdNullifier,
+  draftDocumentNo,
+  publishedDocumentNo,
 }: {
   values: InvoiceFormValues;
   previewRef: React.RefObject<HTMLDivElement | null>;
   emitterWorldIdNullifier?: string | null;
+  /** Page création : résultat de `getNextInvoiceId`. */
+  draftDocumentNo?: InvoiceDraftDocumentNo;
+  /** Détail / meta : libellé figé (ex. depuis le stockage ou l’ID on-chain). */
+  publishedDocumentNo?: string | null;
 }) {
   const { t, i18n } = useTranslation('common');
   const localeTag = i18n.language.startsWith('fr') ? 'fr-FR' : 'en-US';
   const dateLocale = i18n.language.startsWith('fr') ? fr : enUS;
 
   const { totalHt, tvaAmount, totalTtc } = computeTotalsFromLines(values.lines);
+
+  const documentNoLine = useMemo(
+    () => draftDocumentNoText(draftDocumentNo, publishedDocumentNo, t),
+    [draftDocumentNo, publishedDocumentNo, t],
+  );
 
   let issueFmt = values.issueDate;
   let dueFmt = values.dueDate;
@@ -180,7 +220,15 @@ export function InvoicePreviewDocument({
                       <span className="text-muted-foreground/60">
                         {t('invoice.preview.documentNo')}:{' '}
                       </span>
-                      {values.invoiceNumber}
+                      <span
+                        className={
+                          draftDocumentNo?.kind === 'chainLoading'
+                            ? 'animate-pulse'
+                            : undefined
+                        }
+                      >
+                        {documentNoLine}
+                      </span>
                     </p>
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
@@ -266,8 +314,10 @@ export function InvoicePreviewDocument({
               </>
             ) : (
               <div className="flex items-center justify-between border-b border-border pb-3 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  {t('invoice.preview.documentNo')}: {values.invoiceNumber}
+                <span
+                  className={`font-medium text-foreground${draftDocumentNo?.kind === 'chainLoading' ? ' animate-pulse' : ''}`}
+                >
+                  {t('invoice.preview.documentNo')}: {documentNoLine}
                 </span>
                 <span>
                   {issueFmt} — {values.currency}

@@ -49,9 +49,6 @@ export function createInvoiceFormSchema(t: TFunction<'common'>) {
     clientCountry: z.string(),
     clientEmail: optionalEmail,
     lines: z.array(lineSchema).min(1, t('invoice.validation.minOneLine')),
-    invoiceNumber: z
-      .string()
-      .min(1, t('invoice.validation.invoiceNumberRequired')),
     issueDate: z.string().min(1, t('invoice.validation.issueDateRequired')),
     dueDate: z.string().min(1, t('invoice.validation.dueDateRequired')),
     currency: z.enum(['USDC', 'EURC']),

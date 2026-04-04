@@ -1,7 +1,10 @@
 'use client';
 
 import { createInvoiceFormSchema } from '@/components/invoice/invoice-form-schema';
-import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
+import {
+  InvoicePreviewDocument,
+  type InvoiceDraftDocumentNo,
+} from '@/components/invoice/invoice-preview';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +115,6 @@ function defaultForm(): InvoiceFormValues {
         vatPercent: 20,
       },
     ],
-    invoiceNumber: '',
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     currency: 'USDC',
@@ -144,7 +146,6 @@ const INVOICE_FIELD_TO_TAB: Record<string, InvoiceTab> = {
   clientCountry: 'client',
   clientEmail: 'client',
   lines: 'items',
-  invoiceNumber: 'items',
   issueDate: 'items',
   dueDate: 'items',
   currency: 'items',
@@ -196,7 +197,6 @@ function devSampleForm(): InvoiceFormValues {
         vatPercent: 20,
       },
     ],
-    invoiceNumber: `INV-${new Date().getFullYear()}-0042`,
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     currency: 'EURC',
@@ -284,8 +284,6 @@ export function InvoiceNewClient() {
 
   const {
     data: nextPackedInvoiceId,
-    isPending: isNextInvoiceIdPending,
-    isFetching: isNextInvoiceIdFetching,
     isError: isNextInvoiceIdError,
     error: nextInvoiceIdError,
   } = useReadContract({
@@ -314,20 +312,21 @@ export function InvoiceNewClient() {
     }
   }, [nextInvoiceIdError]);
 
-  const nextInvoiceFromChainLoading =
-    registryDeployed &&
-    !!nextIdArgs &&
-    (isNextInvoiceIdPending || isNextInvoiceIdFetching) &&
-    !isNextInvoiceIdError;
-
-  useEffect(() => {
-    if (typeof nextPackedInvoiceId !== 'bigint') return;
-    const label = formatOnvoInvoiceLabel(nextPackedInvoiceId);
-    form.setValue('invoiceNumber', label, {
-      shouldValidate: true,
-      shouldDirty: false,
-    });
-  }, [nextPackedInvoiceId, form]);
+  const draftDocumentNo = useMemo((): InvoiceDraftDocumentNo => {
+    if (!registryDeployed || !nextIdArgs) {
+      return { kind: 'chainUnavailable' };
+    }
+    if (isNextInvoiceIdError) {
+      return { kind: 'chainError' };
+    }
+    if (typeof nextPackedInvoiceId === 'bigint') {
+      return {
+        kind: 'chain',
+        label: formatOnvoInvoiceLabel(nextPackedInvoiceId),
+      };
+    }
+    return { kind: 'chainLoading' };
+  }, [registryDeployed, nextIdArgs, isNextInvoiceIdError, nextPackedInvoiceId]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -422,7 +421,23 @@ export function InvoiceNewClient() {
 
       setStepSubmitting(true);
       try {
-        const pdfBlob = await generateInvoicePdf(data, emitterWorldIdForDoc);
+        const issue = new Date(data.issueDate);
+        const invYear = BigInt(issue.getFullYear());
+        const invMonth = BigInt(issue.getMonth() + 1);
+
+        const nextInvoiceId = await publicClientArc!.readContract({
+          address: invoiceRegistryContract.address,
+          abi: invoiceRegistryContract.abi,
+          functionName: 'getNextInvoiceId',
+          args: [nullifierBn, invYear, invMonth],
+        });
+        const documentLabel = formatOnvoInvoiceLabel(nextInvoiceId);
+
+        const pdfBlob = await generateInvoicePdf(
+          data,
+          emitterWorldIdForDoc,
+          documentLabel,
+        );
         const invoiceHash = await pdfBlobToBytes32(pdfBlob);
         const base64 = await blobToBase64(pdfBlob);
 
@@ -437,17 +452,6 @@ export function InvoiceNewClient() {
           toast.error(t('invoice.toast.tokenEnv'));
           return;
         }
-
-        const issue = new Date(data.issueDate);
-        const invYear = BigInt(issue.getFullYear());
-        const invMonth = BigInt(issue.getMonth() + 1);
-
-        const nextInvoiceId = await publicClientArc!.readContract({
-          address: invoiceRegistryContract.address,
-          abi: invoiceRegistryContract.abi,
-          functionName: 'getNextInvoiceId',
-          args: [nullifierBn, invYear, invMonth],
-        });
 
         const onChainRecipient = address;
         const vatNumberOnChain = data.emitterVatNumber.trim().slice(0, 64);
@@ -484,7 +488,7 @@ export function InvoiceNewClient() {
 
         const meta: InvoiceMetaRecord = {
           invoiceId: newId.toString(),
-          invoiceNumber: data.invoiceNumber,
+          invoiceNumber: formatOnvoInvoiceLabel(newId),
           emitterName: data.emitterName,
           emitterStreet: data.emitterStreet,
           emitterStreetLine2: data.emitterStreetLine2,
@@ -1131,59 +1135,28 @@ export function InvoiceNewClient() {
                       </div>
 
                       <div className="space-y-4 border-t border-border/60 pt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>
-                              {t('invoice.form.currency')}
-                              <RequiredFieldMark />
-                            </Label>
-                            <Select
-                              value={form.watch('currency')}
-                              onValueChange={(v) =>
-                                form.setValue(
-                                  'currency',
-                                  v as InvoiceFormValues['currency'],
-                                )
-                              }
-                            >
-                              <SelectTrigger aria-required>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="USDC">USDC</SelectItem>
-                                <SelectItem value="EURC">EURC</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="invoiceNumber">
-                              {t('invoice.form.invoiceNumber')}
-                              <RequiredFieldMark />
-                            </Label>
-                            <Input
-                              id="invoiceNumber"
-                              aria-required
-                              placeholder={t(
-                                'invoice.form.invoiceNumberPlaceholder',
-                              )}
-                              readOnly={nextInvoiceFromChainLoading}
-                              aria-busy={nextInvoiceFromChainLoading}
-                              {...form.register('invoiceNumber')}
-                            />
-                            {nextInvoiceFromChainLoading ? (
-                              <p className="text-xs text-muted-foreground">
-                                {t('invoice.form.invoiceNumberLoading')}
-                              </p>
-                            ) : null}
-                            {registryDeployed &&
-                            nextIdArgs &&
-                            !nextInvoiceFromChainLoading &&
-                            isNextInvoiceIdError ? (
-                              <p className="text-xs text-amber-600 dark:text-amber-500">
-                                {t('invoice.form.invoiceNumberChainError')}
-                              </p>
-                            ) : null}
-                          </div>
+                        <div className="max-w-xs space-y-2">
+                          <Label>
+                            {t('invoice.form.currency')}
+                            <RequiredFieldMark />
+                          </Label>
+                          <Select
+                            value={form.watch('currency')}
+                            onValueChange={(v) =>
+                              form.setValue(
+                                'currency',
+                                v as InvoiceFormValues['currency'],
+                              )
+                            }
+                          >
+                            <SelectTrigger aria-required>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USDC">USDC</SelectItem>
+                              <SelectItem value="EURC">EURC</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
@@ -1303,6 +1276,7 @@ export function InvoiceNewClient() {
                       values={debouncedPreview}
                       previewRef={previewRef}
                       emitterWorldIdNullifier={previewWorldIdNullifier}
+                      draftDocumentNo={draftDocumentNo}
                     />
                   </div>
                 </div>
