@@ -197,7 +197,7 @@ export function DashboardClient({
 
   if (!emitterReady) {
     return (
-      <div className="mx-auto w-full max-w-3xl p-4 lg:p-6">
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-start md:justify-center">
         <EmitterSetupCard onRegistered={() => void refetchEmitterVerified()} />
       </div>
     );

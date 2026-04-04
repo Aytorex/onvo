@@ -180,6 +180,10 @@
       "exportAllCsv": "Export all (CSV)",
       "emitterSetupTitle": "Finish issuer setup",
       "emitterSetupSubtitle": "Connect the wallet you will use to sign invoices, then register it as a verified issuer with World ID.",
+      "emitterSetupKicker": "Verified path · 2 steps",
+      "emitterSetupStepsAria": "Steps to become a verified issuer",
+      "emitterSetupWalletLead": "Use Rabby or an injected wallet on Arc Testnet — same address you will use to sign invoices.",
+      "emitterSetupWorldLead": "One-time World ID proof: your address is registered as a trusted issuer on the contract.",
       "setupStepWallet": "1. Connect wallet",
       "walletConnected": "Wallet connected",
       "setupStepRegister": "2. Register with World ID",
@@ -351,7 +355,8 @@
     "registerEmitter": {
       "title": "On-chain issuer registration",
       "description": "Verify your identity with World ID to link your wallet as a verified emitter. Use the same wallet you use to sign invoices.",
-      "button": "Register my wallet with World ID"
+      "button": "Register my wallet with World ID",
+      "buttonShort": "Register"
     },
     "errors": {
       "worldIdV3Expected": "Expected World ID v3 response (Orb legacy).",

@@ -291,17 +291,15 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
   const isNewInvoicePage = pathname?.startsWith('/invoice/new');
 
   const shellMainClass = cn(
-    'mx-auto flex min-w-0 w-full flex-1 flex-col',
+    'mx-auto flex min-w-0 w-full flex-1 flex-col min-h-0',
     isNewInvoicePage
-      ? 'max-w-[min(100%,100rem)] min-h-0 gap-4 overflow-hidden p-4 lg:gap-6 lg:p-6'
-      : 'max-w-6xl gap-4 p-4 lg:gap-6 lg:p-6',
+      ? 'max-w-[min(100%,100rem)] gap-4 overflow-hidden p-4 lg:gap-6 lg:p-6'
+      : 'max-w-6xl gap-4 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 lg:gap-6 lg:p-6',
   );
 
   const emitterContentColumnClass = cn(
-    'flex min-w-0 flex-1 flex-col',
-    isNewInvoicePage
-      ? 'h-dvh max-h-dvh min-h-0 overflow-hidden'
-      : 'min-h-screen',
+    'flex min-h-0 min-w-0 flex-1 flex-col',
+    isNewInvoicePage ? 'h-dvh max-h-dvh overflow-hidden' : 'overflow-hidden',
   );
 
   if (!authReady || !isVerified) {
@@ -323,7 +321,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden">
         <div
           className={cn(
             'hidden h-[100dvh] max-h-[100dvh] shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 ease-out md:sticky md:top-0 md:z-30 md:flex',

@@ -180,6 +180,10 @@
       "exportAllCsv": "Exporter tout (CSV)",
       "emitterSetupTitle": "Configurer votre émission",
       "emitterSetupSubtitle": "Connectez le wallet avec lequel vous signerez les factures, puis enregistrez-le comme émetteur vérifié avec World ID.",
+      "emitterSetupKicker": "Parcours vérifié · 2 étapes",
+      "emitterSetupStepsAria": "Étapes pour devenir émetteur vérifié",
+      "emitterSetupWalletLead": "Utilisez Rabby ou un wallet injecté sur Arc Testnet — même adresse que pour signer vos factures.",
+      "emitterSetupWorldLead": "Preuve unique World ID : votre adresse est enregistrée comme émetteur de confiance sur le contrat.",
       "setupStepWallet": "1. Connecter le wallet",
       "walletConnected": "Wallet connecté",
       "setupStepRegister": "2. Enregistrer avec World ID",
@@ -351,7 +355,8 @@
     "registerEmitter": {
       "title": "Enregistrement émetteur on-chain",
       "description": "Vérifiez votre identité avec World ID pour lier votre wallet en tant qu'émetteur vérifié. Utilisez le même wallet que pour signer les factures.",
-      "button": "Enregistrer mon wallet avec World ID"
+      "button": "Enregistrer mon wallet avec World ID",
+      "buttonShort": "Enregistrer"
     },
     "errors": {
       "worldIdV3Expected": "Réponse World ID v3 attendue (Orb legacy).",

@@ -112,14 +112,20 @@ export function RegisterEmitterWidget({
         type="button"
         className={unstyled ? 'mt-3' : 'mt-4'}
         disabled={loadingRp || isPending}
+        aria-label={t('invoice.registerEmitter.button')}
         onClick={() => void start()}
       >
         {loadingRp || isPending ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
         ) : (
-          <ShieldCheck className="mr-2 h-4 w-4" />
+          <ShieldCheck className="mr-2 h-4 w-4 shrink-0" />
         )}
-        {t('invoice.registerEmitter.button')}
+        <span className="sm:hidden">
+          {t('invoice.registerEmitter.buttonShort')}
+        </span>
+        <span className="hidden sm:inline">
+          {t('invoice.registerEmitter.button')}
+        </span>
       </Button>
 
       {rpContext ? (

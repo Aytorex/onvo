@@ -96,6 +96,20 @@ const config = {
           from: { opacity: '0', transform: 'translateY(32px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        'emitter-setup-glow': {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(1)' },
+          '50%': { opacity: '0.65', transform: 'scale(1.06)' },
+        },
+        'emitter-setup-shimmer': {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+        'emitter-setup-orbit': {
+          '0%': { transform: 'translate(0, 0)' },
+          '33%': { transform: 'translate(12px, -10px)' },
+          '66%': { transform: 'translate(-8px, 8px)' },
+          '100%': { transform: 'translate(0, 0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -105,6 +119,9 @@ const config = {
         'slide-in-left': 'slide-in-left 0.6s ease-out forwards',
         'slide-in-right': 'slide-in-right 0.6s ease-out forwards',
         'slide-in-bottom': 'slide-in-bottom 0.6s ease-out forwards',
+        'emitter-setup-glow': 'emitter-setup-glow 5s ease-in-out infinite',
+        'emitter-setup-shimmer': 'emitter-setup-shimmer 8s linear infinite',
+        'emitter-setup-orbit': 'emitter-setup-orbit 14s ease-in-out infinite',
       },
     },
   },
