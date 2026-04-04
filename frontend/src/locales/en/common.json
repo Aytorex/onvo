@@ -301,7 +301,6 @@
       "mailtoSubject": "Invoice {{invoiceNumber}} — Onvo payment link",
       "mailtoBody": "Hello {{clientName}},\n\nYour invoice {{invoiceNumber}} from {{emitterName}} is ready.\n\nTotal (incl. tax): {{amount}}\nDue: {{dueDate}}\n\nSecure payment link:\n{{paymentUrl}}\n\nPlease complete payment using the link above.\n\nBest regards,\n{{emitterName}}",
       "mailtoClientFallback": "Hello",
-      "backDashboard": "Back to dashboard",
       "openPayPage": "Open payment page",
       "title": "New invoice",
       "subtitle": "Fill in the form — the preview updates (300 ms).",

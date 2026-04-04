@@ -737,7 +737,7 @@ export function InvoiceNewClient() {
   if (successId !== null && successContext && successSummary) {
     const { dueFormatted, amountStr, mailtoHref } = successSummary;
     return (
-      <div className="mx-auto w-full max-w-xl animate-fade-in px-4 py-6 sm:py-10">
+      <div className="mx-auto w-full max-w-xl animate-fade-in">
         <div
           className="relative overflow-hidden rounded-[1.75rem] border border-onvo-purple/20 bg-gradient-to-br from-card via-card to-onvo-purple/[0.07] shadow-2xl shadow-onvo-purple/15 dark:border-onvo-purple/35 dark:from-card dark:via-card dark:to-onvo-cyan/[0.06] dark:shadow-onvo-cyan/10"
           role="region"
@@ -832,15 +832,6 @@ export function InvoiceNewClient() {
                     aria-hidden
                   />
                 </Link>
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="lg"
-                className="h-12 w-full gap-2 rounded-full"
-                asChild
-              >
-                <Link href="/dashboard">{t('invoice.form.backDashboard')}</Link>
               </Button>
 
               <Button
