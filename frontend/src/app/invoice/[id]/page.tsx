@@ -1,7 +1,8 @@
 import { InvoiceDetailClient } from '@/components/invoice/invoice-detail-client';
 import {
+  cropOnvoLabelMiddle,
   formatOnvoInvoiceLabel,
-  shortenOnvoInvoiceLabelString,
+  parseInvoiceIdRouteParam,
 } from '@/lib/invoice-id';
 import type { Metadata } from 'next';
 
@@ -14,10 +15,15 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   let title = 'Onvo';
-  try {
-    const full = formatOnvoInvoiceLabel(BigInt(id));
-    title = `${shortenOnvoInvoiceLabelString(full)} · Onvo`;
-  } catch {
+  const parsed = parseInvoiceIdRouteParam(id);
+  if (parsed !== null) {
+    try {
+      const full = formatOnvoInvoiceLabel(parsed);
+      title = `${cropOnvoLabelMiddle(full)} · Onvo`;
+    } catch {
+      title = 'Facture · Onvo';
+    }
+  } else {
     title = 'Facture · Onvo';
   }
   return { title };

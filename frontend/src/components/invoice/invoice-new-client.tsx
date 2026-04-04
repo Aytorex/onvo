@@ -28,6 +28,7 @@ import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
 import {
   formatOnvoInvoiceLabel,
   shortenOnvoInvoiceLabelString,
+  invoiceIdToUrlSegment,
 } from '@/lib/invoice-id';
 import {
   appendInvoiceId,
@@ -498,10 +499,21 @@ export function InvoiceNewClient() {
         const receipt = await publicClientArc!.waitForTransactionReceipt({
           hash,
         });
-        const newId = parseInvoiceCreatedInvoiceId(receipt);
-        if (newId === undefined) {
-          toast.error(t('invoice.toast.receiptNoId'));
-          return;
+        const parsedFromReceipt = parseInvoiceCreatedInvoiceId(receipt);
+        const newId = parsedFromReceipt ?? nextInvoiceId;
+        if (parsedFromReceipt === undefined) {
+          console.warn(
+            '[onvo] InvoiceCreated not parsed from receipt; using nextInvoiceId from chain',
+            { nextInvoiceId: nextInvoiceId.toString() },
+          );
+        } else if (parsedFromReceipt !== nextInvoiceId) {
+          console.warn(
+            '[onvo] InvoiceCreated id differs from pre-tx nextInvoiceId',
+            {
+              parsedFromReceipt: parsedFromReceipt.toString(),
+              nextInvoiceId: nextInvoiceId.toString(),
+            },
+          );
         }
 
         setInvoicePdfBase64(newId, base64);
@@ -544,7 +556,7 @@ export function InvoiceNewClient() {
         setInvoiceMeta(newId, meta);
 
         const label = formatOnvoInvoiceLabel(newId);
-        const paymentUrl = `${window.location.origin}/pay/${newId.toString()}`;
+        const paymentUrl = `${window.location.origin}/pay/${invoiceIdToUrlSegment(newId)}`;
         setSuccessContext({
           paymentUrl,
           clientEmail: data.clientEmail,
@@ -811,7 +823,7 @@ export function InvoiceNewClient() {
                 className="h-12 w-full gap-2 rounded-full text-base shadow-lg"
               >
                 <Link
-                  href={`/pay/${successId.toString()}`}
+                  href={`/pay/${invoiceIdToUrlSegment(successId)}`}
                   className="inline-flex items-center justify-center gap-2"
                 >
                   <span>{t('invoice.form.openPayPage')}</span>
@@ -820,6 +832,15 @@ export function InvoiceNewClient() {
                     aria-hidden
                   />
                 </Link>
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                className="h-12 w-full gap-2 rounded-full"
+                asChild
+              >
+                <Link href="/dashboard">{t('invoice.form.backDashboard')}</Link>
               </Button>
 
               <Button

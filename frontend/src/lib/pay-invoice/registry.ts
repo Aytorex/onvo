@@ -1,6 +1,7 @@
 import { isAddressEqual, zeroAddress } from 'viem';
 
 import { invoiceRegistryContract } from '@/lib/contract';
+import { parseInvoiceIdRouteParam } from '@/lib/invoice-id';
 
 /** `usePayInvoice` error `message` when the registry env address is unset. */
 export const INVOICE_REGISTRY_UNCONFIGURED_ERROR =
@@ -69,17 +70,7 @@ export function isInvoiceRegistryConfigured(): boolean {
   return !isAddressEqual(invoiceRegistryContract.address, zeroAddress);
 }
 
-/** `/pay/[invoiceId]` segment: positive base-10 integer, no leading zeros. */
-const PAY_INVOICE_ID_SEGMENT = /^[1-9]\d*$/;
-
+/** `/pay/[invoiceId]` — decimal (legacy) or `0x…` hex (compact). */
 export function parseInvoiceIdParam(param: string): bigint | null {
-  const t = param.trim();
-  if (!PAY_INVOICE_ID_SEGMENT.test(t)) {
-    return null;
-  }
-  try {
-    return BigInt(t);
-  } catch {
-    return null;
-  }
+  return parseInvoiceIdRouteParam(param);
 }

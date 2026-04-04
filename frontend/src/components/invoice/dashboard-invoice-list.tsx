@@ -28,6 +28,7 @@ import { InvoiceStatusBadge } from '@/components/invoice/invoice-status-badge';
 import {
   formatOnvoInvoiceLabel,
   formatOnvoInvoiceLabelDisplay,
+  invoiceIdToUrlSegment,
 } from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
@@ -362,7 +363,7 @@ export function DashboardInvoiceList({
                         >
                           <DropdownMenuItem asChild>
                             <Link
-                              href={`/invoice/${r.invoiceId.toString()}`}
+                              href={`/invoice/${invoiceIdToUrlSegment(r.invoiceId)}`}
                               className="flex cursor-pointer items-center gap-2"
                             >
                               <Eye className="size-4 opacity-70" aria-hidden />
