@@ -12,9 +12,6 @@ import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConnect } from 'wagmi';
 
-const btn =
-  'border-0 bg-[#4779FF] font-semibold text-white shadow-md shadow-[#4779FF]/25 hover:bg-[#3d66db] hover:text-white';
-
 type Props = Readonly<{
   className?: string;
   size?: 'sm' | 'default' | 'lg';
@@ -64,7 +61,7 @@ function Fallback({ className, size, fullWidth, connectLabel }: Props) {
       type="button"
       variant="default"
       size={size === 'lg' ? 'lg' : 'default'}
-      className={cn(btn, sizeClasses(size), fullWidth && 'w-full', className)}
+      className={cn(sizeClasses(size), fullWidth && 'w-full', className)}
       disabled={isPending || !injected}
       onClick={() => injected && connect({ connector: injected })}
     >
@@ -88,8 +85,9 @@ function WithDynamic({ className, size, fullWidth, connectLabel }: Props) {
   return (
     <Button
       type="button"
+      variant="default"
       size={size === 'lg' ? 'lg' : 'default'}
-      className={cn(btn, sizeClasses(size), fullWidth && 'w-full', className)}
+      className={cn(sizeClasses(size), fullWidth && 'w-full', className)}
       disabled={!sdkHasLoaded}
       onClick={() => setShowAuthFlow(true)}
     >
