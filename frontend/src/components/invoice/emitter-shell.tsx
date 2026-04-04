@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const SIDEBAR_COLLAPSED_KEY = 'onvo_emitter_sidebar_collapsed';
@@ -133,7 +133,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         'flex items-center rounded-xl text-sm font-medium transition-all hover:text-primary',
         collapsed
           ? 'mx-auto size-10 shrink-0 justify-center p-0'
-          : 'gap-3 px-3 py-2',
+          : 'h-10 min-h-10 gap-3 px-3 py-0',
         active ? 'bg-muted text-heading' : 'text-muted-foreground',
       );
 
@@ -143,9 +143,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
           className={linkClass}
           aria-label={collapsed ? label : undefined}
         >
-          <item.icon
-            className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')}
-          />
+          <item.icon className="h-5 w-5 shrink-0" />
           <span
             className={cn(
               'truncate transition-[opacity,width,margin] duration-200',
@@ -170,7 +168,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
         );
       }
 
-      return <div key={item.href}>{link}</div>;
+      return <Fragment key={item.href}>{link}</Fragment>;
     });
 
   const shellMainClass =
@@ -226,15 +224,15 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-9 shrink-0"
+                    className="size-10 shrink-0 rounded-xl"
                     aria-expanded={!collapsed}
                     aria-controls="emitter-sidebar"
                     onClick={() => setCollapsed(!sidebarCollapsed)}
                   >
                     {collapsed ? (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-5 w-5" />
                     ) : (
-                      <ChevronLeft className="h-4 w-4" />
+                      <ChevronLeft className="h-5 w-5" />
                     )}
                     <span className="sr-only">
                       {collapsed
@@ -253,8 +251,8 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
             <div className="min-h-0 flex-1 overflow-y-auto">
               <nav
                 className={cn(
-                  'grid items-start text-sm font-medium',
-                  collapsed ? 'gap-1 px-1.5 py-1' : 'gap-0.5 px-2 lg:px-4',
+                  'grid items-start gap-1 text-sm font-medium',
+                  collapsed ? 'px-2 py-1' : 'px-3 py-1',
                 )}
               >
                 {renderDesktopNavLinks(collapsed)}
@@ -263,7 +261,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
             <div
               className={cn(
                 'shrink-0 border-t border-border',
-                collapsed ? 'flex justify-center p-1.5' : 'p-2 lg:p-4',
+                collapsed ? 'flex justify-center p-1.5' : 'px-3 py-1.5 lg:px-4',
               )}
             >
               {collapsed ? (
@@ -286,10 +284,10 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               ) : (
                 <Button
                   variant="ghost"
-                  className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-primary"
+                  className="h-10 min-h-10 w-full justify-start gap-3 rounded-xl px-3 text-muted-foreground hover:text-primary"
                   onClick={() => void logout()}
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-5 w-5 shrink-0" />
                   {t('emitterNav.logOut')}
                 </Button>
               )}
