@@ -324,5 +324,70 @@
       "registerTxFailed": "Transaction registerWithWorldId échouée.",
       "connectWalletFirst": "Connectez d’abord votre wallet (même adresse que pour les factures)."
     }
+  },
+  "landing": {
+    "createInvoice": "Créer ma facture",
+    "learnMore": "En savoir plus",
+    "poweredBy": "Propulsé par",
+    "hero": {
+      "eyebrow": "Facturation on-chain pour le Web3",
+      "titleBefore": "Facturation B2B,",
+      "titleHighlight": "Vérifiée on-chain",
+      "subtitle": "Créez des factures certifiées, prouvez votre identité avec World ID et soyez payé en stablecoins — le tout sécurisé on-chain."
+    },
+    "featuresSection": {
+      "eyebrow": "Pourquoi Onvo",
+      "title": "La confiance à chaque étape"
+    },
+    "features": {
+      "worldId": {
+        "title": "World ID",
+        "subtitle": "Preuve d’humanité",
+        "description": "Chaque émetteur de facture est vérifié comme un humain réel via World ID 4.0. Pas de bots ni de fraude — seules des identités de confiance peuvent créer des factures sur Onvo."
+      },
+      "ledger": {
+        "title": "Ledger",
+        "subtitle": "Clear Signing",
+        "description": "Chaque transaction est signée en toute sécurité avec un portefeuille matériel Ledger. Voyez exactement ce que vous signez avant de signer — transparence totale, aucune surprise."
+      },
+      "arc": {
+        "title": "Arc",
+        "subtitle": "Paiements en stablecoins",
+        "description": "Payez les factures en EURC ou USDC sur l’Arc L1 de Circle. Finalité rapide, frais réduits et règlement entièrement on-chain pour chaque transaction."
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "Comment ça marche",
+      "title": "Trois étapes pour être payé"
+    },
+    "steps": {
+      "verify": {
+        "number": "01",
+        "title": "Vérifiez votre identité",
+        "description": "Prouvez que vous êtes un humain réel avec World ID — configuration unique, respect de la vie privée."
+      },
+      "create": {
+        "number": "02",
+        "title": "Créez votre facture",
+        "description": "Renseignez les détails, prévisualisez en temps réel et certifiez on-chain avec un hash SHA-256."
+      },
+      "paid": {
+        "number": "03",
+        "title": "Soyez payé en stablecoins",
+        "description": "Partagez un lien de paiement unique. Votre client paie en EURC/USDC — réglé instantanément sur Arc."
+      }
+    },
+    "sponsors": {
+      "world": { "label": "Identité" },
+      "arc": { "label": "Paiements" },
+      "ledger": { "label": "Sécurité" }
+    },
+    "finalCta": {
+      "title": "Prêt à commencer ?",
+      "subtitle": "Rejoignez l’avenir de la facturation B2B. Créez votre première facture vérifiée en quelques minutes."
+    },
+    "footer": {
+      "builtFor": "Conçu pour ETHGlobal Cannes 2026"
+    }
   }
 }

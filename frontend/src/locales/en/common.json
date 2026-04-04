@@ -324,5 +324,70 @@
       "registerTxFailed": "registerWithWorldId transaction failed.",
       "connectWalletFirst": "Connect your wallet first (same address as for invoices)."
     }
+  },
+  "landing": {
+    "createInvoice": "Create my invoice",
+    "learnMore": "Learn more",
+    "poweredBy": "Powered by",
+    "hero": {
+      "eyebrow": "On-chain invoicing for Web3",
+      "titleBefore": "B2B Invoicing,",
+      "titleHighlight": "Verified On-Chain",
+      "subtitle": "Create certified invoices, prove your identity with World ID, and get paid in stablecoins — all secured on-chain."
+    },
+    "featuresSection": {
+      "eyebrow": "Why Onvo",
+      "title": "Trust at every step"
+    },
+    "features": {
+      "worldId": {
+        "title": "World ID",
+        "subtitle": "Proof of Humanity",
+        "description": "Every invoice issuer is verified as a real human via World ID 4.0. No bots, no fraud — only trusted identities can create invoices on Onvo."
+      },
+      "ledger": {
+        "title": "Ledger",
+        "subtitle": "Clear Signing",
+        "description": "Every transaction is signed securely with Ledger hardware wallets. See exactly what you sign before you sign it — full transparency, zero surprises."
+      },
+      "arc": {
+        "title": "Arc",
+        "subtitle": "Stablecoin Payments",
+        "description": "Pay invoices in EURC or USDC on Circle's Arc L1. Fast finality, low fees, and fully on-chain settlement for every transaction."
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "How it works",
+      "title": "Three steps to get paid"
+    },
+    "steps": {
+      "verify": {
+        "number": "01",
+        "title": "Verify your identity",
+        "description": "Prove you are a real human with World ID — one-time setup, privacy-preserving."
+      },
+      "create": {
+        "number": "02",
+        "title": "Create your invoice",
+        "description": "Fill in the details, preview in real-time, and certify on-chain with a SHA-256 hash."
+      },
+      "paid": {
+        "number": "03",
+        "title": "Get paid in stablecoins",
+        "description": "Share a unique payment link. Your client pays in EURC/USDC — settled instantly on Arc."
+      }
+    },
+    "sponsors": {
+      "world": { "label": "Identity" },
+      "arc": { "label": "Payments" },
+      "ledger": { "label": "Security" }
+    },
+    "finalCta": {
+      "title": "Ready to get started?",
+      "subtitle": "Join the future of B2B invoicing. Create your first verified invoice in minutes."
+    },
+    "footer": {
+      "builtFor": "Built for ETHGlobal Cannes 2026"
+    }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from '@/components/shared/language-toggle';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { MagicRings } from '@/components/shared/magic-rings';
@@ -59,12 +60,9 @@ function AnimateOnScroll({
   );
 }
 
-const FEATURES = [
+const LANDING_FEATURES = [
   {
-    title: 'World ID',
-    subtitle: 'Proof of Humanity',
-    description:
-      'Every invoice issuer is verified as a real human via World ID 4.0. No bots, no fraud — only trusted identities can create invoices on Onvo.',
+    id: 'worldId',
     gradient: 'from-onvo-purple/20 to-onvo-purple/5',
     lightLogo: '/logos/world.svg',
     darkLogo: '/logos/world-dark.svg',
@@ -72,10 +70,7 @@ const FEATURES = [
     logoHeight: 32,
   },
   {
-    title: 'Ledger',
-    subtitle: 'Clear Signing',
-    description:
-      'Every transaction is signed securely with Ledger hardware wallets. See exactly what you sign before you sign it — full transparency, zero surprises.',
+    id: 'ledger',
     gradient: 'from-onvo-cyan/20 to-onvo-cyan/5',
     lightLogo: '/logos/ledger.svg',
     darkLogo: '/logos/ledger-white.svg',
@@ -83,10 +78,7 @@ const FEATURES = [
     logoHeight: 36,
   },
   {
-    title: 'Arc',
-    subtitle: 'Stablecoin Payments',
-    description:
-      "Pay invoices in EURC or USDC on Circle's Arc L1. Fast finality, low fees, and fully on-chain settlement for every transaction.",
+    id: 'arc',
     gradient: 'from-onvo-purple/15 to-onvo-cyan/15',
     lightLogo: '/logos/arc.svg',
     darkLogo: '/logos/arc.svg',
@@ -95,58 +87,41 @@ const FEATURES = [
   },
 ] as const;
 
-const STEPS = [
-  {
-    icon: Fingerprint,
-    step: '01',
-    title: 'Verify your identity',
-    description:
-      'Prove you are a real human with World ID — one-time setup, privacy-preserving.',
-  },
-  {
-    icon: FileCheck2,
-    step: '02',
-    title: 'Create your invoice',
-    description:
-      'Fill in the details, preview in real-time, and certify on-chain with a SHA-256 hash.',
-  },
-  {
-    icon: Send,
-    step: '03',
-    title: 'Get paid in stablecoins',
-    description:
-      'Share a unique payment link. Your client pays in EURC/USDC — settled instantly on Arc.',
-  },
+const LANDING_STEPS = [
+  { id: 'verify', icon: Fingerprint },
+  { id: 'create', icon: FileCheck2 },
+  { id: 'paid', icon: Send },
 ] as const;
 
-const SPONSORS = [
+const LANDING_SPONSORS = [
   {
+    id: 'world',
     name: 'World',
     lightLogo: '/logos/world.svg',
     darkLogo: '/logos/world-dark.svg',
-    description: 'Identity',
     width: 120,
     height: 30,
   },
   {
+    id: 'arc',
     name: 'Arc',
     lightLogo: '/logos/arc.svg',
     darkLogo: '/logos/arc.svg',
-    description: 'Payments',
     width: 100,
     height: 34,
   },
   {
+    id: 'ledger',
     name: 'Ledger',
     lightLogo: '/logos/ledger.svg',
     darkLogo: '/logos/ledger-white.svg',
-    description: 'Security',
     width: 120,
     height: 40,
   },
 ] as const;
 
 export default function LandingPage() {
+  const { t } = useTranslation('common');
   const ctaView = useInView();
 
   return (
@@ -160,7 +135,7 @@ export default function LandingPage() {
             <ThemeToggle />
             <Link href="/auth" className="ml-1">
               <Button size="sm">
-                Create my invoice
+                {t('landing.createInvoice')}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -197,17 +172,16 @@ export default function LandingPage() {
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
           <div className="animate-fade-in-up">
             <p className="mb-4 text-sm font-medium uppercase tracking-widest text-onvo-purple">
-              On-chain invoicing for Web3
+              {t('landing.hero.eyebrow')}
             </p>
             <h1 className="text-4xl font-bold leading-tight tracking-tight text-heading sm:text-5xl md:text-6xl lg:text-7xl">
-              B2B Invoicing,{' '}
+              {t('landing.hero.titleBefore')}{' '}
               <span className="bg-gradient-to-r from-onvo-purple to-onvo-cyan bg-clip-text text-transparent">
-                Verified On-Chain
+                {t('landing.hero.titleHighlight')}
               </span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-              Create certified invoices, prove your identity with World ID, and
-              get paid in stablecoins — all secured on-chain.
+              {t('landing.hero.subtitle')}
             </p>
           </div>
 
@@ -217,13 +191,13 @@ export default function LandingPage() {
           >
             <Link href="/auth">
               <Button size="lg" className="px-8 text-base">
-                Create my invoice
+                {t('landing.createInvoice')}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <a href="#features">
               <Button variant="outline" size="lg" className="px-8 text-base">
-                Learn more
+                {t('landing.learnMore')}
               </Button>
             </a>
           </div>
@@ -234,12 +208,12 @@ export default function LandingPage() {
       <section className="border-y border-border/40 bg-card/50 py-12">
         <div className="mx-auto max-w-4xl px-6">
           <p className="mb-10 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Powered by
+            {t('landing.poweredBy')}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-16 sm:gap-24">
-            {SPONSORS.map((sponsor) => (
+            {LANDING_SPONSORS.map((sponsor) => (
               <div
-                key={sponsor.name}
+                key={sponsor.id}
                 className="group flex flex-col items-center gap-3 transition-transform duration-300 hover:-translate-y-1"
               >
                 <div className="flex h-12 items-center justify-center opacity-80 transition-opacity duration-300 group-hover:opacity-100">
@@ -259,7 +233,7 @@ export default function LandingPage() {
                   />
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {sponsor.description}
+                  {t(`landing.sponsors.${sponsor.id}.label`)}
                 </span>
               </div>
             ))}
@@ -273,16 +247,16 @@ export default function LandingPage() {
           <AnimateOnScroll animation="animate-fade-in-up">
             <div className="mb-20 text-center">
               <p className="mb-2 text-sm font-medium uppercase tracking-widest text-onvo-purple">
-                Why Onvo
+                {t('landing.featuresSection.eyebrow')}
               </p>
               <h2 className="text-3xl font-bold text-heading sm:text-4xl">
-                Trust at every step
+                {t('landing.featuresSection.title')}
               </h2>
             </div>
           </AnimateOnScroll>
 
           <div className="space-y-20 md:space-y-32">
-            {FEATURES.map((feature, i) => {
+            {LANDING_FEATURES.map((feature, i) => {
               const iconSlide =
                 i % 2 === 0
                   ? 'animate-slide-in-left'
@@ -291,10 +265,11 @@ export default function LandingPage() {
                 i % 2 === 0
                   ? 'animate-slide-in-right'
                   : 'animate-slide-in-left';
+              const title = t(`landing.features.${feature.id}.title`);
 
               return (
                 <div
-                  key={feature.title}
+                  key={feature.id}
                   className={cn(
                     'grid items-center gap-10 md:grid-cols-2 md:gap-16',
                     i % 2 === 1 && 'md:[&>*:first-child]:order-2',
@@ -313,14 +288,14 @@ export default function LandingPage() {
                     <div className="relative flex h-28 w-28 items-center justify-center rounded-3xl border border-border/30 bg-card/80 shadow-xl backdrop-blur-sm sm:h-36 sm:w-36">
                       <Image
                         src={feature.lightLogo}
-                        alt={feature.title}
+                        alt={title}
                         width={feature.logoWidth}
                         height={feature.logoHeight}
                         className="block h-auto w-16 dark:hidden sm:w-20"
                       />
                       <Image
                         src={feature.darkLogo}
-                        alt={feature.title}
+                        alt={title}
                         width={feature.logoWidth}
                         height={feature.logoHeight}
                         className="hidden h-auto w-16 dark:block sm:w-20"
@@ -330,13 +305,13 @@ export default function LandingPage() {
 
                   <AnimateOnScroll animation={textSlide}>
                     <span className="mb-2 inline-block rounded-full bg-gradient-to-r from-onvo-purple/10 to-onvo-cyan/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-onvo-purple">
-                      {feature.subtitle}
+                      {t(`landing.features.${feature.id}.subtitle`)}
                     </span>
                     <h3 className="mt-3 text-2xl font-bold text-heading sm:text-3xl">
-                      {feature.title}
+                      {title}
                     </h3>
                     <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
-                      {feature.description}
+                      {t(`landing.features.${feature.id}.description`)}
                     </p>
                   </AnimateOnScroll>
                 </div>
@@ -352,10 +327,10 @@ export default function LandingPage() {
           <AnimateOnScroll animation="animate-fade-in-up">
             <div className="mb-20 text-center">
               <p className="mb-2 text-sm font-medium uppercase tracking-widest text-onvo-cyan">
-                How it works
+                {t('landing.howItWorks.eyebrow')}
               </p>
               <h2 className="text-3xl font-bold text-heading sm:text-4xl">
-                Three steps to get paid
+                {t('landing.howItWorks.title')}
               </h2>
             </div>
           </AnimateOnScroll>
@@ -364,9 +339,9 @@ export default function LandingPage() {
             <div className="absolute bottom-0 left-8 top-0 hidden w-px bg-gradient-to-b from-onvo-purple via-onvo-cyan to-transparent md:block" />
 
             <div className="space-y-16">
-              {STEPS.map((step) => (
+              {LANDING_STEPS.map((step) => (
                 <AnimateOnScroll
-                  key={step.step}
+                  key={step.id}
                   animation="animate-slide-in-right"
                   className="relative flex gap-8"
                 >
@@ -382,14 +357,14 @@ export default function LandingPage() {
                         <step.icon className="h-5 w-5 text-onvo-purple" />
                       </div>
                       <span className="bg-gradient-to-r from-onvo-purple to-onvo-cyan bg-clip-text text-3xl font-bold text-transparent">
-                        {step.step}
+                        {t(`landing.steps.${step.id}.number`)}
                       </span>
                     </div>
                     <h3 className="mb-2 text-xl font-bold text-heading">
-                      {step.title}
+                      {t(`landing.steps.${step.id}.title`)}
                     </h3>
                     <p className="text-sm leading-relaxed text-muted-foreground">
-                      {step.description}
+                      {t(`landing.steps.${step.id}.description`)}
                     </p>
                   </div>
                 </AnimateOnScroll>
@@ -428,16 +403,15 @@ export default function LandingPage() {
           )}
         >
           <h2 className="text-3xl font-bold text-heading sm:text-4xl md:text-5xl">
-            Ready to get started?
+            {t('landing.finalCta.title')}
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-lg text-muted-foreground">
-            Join the future of B2B invoicing. Create your first verified invoice
-            in minutes.
+            {t('landing.finalCta.subtitle')}
           </p>
           <div className="mt-8">
             <Link href="/auth">
               <Button size="lg" className="px-10 text-base">
-                Create my invoice
+                {t('landing.createInvoice')}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -450,7 +424,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-6 sm:flex-row sm:justify-between">
           <OnvoLogo className="text-lg" />
           <p className="text-xs text-muted-foreground">
-            Built for ETHGlobal Cannes 2026
+            {t('landing.footer.builtFor')}
           </p>
         </div>
       </footer>
