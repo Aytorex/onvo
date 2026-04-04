@@ -184,7 +184,8 @@ export async function generateInvoicePdf(
     color: COLOR_BLACK,
   });
 
-  page.drawText(data.invoiceNumber || '', {
+  const docNo = data.invoiceNumber?.trim() || '—';
+  page.drawText(`Document no.: ${docNo}`, {
     x: MARGIN,
     y: y - 18,
     size: 10,

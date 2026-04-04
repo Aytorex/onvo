@@ -177,6 +177,9 @@ export function InvoicePreviewDocument({
                       {t('invoice.preview.invoiceTitle')}
                     </h2>
                     <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="text-muted-foreground/60">
+                        {t('invoice.preview.documentNo')}:{' '}
+                      </span>
                       {values.invoiceNumber}
                     </p>
                   </div>
@@ -264,7 +267,7 @@ export function InvoicePreviewDocument({
             ) : (
               <div className="flex items-center justify-between border-b border-border pb-3 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">
-                  {values.invoiceNumber}
+                  {t('invoice.preview.documentNo')}: {values.invoiceNumber}
                 </span>
                 <span>
                   {issueFmt} — {values.currency}

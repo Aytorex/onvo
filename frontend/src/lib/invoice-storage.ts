@@ -1,5 +1,16 @@
 import type { InvoiceMetaRecord } from '@/lib/invoice-types';
 
+/** Primary key: World ID nullifier (stable across wallets). Falls back to wallet when nullifier unknown. */
+export function invoiceIdsStorageKey(
+  worldAddress: string,
+  worldIdNullifier: string | null | undefined,
+): string {
+  const n = worldIdNullifier?.trim();
+  if (n) return `onvo_invoice_ids_wid_${n}`;
+  return `onvo_invoice_ids_${worldAddress.toLowerCase()}`;
+}
+
+/** @deprecated use invoiceIdsStorageKey */
 export function invoiceIdsKey(worldAddress: string): string {
   return `onvo_invoice_ids_${worldAddress.toLowerCase()}`;
 }
@@ -12,10 +23,9 @@ export function metaKey(invoiceId: bigint): string {
   return `onvo_invoice_meta_${invoiceId.toString()}`;
 }
 
-export function getStoredInvoiceIds(worldAddress: string): bigint[] {
-  if (typeof window === 'undefined') return [];
+function readIdsFromKey(key: string): bigint[] {
   try {
-    const raw = localStorage.getItem(invoiceIdsKey(worldAddress));
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     const arr = JSON.parse(raw) as string[];
     return arr.map((x) => BigInt(x));
@@ -24,17 +34,41 @@ export function getStoredInvoiceIds(worldAddress: string): bigint[] {
   }
 }
 
-export function appendInvoiceId(worldAddress: string, invoiceId: bigint): void {
-  const existing = getStoredInvoiceIds(worldAddress);
+/** Loads invoice ids for this emitter: World ID bucket plus legacy wallet bucket (merge). */
+export function getStoredInvoiceIds(
+  worldAddress: string,
+  worldIdNullifier?: string | null,
+): bigint[] {
+  if (typeof window === 'undefined') return [];
+  const merge = new Set<string>();
+  for (const id of readIdsFromKey(
+    invoiceIdsStorageKey(worldAddress, worldIdNullifier),
+  )) {
+    merge.add(id.toString());
+  }
+  if (worldIdNullifier?.trim()) {
+    for (const id of readIdsFromKey(invoiceIdsKey(worldAddress))) {
+      merge.add(id.toString());
+    }
+  }
+  return [...merge]
+    .map((x) => BigInt(x))
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+}
+
+export function appendInvoiceId(
+  worldAddress: string,
+  invoiceId: bigint,
+  worldIdNullifier?: string | null,
+): void {
+  const key = invoiceIdsStorageKey(worldAddress, worldIdNullifier);
+  const existing = readIdsFromKey(key);
   const set = new Set(existing.map((x) => x.toString()));
   set.add(invoiceId.toString());
   const sorted = [...set]
     .map((x) => BigInt(x))
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  localStorage.setItem(
-    invoiceIdsKey(worldAddress),
-    JSON.stringify(sorted.map((x) => x.toString())),
-  );
+  localStorage.setItem(key, JSON.stringify(sorted.map((x) => x.toString())));
 }
 
 export function setInvoicePdfBase64(invoiceId: bigint, base64: string): void {

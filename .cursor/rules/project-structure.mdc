@@ -6,7 +6,7 @@ alwaysApply: false
 
 # DApp Boilerplate Project Structure
 
-This is a full-stack decentralized application (DApp) boilerplate with a voting system implementation. The project follows a monorepo structure with separate backend (blockchain) and frontend (web application) directories.
+This is the Onvo monorepo: B2B invoicing verified on-chain (InvoiceRegistry) with a React frontend and NestJS/Hardhat backend. The project follows a monorepo structure with separate backend (blockchain + API) and frontend (web application) directories.
 
 ## Project Overview
 
@@ -16,7 +16,7 @@ The main entry point is [README.md](mdc:README.md) which contains setup instruct
 
 The backend is located in the [backend/](mdc:backend/) directory and contains:
 
-- **Smart Contracts**: [backend/contracts/Ballot.sol](mdc:backend/contracts/Ballot.sol) - Main voting contract implementing delegation and voting functionality
+- **Smart Contracts**: [backend/contracts/InvoiceRegistry.sol](mdc:backend/contracts/InvoiceRegistry.sol) - Invoice registry, World ID gating, ERC-20 payment
 - **Configuration**: [backend/hardhat.config.ts](mdc:backend/hardhat.config.ts) - Hardhat configuration for development and deployment
 - **Foundry Configuration**: [backend/foundry.toml](mdc:backend/foundry.toml) - Foundry configuration for testing and deployment
 - **Package Management**: [backend/package.json](mdc:backend/package.json) - Dependencies and scripts for blockchain development
@@ -36,7 +36,7 @@ The frontend is located in the [frontend/](mdc:frontend/) directory and contains
 - **Web3 Integration**:
   - [frontend/src/contexts/web3-provider.tsx](mdc:frontend/src/contexts/web3-provider.tsx) - Wagmi and Reown providers
   - [frontend/src/lib/wagmi.config.ts](mdc:frontend/src/lib/wagmi.config.ts) - Wagmi configuration for blockchain connections
-  - [frontend/src/contracts/ballot.contract.ts](mdc:frontend/src/contracts/ballot.contract.ts) - Contract ABI and configuration
+  - [frontend/src/lib/contract.ts](mdc:frontend/src/lib/contract.ts) - InvoiceRegistry ABI and configuration
 - **Hooks**: [frontend/src/hooks/](mdc:frontend/src/hooks/) - Custom React hooks for blockchain interactions
 - **Package Management**: [frontend/package.json](mdc:frontend/package.json) - Dependencies and scripts for web development
 

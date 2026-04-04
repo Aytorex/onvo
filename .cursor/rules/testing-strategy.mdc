@@ -22,7 +22,7 @@ The project uses both Foundry and Hardhat for comprehensive testing:
 
 ### Test Structure
 
-Follow the pattern in [backend/test/foundry/Ballot.t.sol](mdc:backend/test/foundry/Ballot.t.sol):
+Follow the pattern in [backend/test/foundry/InvoiceRegistry.t.sol](mdc:backend/test/foundry/InvoiceRegistry.t.sol):
 
 - Use descriptive test names
 - Test all public functions

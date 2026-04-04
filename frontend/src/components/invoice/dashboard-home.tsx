@@ -170,11 +170,7 @@ export function DashboardHomeView({
                 {t('invoice.dashboard.subtitle')}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button
-                  size="lg"
-                  className="gap-2 shadow-lg shadow-primary/20"
-                  asChild
-                >
+                <Button size="lg" className="gap-2" asChild>
                   <Link href="/invoice/new">
                     <Plus className="size-4" aria-hidden />
                     {t('invoice.dashboard.newInvoice')}
@@ -293,10 +289,7 @@ export function DashboardHomeView({
               <p className="mx-auto mt-2 max-w-md text-muted-foreground text-sm">
                 {t('invoice.dashboard.emptyState')}
               </p>
-              <Button
-                className="mt-6 gap-2 shadow-md shadow-primary/15"
-                asChild
-              >
+              <Button className="mt-6 gap-2" asChild>
                 <Link href="/invoice/new">
                   <Plus className="size-4" aria-hidden />
                   {t('invoice.dashboard.newInvoice')}

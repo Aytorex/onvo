@@ -38,7 +38,11 @@ export function DashboardClient({
 }) {
   const { t } = useTranslation('common');
   const router = useRouter();
-  const { authReady, isVerified } = useWorldID();
+  const {
+    authReady,
+    isVerified,
+    nullifier: sessionWorldIdNullifier,
+  } = useWorldID();
   const { address, isConnected } = useAccount();
   const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
   const publicClientArc = usePublicClient({ chainId: registryChainId });
@@ -64,7 +68,7 @@ export function DashboardClient({
       setLoading(false);
       return;
     }
-    const ids = getStoredInvoiceIds(address);
+    const ids = getStoredInvoiceIds(address, sessionWorldIdNullifier);
     const next: InvoiceRowView[] = [];
     for (const id of ids) {
       try {
@@ -88,7 +92,7 @@ export function DashboardClient({
     next.sort((a, b) => (a.invoiceId < b.invoiceId ? 1 : -1));
     setRows(next);
     setLoading(false);
-  }, [address, publicClientArc]);
+  }, [address, publicClientArc, sessionWorldIdNullifier]);
 
   useEffect(() => {
     void load();
@@ -155,7 +159,7 @@ export function DashboardClient({
 
   const actionsRow = (
     <div className="flex flex-wrap gap-2">
-      <Button asChild>
+      <Button variant="default" asChild>
         <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
       </Button>
       <Button

@@ -4,15 +4,7 @@
     "description": "B2B invoicing verified on-chain with World ID"
   },
   "nav": {
-    "mobileMenu": "Navigation menu",
-    "projectName": "The Ballot Project",
-    "dashboard": "Dashboard",
-    "voters": "Voters",
-    "proposals": "Proposals",
-    "votes": "Votes",
-    "events": "Events",
-    "home": "Home",
-    "notFound": "404"
+    "mobileMenu": "Navigation menu"
   },
   "wallet": {
     "connect": "Connect",
@@ -113,88 +105,6 @@
     "title": "Page not found",
     "description": "This page does not exist or the link may be incorrect. Use the navigation or the shortcuts below.",
     "backHome": "Back to Home"
-  },
-  "account": {
-    "title": "Your rights",
-    "description": "Here is some information about your rights in The Ballot Project.",
-    "registrationStatus": "Registration status",
-    "registered": "Registered",
-    "notRegistered": "Not registered",
-    "hasVoted": "Has voted",
-    "yes": "Yes",
-    "no": "No",
-    "voteWeight": "Vote weight",
-    "delegation": "Delegation",
-    "voteProposal": "Vote proposal"
-  },
-  "chairPerson": {
-    "title": "Chair person",
-    "description": "The address that owns The Ballot Project.",
-    "address": "Address"
-  },
-  "proposalsList": {
-    "title": "Proposals",
-    "description": "List of available proposals for the vote.",
-    "id": "ID",
-    "name": "Name",
-    "voteCount": "Vote count"
-  },
-  "votersCount": {
-    "title": "Voters count",
-    "description": "The total number of registered voters in The Ballot Project.",
-    "totalVoters": "Total voters"
-  },
-  "winningProposal": {
-    "title": "Winning proposal",
-    "description": "The proposal that currently has the most votes.",
-    "proposal": "Proposal"
-  },
-  "voteCard": {
-    "title": "Vote",
-    "description": "As a registered voter, you can vote for a proposal.",
-    "alreadyVoted": "You have already voted in this ballot.",
-    "proposalLabel": "Proposal",
-    "selectPlaceholder": "Select a proposal…",
-    "submit": "Vote"
-  },
-  "giveRight": {
-    "title": "Give right to vote",
-    "description": "As an admin, you can grant the right to vote to another address.",
-    "address": "Address",
-    "submit": "Give rights",
-    "placeholder": "0x…"
-  },
-  "delegate": {
-    "title": "Delegate",
-    "description": "As a registered voter, you can delegate your voting power to another address.",
-    "cannotDelegate": "You cannot delegate your vote because you have already voted in this ballot.",
-    "address": "Address",
-    "submit": "Delegate",
-    "placeholder": "0x…"
-  },
-  "eventsTable": {
-    "recentTitle": "Recent events",
-    "recentDescription": "The last five events from the ballot contract.",
-    "allTitle": "All contract events",
-    "allDescription": "Complete overview of recent events from the ballot contract.",
-    "noEvents": "No events found.",
-    "type": "Type",
-    "details": "Details",
-    "block": "Block",
-    "transaction": "Transaction",
-    "na": "N/A",
-    "unknownEvent": "Unknown event",
-    "detailGiveRight": "Voter {{addr}} was registered",
-    "detailDelegate": "{{from}} delegated to {{to}}",
-    "detailVote": "Voter {{voter}} voted for proposal {{proposal}}"
-  },
-  "voterEventsTable": {
-    "title": "Voter registrations",
-    "description": "Recent voter registration and delegation events from the ballot contract."
-  },
-  "voteEventsTable": {
-    "title": "Voting activity",
-    "description": "Recent voting events from the ballot contract."
   },
   "theme": {
     "light": "Light",
@@ -305,11 +215,15 @@
       "client": "Client",
       "emitterWorldId": "Issuer World ID number",
       "vatNumber": "VAT number (on-chain)",
+      "back": "Back",
       "backDashboard": "Dashboard",
       "payPage": "Payment page",
       "downloadPdf": "Download PDF",
       "downloadStarted": "Download started.",
+      "downloadWatermarkFailed": "Could not prepare the duplicate watermarked PDF.",
       "pdfUnavailable": "PDF not available locally.",
+      "storedMetaMissing": "Full invoice layout is not stored on this device — only on-chain fields are shown below.",
+      "onChainDetailsSummary": "On-chain details",
       "loadingSessionAria": "Loading session"
     },
     "commission": {
@@ -389,6 +303,7 @@
     "preview": {
       "brand": "Onvo",
       "invoiceTitle": "Invoice",
+      "documentNo": "Document no.",
       "issuedOn": "Issued on",
       "dueOn": "Due",
       "emitter": "Issuer",
@@ -458,6 +373,7 @@
       "walletRequiredShort": "Wallet required.",
       "emitterOrInvoiceFailed": "Issuer registration or invoice failed.",
       "verifyingOnChain": "On-chain check in progress, try again shortly.",
+      "worldIdRequiredForInvoiceId": "World ID is required to reserve the on-chain invoice number.",
       "worldIdInitRp": "Could not initialize World ID (RP).",
       "worldIdCancelled": "World ID cancelled or error.",
       "registerSuccess": "Address registered as verified issuer.",

@@ -24,8 +24,7 @@ export function PayInvoiceDocumentPaymentToken({
   const tokenUrl = tokenExplorerUrl(chainId, invoice.token);
   const known = getTokenMeta(invoice.token);
 
-  const displayLabel =
-    arcData?.symbol ?? arcData?.name ?? known.symbol;
+  const displayLabel = arcData?.symbol ?? arcData?.name ?? known.symbol;
 
   return (
     <div

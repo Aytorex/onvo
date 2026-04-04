@@ -1,12 +1,5 @@
 # Hardhat
 
-Deploy **Ballot** on localhost:
-
-```
-$ bun run start:node
-$ bunx hardhat ignition deploy ignition/modules/Ballot.ts --network localhost
-```
-
 Deploy **InvoiceRegistry** (mock World ID + test ERC-20) on the in-process network:
 
 ```
@@ -38,7 +31,7 @@ Deploy on **Arc Testnet** (needs `PRIVATE_KEY`, RPC via `ALCHEMY_ENDPOINT_URL_AR
 
    This runs Hardhat Ignition with `--parameters ignition/parameters/invoice-registry.arc.json` (see [`package.json`](package.json)).
 
-Verify on ArcScan (uses `ARCSCAN_API_KEY` or `ETHERSCAN_API_KEY` in [`hardhat.config.ts`](hardhat.config.ts)). Constructor arguments are read from the same `ignition/parameters/invoice-registry.arc.json` as deploy via [`scripts/verify/invoice-registry.constructor-args.ts`](scripts/verify/invoice-registry.constructor-args.ts):
+Verify on ArcScan (uses `ARCSCAN_API_KEY` in [`hardhat.config.ts`](hardhat.config.ts)). Constructor arguments are read from the same `ignition/parameters/invoice-registry.arc.json` as deploy via [`scripts/verify/invoice-registry.constructor-args.ts`](scripts/verify/invoice-registry.constructor-args.ts):
 
 ```
 $ bun run verify:invoice:arc -- 0xYourDeployedInvoiceRegistry
