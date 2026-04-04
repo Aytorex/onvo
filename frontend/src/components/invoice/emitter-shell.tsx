@@ -175,8 +175,21 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
       return <Fragment key={item.href}>{link}</Fragment>;
     });
 
-  const shellMainClass =
-    'flex min-w-0 flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full max-w-6xl mx-auto';
+  const isNewInvoicePage = pathname?.startsWith('/invoice/new');
+
+  const shellMainClass = cn(
+    'mx-auto flex min-w-0 w-full flex-1 flex-col',
+    isNewInvoicePage
+      ? 'max-w-[min(100%,100rem)] min-h-0 gap-4 overflow-hidden p-4 lg:gap-6 lg:p-6'
+      : 'max-w-6xl gap-4 p-4 lg:gap-6 lg:p-6',
+  );
+
+  const emitterContentColumnClass = cn(
+    'flex min-w-0 flex-1 flex-col',
+    isNewInvoicePage
+      ? 'h-dvh max-h-dvh min-h-0 overflow-hidden'
+      : 'min-h-screen',
+  );
 
   if (!authReady || !isVerified) {
     return (
@@ -298,7 +311,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <div className={emitterContentColumnClass}>
           <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-4 border-b border-border bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 lg:h-[60px] lg:px-6">
             <Sheet>
               <SheetTrigger asChild>

@@ -197,29 +197,29 @@ export function DashboardClient({
 
   return (
     <div className="p-4">
-    <DashboardHomeView
-      rows={rows}
-      loading={loading}
-      alertsSlot={
-        <>
-          {!isConnected ? (
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-              {t('invoice.dashboard.connectWalletHint')}
-            </p>
-          ) : null}
-          {isConnected && emitterVerified === false ? (
-            <RegisterEmitterWidget
-              onRegistered={() => void refetchEmitterVerified()}
-            />
-          ) : null}
-        </>
-      }
-      onExportAllCsv={() => exportInvoicesCSV(rows)}
-      exportDisabled={rows.length === 0}
-      onCancel={(invoiceId) => void onCancel(invoiceId)}
-      onExportPdf={exportPdf}
-      isCancelPending={isCancelPending}
-    />
+      <DashboardHomeView
+        rows={rows}
+        loading={loading}
+        alertsSlot={
+          <>
+            {!isConnected ? (
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+                {t('invoice.dashboard.connectWalletHint')}
+              </p>
+            ) : null}
+            {isConnected && emitterVerified === false ? (
+              <RegisterEmitterWidget
+                onRegistered={() => void refetchEmitterVerified()}
+              />
+            ) : null}
+          </>
+        }
+        onExportAllCsv={() => exportInvoicesCSV(rows)}
+        exportDisabled={rows.length === 0}
+        onCancel={(invoiceId) => void onCancel(invoiceId)}
+        onExportPdf={exportPdf}
+        isCancelPending={isCancelPending}
+      />
     </div>
   );
 }
