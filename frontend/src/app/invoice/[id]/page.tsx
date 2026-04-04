@@ -1,6 +1,5 @@
 import { InvoiceDetailClient } from '@/components/invoice/invoice-detail-client';
 import {
-  cropOnvoLabelMiddle,
   formatOnvoInvoiceLabel,
   parseInvoiceIdRouteParam,
 } from '@/lib/invoice-id';
@@ -19,7 +18,7 @@ export async function generateMetadata({
   if (parsed !== null) {
     try {
       const full = formatOnvoInvoiceLabel(parsed);
-      title = `${cropOnvoLabelMiddle(full)} · Onvo`;
+      title = `${full} · Onvo`;
     } catch {
       title = 'Facture · Onvo';
     }

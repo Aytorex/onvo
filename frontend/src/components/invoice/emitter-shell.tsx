@@ -20,7 +20,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
 import {
   formatOnvoInvoiceLabel,
-  formatOnvoInvoiceLabelDisplay,
+  parseInvoiceIdRouteParam,
 } from '@/lib/invoice-id';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { useWorldID } from '@/lib/worldid';
@@ -125,12 +125,14 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
   );
 
   const invoiceDetailHeader = useMemo(() => {
-    const m = pathname?.match(/^\/invoice\/(\d+)$/);
-    if (!m) return null;
+    if (!pathname?.startsWith('/invoice/')) return null;
+    const rest = pathname.slice('/invoice/'.length);
+    if (!rest || rest.includes('/')) return null;
+    if (rest === 'new') return null;
+    const parsed = parseInvoiceIdRouteParam(rest);
+    if (parsed === null) return null;
     try {
-      const id = BigInt(m[1]);
-      const full = formatOnvoInvoiceLabel(id);
-      return { full, short: formatOnvoInvoiceLabelDisplay(id) };
+      return { full: formatOnvoInvoiceLabel(parsed) };
     } catch {
       return null;
     }
@@ -468,13 +470,13 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
                 </Link>
               ) : null}
               {invoiceDetailHeader ? (
-                <div className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+                <div className="inline-flex min-w-0 max-w-full items-start gap-1.5">
                   <h1
-                    className="inline-block max-w-[min(100%,calc(100vw-11rem))] truncate text-lg font-bold tracking-tight text-heading sm:max-w-[min(42rem,calc(100vw-13rem))]"
+                    className="min-w-0 flex-1 break-all text-lg font-bold leading-snug tracking-tight text-heading"
                     title={`${t('invoice.detail.invoiceLabel')} · ${invoiceDetailHeader.full}`}
                   >
                     {t('invoice.detail.invoiceLabel')} ·{' '}
-                    {invoiceDetailHeader.short}
+                    {invoiceDetailHeader.full}
                   </h1>
                   <Button
                     type="button"

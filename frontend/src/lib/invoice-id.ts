@@ -63,11 +63,12 @@ export function formatOnvoInvoiceLabel(invoiceId: bigint): string {
   return `F-${emitter}-${seq.toString()}`;
 }
 
-const ONVO_LABEL_FULL_RE = /^(F-)(0x)([0-9a-f]{40})(-\d+-\d{2}-\d{4})$/i;
+/** `F-0x` + 40 hex + `-` + séquence (nombre). */
+const ONVO_LABEL_FULL_RE = /^(F-)(0x)([0-9a-f]{40})(-\d+)$/i;
 
 /**
- * Tronque le bloc hex (40 caractères) au milieu : `F-0x` + 3 + `…` + 3 + `-yyyy-mm-seq`.
- * Si le format ne correspond pas à une étiquette Onvo complète, renvoie la chaîne telle quelle.
+ * Tronque le bloc hex (40 caractères) au milieu pour listes denses : `F-0x` + 3 + `…` + 3 + `-seq`.
+ * Si le format ne correspond pas, renvoie la chaîne telle quelle.
  */
 export function shortenOnvoInvoiceLabelString(full: string): string {
   const m = full.match(ONVO_LABEL_FULL_RE);

@@ -12,7 +12,6 @@ import {
 } from '@/lib/invoice-contract';
 import {
   formatOnvoInvoiceLabel,
-  shortenOnvoInvoiceLabelString,
   invoiceIdToUrlSegment,
   parseInvoiceIdRouteParam,
 } from '@/lib/invoice-id';
@@ -32,16 +31,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { isAddressEqual, zeroAddress } from 'viem';
 import { usePublicClient } from 'wagmi';
-
-/** Affichage court : N premiers + … + N derniers caractères (ID décimal on-chain). */
-function cropDecimalIdMiddle(
-  decimalId: string,
-  headLen = 5,
-  tailLen = 5,
-): string {
-  if (decimalId.length <= headLen + tailLen) return decimalId;
-  return `${decimalId.slice(0, headLen)}…${decimalId.slice(-tailLen)}`;
-}
 
 export function InvoiceDetailClient() {
   const { t } = useTranslation('common');
@@ -187,12 +176,12 @@ export function InvoiceDetailClient() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="inline-flex min-w-0 max-w-full items-center gap-2">
+          <div className="inline-flex min-w-0 max-w-full flex-wrap items-start gap-2">
             <h2
-              className="inline-block max-w-[min(100%,calc(100vw-2.5rem))] truncate text-2xl font-semibold tracking-tight sm:max-w-[min(36rem,calc(100vw-4rem))]"
+              className="min-w-0 flex-1 break-all text-2xl font-semibold tracking-tight"
               title={invoiceLabelFull}
             >
-              {shortenOnvoInvoiceLabelString(invoiceLabelFull)}
+              {invoiceLabelFull}
             </h2>
             <Button
               type="button"
@@ -213,36 +202,6 @@ export function InvoiceDetailClient() {
               }}
             >
               <Copy className="size-4" aria-hidden />
-            </Button>
-          </div>
-          <div className="mt-1 inline-flex min-w-0 max-w-full items-center gap-1.5">
-            <span
-              className="inline-block max-w-[min(100%,calc(100vw-3rem))] truncate font-mono text-xs text-muted-foreground"
-              title={invoiceId.toString()}
-            >
-              {cropDecimalIdMiddle(invoiceId.toString())}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
-              aria-label={t('invoice.detail.copyInvoiceIdDecimalAria')}
-              title={t('invoice.detail.copyInvoiceIdDecimal')}
-              onClick={() => {
-                void navigator.clipboard.writeText(invoiceId.toString()).then(
-                  () => {
-                    toast.success(
-                      t('invoice.detail.copyInvoiceIdDecimalSuccess'),
-                    );
-                  },
-                  () => {
-                    toast.error(t('invoice.detail.copyInvoiceIdDecimalError'));
-                  },
-                );
-              }}
-            >
-              <Copy className="size-3.5" aria-hidden />
             </Button>
           </div>
         </div>
