@@ -8,6 +8,7 @@ import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
+import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
   downloadBase64Pdf,
@@ -128,14 +129,29 @@ export function DashboardClient({
     }
   };
 
-  const exportPdf = (invoiceId: bigint) => {
-    const b64 = getInvoicePdfBase64(invoiceId);
-    if (!b64) {
-      toast.error(t('invoice.toast.pdfNotStored'));
-      return;
-    }
-    downloadBase64Pdf(b64, `invoice-${invoiceId.toString()}.pdf`);
-  };
+  const exportPdf = useCallback(
+    (invoiceId: bigint) => {
+      void (async () => {
+        const b64 = getInvoicePdfBase64(invoiceId);
+        if (!b64) {
+          toast.error(t('invoice.toast.pdfNotStored'));
+          return;
+        }
+        try {
+          const stamped = await applyDuplicataWatermarkToPdfBase64(b64);
+          downloadBase64Pdf(
+            stamped,
+            `invoice-${invoiceId.toString()}-duplicata.pdf`,
+          );
+          toast.success(t('invoice.detail.downloadStarted'));
+        } catch (e) {
+          console.error(e);
+          toast.error(t('invoice.detail.downloadWatermarkFailed'));
+        }
+      })();
+    },
+    [t],
+  );
 
   if (!authReady) {
     return (
@@ -158,7 +174,7 @@ export function DashboardClient({
   }
 
   const actionsRow = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 shrink-0">
       <Button variant="default" asChild>
         <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
       </Button>

@@ -195,6 +195,11 @@
       "clientUnknown": "Client inconnu",
       "colStatus": "Statut",
       "colActions": "Actions",
+      "rowActionsAria": "Actions pour cette facture",
+      "copyInvoiceId": "Copier l’ID",
+      "copyInvoiceIdAria": "Copier la référence facture affichée (F-0x…)",
+      "copyInvoiceIdSuccess": "Référence facture copiée.",
+      "copyInvoiceIdError": "Copie impossible (permissions du navigateur).",
       "view": "Voir",
       "export": "Exporter",
       "cancel": "Annuler",
@@ -227,7 +232,15 @@
       "pdfUnavailable": "PDF non disponible en local.",
       "storedMetaMissing": "La mise en page complète de la facture n’est pas stockée sur cet appareil — seuls les champs on-chain sont affichés ci-dessous.",
       "onChainDetailsSummary": "Détails on-chain",
-      "loadingSessionAria": "Chargement de la session"
+      "loadingSessionAria": "Chargement de la session",
+      "copyInvoiceIdDecimal": "Copier l’ID décimal complet",
+      "copyInvoiceIdDecimalAria": "Copier l’identifiant de facture on-chain (nombre décimal entier)",
+      "copyInvoiceIdDecimalSuccess": "ID décimal copié.",
+      "copyInvoiceIdDecimalError": "Copie impossible (permissions du navigateur).",
+      "copyInvoiceLabel": "Copier la référence facture complète (F-0x…)",
+      "copyInvoiceLabelAria": "Copier le libellé complet de la facture",
+      "copyInvoiceLabelSuccess": "Référence facture copiée.",
+      "copyInvoiceLabelError": "Copie impossible (permissions du navigateur)."
     },
     "commission": {
       "title": "Commission Onvo (au paiement)",
