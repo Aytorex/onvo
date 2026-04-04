@@ -3,6 +3,8 @@
   "language": "en,fr",
   "languageId": "javascript,typescript,css,json",
   "words": [
+    "arcscan",
+    "Blockscout",
     "cmdk",
     "appkit",
     "connectbutton",

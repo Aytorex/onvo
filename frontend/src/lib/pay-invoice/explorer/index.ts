@@ -9,4 +9,7 @@ export {
 
 export type { ArcScanTokenMeta } from './arcscan-token.types';
 
-export { parseArcScanTokenJson, fetchArcScanTokenMeta } from './arcscan-token.service';
+export {
+  parseArcScanTokenJson,
+  fetchArcScanTokenMeta,
+} from './arcscan-token.service';

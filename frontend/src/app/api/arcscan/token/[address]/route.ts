@@ -21,7 +21,10 @@ export async function GET(
     const body = await upstream.text();
     return new Response(body, {
       status: upstream.status,
-      headers: { 'content-type': upstream.headers.get('content-type') ?? 'application/json' },
+      headers: {
+        'content-type':
+          upstream.headers.get('content-type') ?? 'application/json',
+      },
     });
   } catch {
     return Response.json({ message: 'Upstream error' }, { status: 502 });

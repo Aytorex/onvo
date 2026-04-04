@@ -72,7 +72,9 @@ export function PayInvoicePaymentColumn({
         )}
 
         {tokenName ? (
-          <p className="mt-2 text-sm font-medium text-foreground">{tokenName}</p>
+          <p className="mt-2 text-sm font-medium text-foreground">
+            {tokenName}
+          </p>
         ) : null}
 
         <div className="mt-2">

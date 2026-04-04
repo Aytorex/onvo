@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLocalePreference } from '@/contexts/i18n-provider';
-import { Check, Languages } from 'lucide-react';
+import { Check, Languages, LaptopMinimal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export function LanguageToggle() {
@@ -27,7 +27,13 @@ export function LanguageToggle() {
           className="justify-between gap-4"
           onClick={() => setLocaleMode('device')}
         >
-          {t('language.device')}
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <LaptopMinimal
+              className="h-4 w-4 shrink-0 opacity-70"
+              aria-hidden
+            />
+            {t('language.device')}
+          </span>
           {localeMode === 'device' ? (
             <Check className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
           ) : null}

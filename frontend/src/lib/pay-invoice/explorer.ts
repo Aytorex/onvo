@@ -50,14 +50,11 @@ export function addressExplorerUrl(
  * Transaction URL on the chain explorer. Pass `chainId` to use the configured
  * chain explorer; otherwise falls back to `NEXT_PUBLIC_CHAIN_EXPLORER_URL`.
  */
-export function explorerTxUrl(
-  txHash: string,
-  chainId?: number,
-): string | null {
+export function explorerTxUrl(txHash: string, chainId?: number): string | null {
   const base =
     chainId !== undefined
       ? getExplorerBaseUrl(chainId)
-      : process.env.NEXT_PUBLIC_CHAIN_EXPLORER_URL?.replace(/\/$/, '') ?? '';
+      : (process.env.NEXT_PUBLIC_CHAIN_EXPLORER_URL?.replace(/\/$/, '') ?? '');
   if (!base) {
     return null;
   }
@@ -90,7 +87,10 @@ export function parseArcScanTokenJson(data: unknown): ArcScanTokenMeta | null {
     return null;
   }
   const o = data as Record<string, unknown>;
-  if (typeof o.message === 'string' && o.message.toLowerCase().includes('not found')) {
+  if (
+    typeof o.message === 'string' &&
+    o.message.toLowerCase().includes('not found')
+  ) {
     return null;
   }
   const name = typeof o.name === 'string' ? o.name : null;
