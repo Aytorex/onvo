@@ -223,6 +223,7 @@ export default function LandingPage() {
                     width={sponsor.width}
                     height={sponsor.height}
                     className="block h-8 w-auto dark:hidden sm:h-10"
+                    style={{ width: 'auto' }}
                   />
                   <Image
                     src={sponsor.darkLogo}
@@ -230,6 +231,7 @@ export default function LandingPage() {
                     width={sponsor.width}
                     height={sponsor.height}
                     className="hidden h-8 w-auto dark:block sm:h-10"
+                    style={{ width: 'auto' }}
                   />
                 </div>
                 <span className="text-xs text-muted-foreground">
@@ -292,6 +294,7 @@ export default function LandingPage() {
                         width={feature.logoWidth}
                         height={feature.logoHeight}
                         className="block h-auto w-16 dark:hidden sm:w-20"
+                        style={{ height: 'auto' }}
                       />
                       <Image
                         src={feature.darkLogo}
@@ -299,6 +302,7 @@ export default function LandingPage() {
                         width={feature.logoWidth}
                         height={feature.logoHeight}
                         className="hidden h-auto w-16 dark:block sm:w-20"
+                        style={{ height: 'auto' }}
                       />
                     </div>
                   </AnimateOnScroll>
