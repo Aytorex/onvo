@@ -1,11 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useDynamicBridge } from '@/contexts/dynamic-bridge-context';
 import { cn } from '@/lib/utils';
-import { DynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConnect } from 'wagmi';
 
@@ -13,7 +12,7 @@ type Props = Readonly<{
   className?: string;
   size?: 'sm' | 'default' | 'lg';
   fullWidth?: boolean;
-  /** Overrides the default “Connect” label (e.g. “Connect with Dynamic”). */
+  /** Overrides the default "Connect" label (e.g. "Connect with Dynamic"). */
   connectLabel?: string;
 }>;
 
@@ -78,9 +77,9 @@ function Fallback({ className, size, fullWidth, connectLabel }: Props) {
 /** Ouvre la modale Dynamic si le provider est présent, sinon connexion injectée wagmi. */
 export function DynamicConnectButton(props: Props) {
   const { t } = useTranslation('common');
-  const ctx = useContext(DynamicContext);
+  const bridge = useDynamicBridge();
 
-  if (!ctx?.sdkHasLoaded) {
+  if (!bridge?.sdkHasLoaded) {
     return <Fallback {...props} />;
   }
 
@@ -92,7 +91,7 @@ export function DynamicConnectButton(props: Props) {
       variant="default"
       size={size === 'lg' ? 'lg' : 'default'}
       className={cn(sizeClasses(size), fullWidth && 'w-full', className)}
-      onClick={() => ctx.setShowAuthFlow(true)}
+      onClick={() => bridge.setShowAuthFlow(true)}
     >
       <Logo />
       {connectLabel ?? t('wallet.connect')}

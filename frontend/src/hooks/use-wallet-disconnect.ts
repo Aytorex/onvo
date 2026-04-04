@@ -1,21 +1,21 @@
 'use client';
 
-import { DynamicContext } from '@dynamic-labs/sdk-react-core';
-import { useCallback, useContext } from 'react';
+import { useDynamicBridge } from '@/contexts/dynamic-bridge-context';
+import { useCallback } from 'react';
 import { useDisconnect } from 'wagmi';
 
 /**
  * Disconnects wagmi; when Dynamic is configured, uses SDK logout so wallet + session clear reliably.
  */
 export function useWalletDisconnect() {
-  const dynamicCtx = useContext(DynamicContext);
+  const bridge = useDynamicBridge();
   const { disconnectAsync } = useDisconnect();
 
   return useCallback(async () => {
-    if (dynamicCtx) {
-      await dynamicCtx.handleLogOut();
+    if (bridge) {
+      await bridge.handleLogOut();
       return;
     }
     await disconnectAsync();
-  }, [dynamicCtx, disconnectAsync]);
+  }, [bridge, disconnectAsync]);
 }
