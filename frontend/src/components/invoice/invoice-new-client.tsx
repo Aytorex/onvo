@@ -819,6 +819,8 @@ export function InvoiceNewClient() {
               >
                 <Link
                   href={`/pay/${invoiceIdToUrlSegment(successId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2"
                 >
                   <span>{t('invoice.form.openPayPage')}</span>
