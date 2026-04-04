@@ -148,7 +148,7 @@ export function EmitterSetupCard({ onRegistered }: Props) {
                     aria-hidden
                   />
                 </div>
-                <div className="min-w-0 flex-1 pb-2 pt-1">
+                <div className="min-w-0 flex-1 pb-6 pt-1">
                   <h3 className="font-semibold text-foreground text-lg tracking-tight">
                     {t('invoice.dashboard.setupStepWallet')}
                   </h3>
