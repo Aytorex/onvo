@@ -45,7 +45,10 @@
   "pay": {
     "title": "Payment",
     "tokenReceived": "Token received:",
-    "missingToken": "Missing token in the URL."
+    "missingToken": "Missing token in the URL.",
+    "invalidToken": "This value is not a valid packed invoice ID.",
+    "loading": "Loading on-chain invoice…",
+    "notFound": "Invoice not found on-chain (or wrong network)."
   },
   "notFound": {
     "title": "Page not found",
@@ -217,6 +220,17 @@
       "downloadStarted": "Download started.",
       "pdfUnavailable": "PDF not available locally.",
       "loadingSessionAria": "Loading session"
+    },
+    "commission": {
+      "title": "Onvo fee (on payment)",
+      "rate": "Commission rate",
+      "rateValue": "{{percent}}% of the payment amount",
+      "recipient": "Fee recipient wallet (Onvo)",
+      "gross": "Gross amount (debited from payer, smallest units)",
+      "fee": "Platform fee (smallest units)",
+      "net": "Net to issuer after fee (smallest units)",
+      "note": "The payer must approve the gross amount; the contract forwards the fee to Onvo then the remainder to the issuer.",
+      "unavailable": "Could not load commission settings from the registry."
     },
     "form": {
       "accessDenied": "Access restricted —",

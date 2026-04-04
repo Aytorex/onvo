@@ -5,6 +5,40 @@ import {
 } from 'viem';
 import { invoiceRegistryContract } from '@/lib/contract';
 
+export type CommissionConfig = {
+  commissionBps: bigint;
+  commissionBpsDenominator: bigint;
+  commissionRecipient: `0x${string}`;
+};
+
+export async function readCommissionConfig(
+  client: PublicClient,
+): Promise<CommissionConfig> {
+  const [commissionBps, commissionBpsDenominator, commissionRecipient] =
+    await Promise.all([
+      client.readContract({
+        address: invoiceRegistryContract.address,
+        abi: invoiceRegistryContract.abi,
+        functionName: 'commissionBps',
+      }),
+      client.readContract({
+        address: invoiceRegistryContract.address,
+        abi: invoiceRegistryContract.abi,
+        functionName: 'COMMISSION_BPS_DENOMINATOR',
+      }),
+      client.readContract({
+        address: invoiceRegistryContract.address,
+        abi: invoiceRegistryContract.abi,
+        functionName: 'commissionRecipient',
+      }),
+    ]);
+  return {
+    commissionBps,
+    commissionBpsDenominator,
+    commissionRecipient,
+  };
+}
+
 export async function readInvoice(
   client: PublicClient,
   invoiceId: bigint,

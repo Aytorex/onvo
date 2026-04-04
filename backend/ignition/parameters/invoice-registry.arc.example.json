@@ -6,6 +6,7 @@
     "allowedTokens": [
       "0x3600000000000000000000000000000000000000",
       "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a"
-    ]
+    ],
+    "commissionRecipient": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
   }
 }

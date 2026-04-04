@@ -6,7 +6,12 @@ import {
   formatClientPhysicalAddressFromMeta,
   formatEmitterPhysicalAddressFromMeta,
 } from '@/lib/invoice-address';
-import { readInvoice } from '@/lib/invoice-contract';
+import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
+import {
+  readCommissionConfig,
+  readInvoice,
+  type CommissionConfig,
+} from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import {
   downloadBase64Pdf,
@@ -39,6 +44,8 @@ export function InvoiceDetailClient() {
   const [data, setData] = useState<Awaited<
     ReturnType<typeof readInvoice>
   > | null>(null);
+  const [commissionConfig, setCommissionConfig] =
+    useState<CommissionConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,9 +53,18 @@ export function InvoiceDetailClient() {
       setLoading(false);
       return;
     }
-    void readInvoice(publicClient, invoiceId)
-      .then(setData)
-      .catch(() => setData(null))
+    void Promise.all([
+      readInvoice(publicClient, invoiceId),
+      readCommissionConfig(publicClient).catch(() => null),
+    ])
+      .then(([inv, cfg]) => {
+        setData(inv);
+        setCommissionConfig(cfg);
+      })
+      .catch(() => {
+        setData(null);
+        setCommissionConfig(null);
+      })
       .finally(() => setLoading(false));
   }, [invoiceId, publicClient]);
 
@@ -208,6 +224,18 @@ export function InvoiceDetailClient() {
           </>
         ) : null}
       </dl>
+
+      {data.status === 0 && commissionConfig ? (
+        <InvoiceCommissionPanel
+          config={commissionConfig}
+          grossAmount={data.amount}
+        />
+      ) : null}
+      {data.status === 0 && !commissionConfig && !loading ? (
+        <p className="text-sm text-muted-foreground">
+          {t('invoice.commission.unavailable')}
+        </p>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="secondary">

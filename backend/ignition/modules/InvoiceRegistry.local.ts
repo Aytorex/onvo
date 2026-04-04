@@ -11,6 +11,7 @@ export default buildModule('InvoiceRegistryLocalModule', (m) => {
     worldId,
     m.getParameter('externalNullifierHash', 1n),
     [token],
+    m.getParameter('commissionRecipient', m.getAccount(0)),
   ]);
   return { registry, worldId, token };
 });

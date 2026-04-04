@@ -26,7 +26,7 @@
       "description": "payInvoice: wallet shows invoice_id from calldata; total_amount, currency, recipient_wallet, issuer_name, client_name, items_summary come from contract storage + token metadata (not in calldata) — dApp or simulation should complement Ledger.",
       "rawTx": "0x02f892827a6980843b9aca008504a817c80083061a80945fbdb2315678afecb367f032d93f642f64180aa380a4ac60a6cd000000000000000000000000000000000000000000000000000000000000002ac001a0f9e38b9648d3ce1704e8cb9afadefd07f83793f59841c3b8517d5f16cce2a230a01fa969d53f22bfb7c56fbf466d3b41c5cb63d9fc4000971ff7e4e6d5b9a28230",
       "expectedTexts": [
-        "Pay invoice — ERC-20 transfer to issuer on-chain",
+        "Pay invoice — ERC-20 gross debit; contract sends platform fee to Onvo then net to issuer",
         "Invoice ID",
         "42"
       ]

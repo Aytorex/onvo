@@ -1,8 +1,15 @@
 'use client';
 
+import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
+import {
+  readCommissionConfig,
+  readInvoice,
+  type CommissionConfig,
+} from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePublicClient } from 'wagmi';
 
 export default function PayPage({
   params,
@@ -11,17 +18,46 @@ export default function PayPage({
 }>) {
   const { token } = use(params);
   const { t } = useTranslation('common');
+  const publicClient = usePublicClient();
 
   const trimmedToken = token?.trim() ?? '';
 
   let packedLabel: string | null = null;
+  let invoiceId: bigint | undefined;
   if (trimmedToken !== '') {
     try {
-      packedLabel = formatOnvoInvoiceLabel(BigInt(trimmedToken));
+      invoiceId = BigInt(trimmedToken);
+      packedLabel = formatOnvoInvoiceLabel(invoiceId);
     } catch {
       packedLabel = null;
+      invoiceId = undefined;
     }
   }
+
+  const [invoice, setInvoice] = useState<Awaited<
+    ReturnType<typeof readInvoice>
+  > | null>(null);
+  const [commissionConfig, setCommissionConfig] =
+    useState<CommissionConfig | null>(null);
+  const [chainLoading, setChainLoading] = useState(false);
+
+  useEffect(() => {
+    if (!invoiceId || !publicClient) {
+      setInvoice(null);
+      setCommissionConfig(null);
+      return;
+    }
+    setChainLoading(true);
+    void Promise.all([
+      readInvoice(publicClient, invoiceId).catch(() => null),
+      readCommissionConfig(publicClient).catch(() => null),
+    ])
+      .then(([inv, cfg]) => {
+        setInvoice(inv);
+        setCommissionConfig(cfg);
+      })
+      .finally(() => setChainLoading(false));
+  }, [invoiceId, publicClient]);
 
   if (!trimmedToken) {
     return (
@@ -58,10 +94,40 @@ export default function PayPage({
       </p>
       {packedLabel ? (
         <p className="mt-3 font-mono text-sm text-foreground">{packedLabel}</p>
-      ) : null}
+      ) : (
+        <p className="mt-3 text-sm text-destructive">{t('pay.invalidToken')}</p>
+      )}
       <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all rounded-xl border border-border bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground">
         {trimmedToken}
       </pre>
+
+      {invoiceId && publicClient ? (
+        <div className="mt-8 space-y-4">
+          {chainLoading ? (
+            <p className="text-sm text-muted-foreground">{t('pay.loading')}</p>
+          ) : null}
+          {!chainLoading && !invoice ? (
+            <p className="text-sm text-muted-foreground">{t('pay.notFound')}</p>
+          ) : null}
+          {!chainLoading &&
+          invoice &&
+          invoice.status === 0 &&
+          commissionConfig ? (
+            <InvoiceCommissionPanel
+              config={commissionConfig}
+              grossAmount={invoice.amount}
+            />
+          ) : null}
+          {!chainLoading &&
+          invoice &&
+          invoice.status === 0 &&
+          !commissionConfig ? (
+            <p className="text-sm text-muted-foreground">
+              {t('invoice.commission.unavailable')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

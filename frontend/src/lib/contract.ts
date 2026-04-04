@@ -32,6 +32,11 @@ export const invoiceRegistryContract = {
           name: 'tokens',
           type: 'address[]',
         },
+        {
+          internalType: 'address',
+          name: 'commissionRecipient_',
+          type: 'address',
+        },
       ],
       stateMutability: 'nonpayable',
       type: 'constructor',
@@ -146,6 +151,32 @@ export const invoiceRegistryContract = {
       anonymous: false,
       inputs: [
         {
+          indexed: false,
+          internalType: 'uint256',
+          name: 'newCommissionBps',
+          type: 'uint256',
+        },
+      ],
+      name: 'CommissionBpsUpdated',
+      type: 'event',
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: 'address',
+          name: 'newRecipient',
+          type: 'address',
+        },
+      ],
+      name: 'CommissionRecipientUpdated',
+      type: 'event',
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
           indexed: true,
           internalType: 'uint256',
           name: 'invoiceId',
@@ -169,6 +200,12 @@ export const invoiceRegistryContract = {
           name: 'token',
           type: 'address',
         },
+        {
+          indexed: false,
+          internalType: 'uint256',
+          name: 'commissionAmount',
+          type: 'uint256',
+        },
       ],
       name: 'InvoicePaid',
       type: 'event',
@@ -191,6 +228,19 @@ export const invoiceRegistryContract = {
       ],
       name: 'OwnershipTransferred',
       type: 'event',
+    },
+    {
+      inputs: [],
+      name: 'COMMISSION_BPS_DENOMINATOR',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: '',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
     },
     {
       inputs: [
@@ -235,6 +285,32 @@ export const invoiceRegistryContract = {
       name: 'cancelInvoice',
       outputs: [],
       stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [],
+      name: 'commissionBps',
+      outputs: [
+        {
+          internalType: 'uint256',
+          name: '',
+          type: 'uint256',
+        },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [],
+      name: 'commissionRecipient',
+      outputs: [
+        {
+          internalType: 'address',
+          name: '',
+          type: 'address',
+        },
+      ],
+      stateMutability: 'view',
       type: 'function',
     },
     {
@@ -554,6 +630,32 @@ export const invoiceRegistryContract = {
     {
       inputs: [],
       name: 'renounceOwnership',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'uint256',
+          name: 'newBps',
+          type: 'uint256',
+        },
+      ],
+      name: 'setCommissionBps',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'newRecipient',
+          type: 'address',
+        },
+      ],
+      name: 'setCommissionRecipient',
       outputs: [],
       stateMutability: 'nonpayable',
       type: 'function',
