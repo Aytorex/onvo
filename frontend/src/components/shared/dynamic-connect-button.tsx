@@ -2,10 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import {
-  DynamicContext,
-  useDynamicContext,
-} from '@dynamic-labs/sdk-react-core';
+import { DynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useContext } from 'react';
@@ -78,9 +75,16 @@ function Fallback({ className, size, fullWidth, connectLabel }: Props) {
   );
 }
 
-function WithDynamic({ className, size, fullWidth, connectLabel }: Props) {
+/** Ouvre la modale Dynamic si le provider est présent, sinon connexion injectée wagmi. */
+export function DynamicConnectButton(props: Props) {
   const { t } = useTranslation('common');
-  const { setShowAuthFlow, sdkHasLoaded } = useDynamicContext();
+  const ctx = useContext(DynamicContext);
+
+  if (!ctx?.sdkHasLoaded) {
+    return <Fallback {...props} />;
+  }
+
+  const { className, size, fullWidth, connectLabel } = props;
 
   return (
     <Button
@@ -88,24 +92,10 @@ function WithDynamic({ className, size, fullWidth, connectLabel }: Props) {
       variant="default"
       size={size === 'lg' ? 'lg' : 'default'}
       className={cn(sizeClasses(size), fullWidth && 'w-full', className)}
-      disabled={!sdkHasLoaded}
-      onClick={() => setShowAuthFlow(true)}
+      onClick={() => ctx.setShowAuthFlow(true)}
     >
       <Logo />
-      {!sdkHasLoaded ? (
-        <>
-          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-          {t('wallet.connecting')}
-        </>
-      ) : (
-        (connectLabel ?? t('wallet.connect'))
-      )}
+      {connectLabel ?? t('wallet.connect')}
     </Button>
   );
-}
-
-/** Ouvre la modale Dynamic si le provider est présent, sinon connexion injectée wagmi. */
-export function DynamicConnectButton(props: Props) {
-  const ctx = useContext(DynamicContext);
-  return ctx ? <WithDynamic {...props} /> : <Fallback {...props} />;
 }
