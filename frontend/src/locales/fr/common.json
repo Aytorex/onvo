@@ -9,7 +9,10 @@
   "wallet": {
     "connect": "Connecter",
     "disconnect": "Déconnecter",
-    "connecting": "Connexion…"
+    "connecting": "Connexion…",
+    "stableBalancesOnArc": "Soldes USDC et EURC sur Arc Testnet",
+    "tokenBalanceLoading": "…",
+    "tokenBalanceUnavailable": "—"
   },
   "brand": {
     "logoAria": "ONVO"
