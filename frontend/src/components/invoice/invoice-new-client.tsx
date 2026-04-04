@@ -25,7 +25,10 @@ import { invoiceRegistryContract } from '@/lib/contract';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
 import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  shortenOnvoInvoiceLabelString,
+} from '@/lib/invoice-id';
 import {
   appendInvoiceId,
   setInvoiceMeta,
@@ -49,8 +52,8 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
-import { addDays, format } from 'date-fns';
-import { Info } from 'lucide-react';
+import { addDays, format, parseISO } from 'date-fns';
+import { enUS, fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -63,7 +66,15 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  ExternalLink,
+  Info,
+  Loader2,
+  Mail,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { parseUnits, zeroAddress } from 'viem';
@@ -75,6 +86,25 @@ import {
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
+
+function fmtSuccessMoney(n: number, currency: string, localeTag: string) {
+  return new Intl.NumberFormat(localeTag, {
+    style: 'currency',
+    currency: currency === 'EURC' ? 'EUR' : 'USD',
+    minimumFractionDigits: 2,
+  }).format(n);
+}
+
+type InvoiceSuccessContext = {
+  paymentUrl: string;
+  clientEmail: string;
+  clientName: string;
+  emitterName: string;
+  invoiceLabel: string;
+  totalTtc: number;
+  currency: InvoiceFormValues['currency'];
+  dueDate: string;
+};
 
 function defaultForm(): InvoiceFormValues {
   return {
@@ -196,7 +226,7 @@ function devSampleForm(): InvoiceFormValues {
 }
 
 export function InvoiceNewClient() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const router = useRouter();
   const previewRef = useRef<HTMLDivElement>(null);
   const {
@@ -215,6 +245,8 @@ export function InvoiceNewClient() {
   const [debouncedPreview, setDebouncedPreview] =
     useState<InvoiceFormValues>(defaultForm);
   const [successId, setSuccessId] = useState<bigint | null>(null);
+  const [successContext, setSuccessContext] =
+    useState<InvoiceSuccessContext | null>(null);
   const [stepSubmitting, setStepSubmitting] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [idKitOpen, setIdKitOpen] = useState(false);
@@ -235,6 +267,49 @@ export function InvoiceNewClient() {
   useEffect(() => {
     setFirstInvoiceHintDismissed(false);
   }, [address]);
+
+  const successSummary = useMemo(() => {
+    if (!successContext) return null;
+    const ctx = successContext;
+    const locale = i18n.language?.startsWith('fr') ? fr : enUS;
+    let dueFormatted: string;
+    try {
+      dueFormatted = format(parseISO(ctx.dueDate), 'PPP', { locale });
+    } catch {
+      dueFormatted = ctx.dueDate;
+    }
+    const amountStr = fmtSuccessMoney(
+      ctx.totalTtc,
+      ctx.currency,
+      i18n.language ?? 'en',
+    );
+    const subject = t('invoice.form.mailtoSubject', {
+      invoiceNumber: ctx.invoiceLabel,
+    });
+    const body = t('invoice.form.mailtoBody', {
+      clientName:
+        ctx.clientName.trim() || t('invoice.form.mailtoClientFallback'),
+      emitterName: ctx.emitterName.trim() || '—',
+      invoiceNumber: ctx.invoiceLabel,
+      amount: amountStr,
+      dueDate: dueFormatted,
+      paymentUrl: ctx.paymentUrl,
+    });
+    const to = ctx.clientEmail.trim();
+    const qs = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoHref = to
+      ? `mailto:${encodeURIComponent(to)}?${qs}`
+      : `mailto:?${qs}`;
+    return { dueFormatted, amountStr, mailtoHref };
+  }, [successContext, i18n.language, t]);
+
+  const copyPaymentLink = useCallback(() => {
+    if (!successContext?.paymentUrl) return;
+    void navigator.clipboard.writeText(successContext.paymentUrl).then(
+      () => toast.success(t('invoice.form.copyPaymentLinkSuccess')),
+      () => toast.error(t('invoice.form.copyPaymentLinkError')),
+    );
+  }, [successContext, t]);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -468,9 +543,19 @@ export function InvoiceNewClient() {
         };
         setInvoiceMeta(newId, meta);
 
-        setSuccessId(newId);
-
         const label = formatOnvoInvoiceLabel(newId);
+        const paymentUrl = `${window.location.origin}/pay/${newId.toString()}`;
+        setSuccessContext({
+          paymentUrl,
+          clientEmail: data.clientEmail,
+          clientName: data.clientName,
+          emitterName: data.emitterName,
+          invoiceLabel: label,
+          totalTtc: lineTotals.totalTtc,
+          currency: data.currency,
+          dueDate: data.dueDate,
+        });
+        setSuccessId(newId);
         const url = URL.createObjectURL(pdfBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -637,32 +722,122 @@ export function InvoiceNewClient() {
     );
   }
 
-  if (successId !== null) {
+  if (successId !== null && successContext && successSummary) {
+    const { dueFormatted, amountStr, mailtoHref } = successSummary;
     return (
-      <div className="mx-auto max-w-lg space-y-6 rounded-2xl border border-border bg-card p-8 text-center">
-        <h1 className="text-xl font-semibold">
-          {t('invoice.form.successTitle')}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {t('invoice.form.successSubtitle')}
-        </p>
-        <p className="font-mono text-sm text-foreground">
-          {formatOnvoInvoiceLabel(successId)}
-        </p>
-        <div className="rounded-lg bg-muted/50 p-4 font-mono text-sm break-all">
-          {typeof window !== 'undefined'
-            ? `${window.location.origin}/pay/${successId.toString()}`
-            : `/pay/${successId.toString()}`}
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button asChild variant="secondary">
-            <Link href="/dashboard">{t('invoice.form.backDashboard')}</Link>
-          </Button>
-          <Button asChild>
-            <Link href={`/pay/${successId.toString()}`}>
-              {t('invoice.form.openPayPage')}
-            </Link>
-          </Button>
+      <div className="mx-auto w-full max-w-xl animate-fade-in px-4 py-6 sm:py-10">
+        <div
+          className="relative overflow-hidden rounded-[1.75rem] border border-onvo-purple/20 bg-gradient-to-br from-card via-card to-onvo-purple/[0.07] shadow-2xl shadow-onvo-purple/15 dark:border-onvo-purple/35 dark:from-card dark:via-card dark:to-onvo-cyan/[0.06] dark:shadow-onvo-cyan/10"
+          role="region"
+          aria-labelledby="invoice-success-title"
+        >
+          <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-onvo-purple/30 to-transparent blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -right-20 h-72 w-64 rounded-full bg-gradient-to-tl from-onvo-cyan/25 to-transparent blur-3xl" />
+
+          <div className="relative space-y-8 p-8 sm:p-10">
+            <div className="flex flex-col items-center text-center">
+              <span className="mb-3 inline-flex items-center rounded-full border border-onvo-purple/25 bg-gradient-to-r from-onvo-purple/10 to-onvo-cyan/10 px-3.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-onvo-purple dark:text-onvo-cyan">
+                {t('invoice.form.successOnChainBadge')}
+              </span>
+              <h1
+                id="invoice-success-title"
+                className="max-w-md bg-gradient-to-r from-onvo-purple via-onvo-purple to-onvo-cyan bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-[2rem] sm:leading-tight"
+              >
+                {t('invoice.form.successTitle')}
+              </h1>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+                {t('invoice.form.successSubtitle')}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 shadow-inner backdrop-blur-sm">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t('invoice.form.successAmountLabel')}
+                </p>
+                <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight text-foreground">
+                  {amountStr}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 shadow-inner backdrop-blur-sm">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t('invoice.form.successDueLabel')}
+                </p>
+                <p className="mt-1.5 text-lg font-semibold leading-snug text-foreground">
+                  {dueFormatted}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-center">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('invoice.preview.documentNo')}
+              </p>
+              <p
+                className="font-mono text-base font-semibold text-foreground sm:text-lg"
+                title={successContext.invoiceLabel}
+              >
+                {shortenOnvoInvoiceLabelString(successContext.invoiceLabel)}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                {t('invoice.form.paymentLinkCaption')}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                <div className="min-h-[3rem] flex-1 rounded-xl border border-border/80 bg-background/90 px-3 py-2.5 font-mono text-xs leading-relaxed text-muted-foreground shadow-inner sm:text-sm">
+                  <span className="break-all text-foreground/90">
+                    {successContext.paymentUrl}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-auto shrink-0 gap-2 rounded-xl border-onvo-purple/30 py-2.5 hover:bg-onvo-purple/5"
+                  onClick={copyPaymentLink}
+                  aria-label={t('invoice.form.copyPaymentLinkAria')}
+                >
+                  <Copy className="h-4 w-4 shrink-0 text-onvo-purple" />
+                  {t('invoice.form.copyPaymentLink')}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 pt-1">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 w-full gap-2 rounded-full text-base shadow-lg"
+              >
+                <Link
+                  href={`/pay/${successId.toString()}`}
+                  className="inline-flex items-center justify-center gap-2"
+                >
+                  <span>{t('invoice.form.openPayPage')}</span>
+                  <ExternalLink
+                    className="h-4 w-4 shrink-0 opacity-90"
+                    aria-hidden
+                  />
+                </Link>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 w-full gap-2 rounded-full border-onvo-purple/35 bg-card/60 hover:bg-onvo-purple/5"
+                asChild
+              >
+                <a
+                  href={mailtoHref}
+                  aria-label={t('invoice.form.sendEmailClientAria')}
+                >
+                  <Mail className="h-4 w-4 shrink-0 text-onvo-purple" />
+                  {t('invoice.form.sendEmailClient')}
+                </a>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );

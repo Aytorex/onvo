@@ -10,7 +10,10 @@ import {
   readInvoice,
   type CommissionConfig,
 } from '@/lib/invoice-contract';
-import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  shortenOnvoInvoiceLabelString,
+} from '@/lib/invoice-id';
 import { invoiceMetaToFormValues } from '@/lib/invoice-meta-to-form';
 import { applyDuplicataWatermarkToPdfBase64 } from '@/lib/pdf-duplicata-watermark';
 import {
@@ -187,7 +190,7 @@ export function InvoiceDetailClient() {
               className="inline-block max-w-[min(100%,calc(100vw-2.5rem))] truncate text-2xl font-semibold tracking-tight sm:max-w-[min(36rem,calc(100vw-4rem))]"
               title={invoiceLabelFull}
             >
-              {cropOnvoLabelMiddle(invoiceLabelFull)}
+              {shortenOnvoInvoiceLabelString(invoiceLabelFull)}
             </h2>
             <Button
               type="button"

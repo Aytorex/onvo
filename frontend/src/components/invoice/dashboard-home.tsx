@@ -2,7 +2,10 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  formatOnvoInvoiceLabelDisplay,
+} from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
   formatInvoiceTokenAmount,
@@ -313,8 +316,11 @@ export function DashboardHomeView({
                     >
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-muted-foreground text-xs">
-                            {formatOnvoInvoiceLabel(r.invoiceId)}
+                          <span
+                            className="font-mono text-muted-foreground text-xs"
+                            title={formatOnvoInvoiceLabel(r.invoiceId)}
+                          >
+                            {formatOnvoInvoiceLabelDisplay(r.invoiceId)}
                           </span>
                           {statusBadge(r.status, t, true)}
                         </div>

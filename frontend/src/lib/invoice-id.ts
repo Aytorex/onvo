@@ -34,6 +34,25 @@ export function formatOnvoInvoiceLabel(invoiceId: bigint): string {
   return `F-0x${shortHexAddress(emitter)}-${seq.toString()}`;
 }
 
+const ONVO_LABEL_FULL_RE = /^(F-)(0x)([0-9a-f]{40})(-\d+-\d{2}-\d{4})$/i;
+
+/**
+ * Tronque le bloc hex (40 caractères) au milieu : `F-0x` + 3 + `…` + 3 + `-yyyy-mm-seq`.
+ * Si le format ne correspond pas à une étiquette Onvo complète, renvoie la chaîne telle quelle.
+ */
+export function shortenOnvoInvoiceLabelString(full: string): string {
+  const m = full.match(ONVO_LABEL_FULL_RE);
+  if (!m) return full;
+  const [, fPrefix, ox, hex, tail] = m;
+  if (hex.length <= 6) return full;
+  return `${fPrefix}${ox}${hex.slice(0, 3)}…${hex.slice(-3)}${tail}`;
+}
+
+/** Libellé compact pour l’UI (voir `shortenOnvoInvoiceLabelString`). */
+export function formatOnvoInvoiceLabelDisplay(invoiceId: bigint): string {
+  return shortenOnvoInvoiceLabelString(formatOnvoInvoiceLabel(invoiceId));
+}
+
 /**
  * Raccourci pour titres / listes : `headLen` premiers caractères + … + `tailLen` derniers.
  * Par défaut 5 + 17 (affichage fiche facture, onglet navigateur).

@@ -25,7 +25,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { InvoiceStatusBadge } from '@/components/invoice/invoice-status-badge';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  formatOnvoInvoiceLabelDisplay,
+} from '@/lib/invoice-id';
 import type { InvoiceRowView } from '@/lib/invoice-types';
 import {
   filterInvoiceRows,
@@ -51,14 +54,20 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
-function InvoiceIdTruncateCopy({ label }: { label: string }) {
+function InvoiceIdTruncateCopy({
+  fullLabel,
+  displayLabel,
+}: {
+  fullLabel: string;
+  displayLabel: string;
+}) {
   const { t } = useTranslation('common');
   const textRef = useRef<HTMLSpanElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [truncated, setTruncated] = useState(false);
 
-  /** Même chaîne que l’affichage (`formatOnvoInvoiceLabel`), pas le uint256 décimal. */
-  const copyValue = label;
+  /** Référence complète (`formatOnvoInvoiceLabel`), pas le uint256 décimal. */
+  const copyValue = fullLabel;
 
   const updateTruncated = useCallback(() => {
     const el = textRef.current;
@@ -75,7 +84,7 @@ function InvoiceIdTruncateCopy({ label }: { label: string }) {
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [label, updateTruncated]);
+  }, [displayLabel, updateTruncated]);
 
   const onCopy = () => {
     void navigator.clipboard.writeText(copyValue).then(
@@ -96,9 +105,9 @@ function InvoiceIdTruncateCopy({ label }: { label: string }) {
       <span
         ref={textRef}
         className="min-w-0 flex-1 truncate font-mono text-xs"
-        title={label}
+        title={fullLabel}
       >
-        {label}
+        {displayLabel}
       </span>
       {truncated ? (
         <Button
@@ -302,7 +311,10 @@ export function DashboardInvoiceList({
                   >
                     <TableCell className="align-top min-w-0 max-w-[min(100vw,20rem)]">
                       <InvoiceIdTruncateCopy
-                        label={formatOnvoInvoiceLabel(r.invoiceId)}
+                        fullLabel={formatOnvoInvoiceLabel(r.invoiceId)}
+                        displayLabel={formatOnvoInvoiceLabelDisplay(
+                          r.invoiceId,
+                        )}
                       />
                     </TableCell>
                     <TableCell className="align-top text-sm">

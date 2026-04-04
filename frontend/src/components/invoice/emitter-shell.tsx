@@ -18,7 +18,10 @@ import {
 } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
-import { cropOnvoLabelMiddle, formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import {
+  formatOnvoInvoiceLabel,
+  formatOnvoInvoiceLabelDisplay,
+} from '@/lib/invoice-id';
 import { useEmitterOnChainReady } from '@/lib/emitter-onchain';
 import { useWorldID } from '@/lib/worldid';
 import {
@@ -127,7 +130,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     try {
       const id = BigInt(m[1]);
       const full = formatOnvoInvoiceLabel(id);
-      return { full, short: cropOnvoLabelMiddle(full) };
+      return { full, short: formatOnvoInvoiceLabelDisplay(id) };
     } catch {
       return null;
     }
