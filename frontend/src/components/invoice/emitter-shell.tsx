@@ -115,7 +115,12 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     navItems.map((item) => {
       const active = item.match(pathname ?? '');
       const base = mobile
-        ? `${active ? 'bg-muted text-heading' : 'text-foreground'} mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-primary`
+        ? cn(
+            'flex items-center gap-4 rounded-xl px-3 py-2 transition-colors',
+            active
+              ? 'bg-muted text-heading hover:bg-muted'
+              : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+          )
         : `${active ? 'bg-muted text-heading' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
       return (
         <Link key={item.href} href={item.href} className={base}>
@@ -308,29 +313,31 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="flex flex-col"
+                className="flex min-h-0 flex-col"
                 aria-describedby={undefined}
               >
                 <SheetTitle className="sr-only">
                   {t('nav.mobileMenu')}
                 </SheetTitle>
-                <nav className="grid gap-2 text-lg font-medium">
+                <nav className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-lg font-medium">
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 text-lg font-semibold"
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-lg font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     <OnvoLogo className="text-lg" />
                   </Link>
                   {renderNavLinks(true)}
+                </nav>
+                <div className="shrink-0 border-t border-border pt-4">
                   <Button
                     variant="ghost"
-                    className="justify-start gap-4 text-lg font-medium"
+                    className="h-auto min-h-10 w-full justify-start gap-4 rounded-xl px-3 py-2 text-lg font-medium"
                     onClick={() => void logout()}
                   >
                     <LogOut className="h-5 w-5" />
                     {t('emitterNav.logOut')}
                   </Button>
-                </nav>
+                </div>
               </SheetContent>
             </Sheet>
             <div className="flex min-w-0 flex-1 items-center gap-3">

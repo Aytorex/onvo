@@ -23,6 +23,7 @@ import {
   Users,
   Vote,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
@@ -162,7 +163,7 @@ export function MainNavigation({ children }: { children: React.ReactNode }) {
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
                   href="/"
-                  className="flex items-center gap-2 text-lg font-semibold"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-lg font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   <Landmark className="h-6 w-6" />
                   <span>{t('nav.projectName')}</span>
@@ -171,7 +172,12 @@ export function MainNavigation({ children }: { children: React.ReactNode }) {
                   <Link
                     key={index}
                     href={page.url}
-                    className={`${pathname === page.url ? 'bg-muted text-heading' : 'text-foreground'} mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-primary`}
+                    className={cn(
+                      'flex items-center gap-4 rounded-xl px-3 py-2 transition-colors',
+                      pathname === page.url
+                        ? 'bg-muted text-heading hover:bg-muted'
+                        : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                    )}
                   >
                     <page.icon className="h-5 w-5" />
                     {page.label}
