@@ -47,19 +47,13 @@ import {
   fetchRpContext,
   parseWorldIdNullifierToBigInt,
   useWorldID,
-  verifyProof
+  verifyProof,
 } from '@/lib/worldid';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 import { addDays, format, parseISO } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
-import {
-  Copy,
-  ExternalLink,
-  Info,
-  Loader2,
-  Mail
-} from 'lucide-react';
+import { Copy, ExternalLink, Info, Loader2, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
