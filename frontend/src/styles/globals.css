@@ -30,6 +30,16 @@
     --warning-foreground: 233 51% 15%;
   }
 
+  .dark .pay-page {
+    --background: 232 42% 11%;
+    --card: 233 34% 17%;
+    --popover: 233 34% 16%;
+    --muted: 233 28% 20%;
+    --accent: 233 32% 22%;
+    --border: 233 24% 30%;
+    --input: 233 24% 30%;
+  }
+
   .dark {
     color-scheme: dark;
     --background: 232 48% 7%;

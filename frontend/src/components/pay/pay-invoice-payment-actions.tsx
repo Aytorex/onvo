@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useChainId } from 'wagmi';
 import { ExternalLink, Loader2, Usb, Wallet } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -23,6 +24,7 @@ export function PayInvoicePaymentActions({
   invoice,
 }: Readonly<{ invoice: InvoiceView }>) {
   const { t } = useTranslation('common');
+  const chainId = useChainId();
   const [phase, setPhase] = useState<Phase>('idle');
   const [channel, setChannel] = useState<PayChannel | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function PayInvoicePaymentActions({
     return null;
   }
 
-  const explorerLink = txHash ? explorerTxUrl(txHash) : null;
+  const explorerLink = txHash ? explorerTxUrl(txHash, chainId) : null;
 
   if (phase === 'success' && txHash) {
     return (
@@ -97,7 +99,7 @@ export function PayInvoicePaymentActions({
             type="button"
             size="lg"
             disabled={phase === 'simulating'}
-            className="h-14 w-full rounded-full bg-gradient-to-r from-onvo-purple to-onvo-cyan text-base font-semibold text-white shadow-md shadow-onvo-purple/25 transition hover:opacity-95"
+            className="h-14 w-full rounded-xl bg-[#000000] text-base font-semibold text-white shadow-md transition hover:bg-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
             onClick={() => void runMockPayment('ledger')}
           >
             {simulatingLedger ? (

@@ -6,11 +6,11 @@ export default function PayLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen flex-col bg-background px-4 py-8 text-foreground sm:py-12">
-      <header className="mx-auto mb-8 w-full max-w-2xl">
+    <div className="pay-page flex min-h-screen flex-col bg-background px-4 py-8 text-foreground sm:py-12">
+      <header className="mx-auto mb-8 w-full max-w-6xl">
         <OnvoLogo />
       </header>
-      <main className="mx-auto w-full max-w-2xl flex-1">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1">{children}</main>
     </div>
   );
 }

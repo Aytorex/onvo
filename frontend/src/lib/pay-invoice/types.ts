@@ -17,6 +17,8 @@ export type InvoiceView = {
   amount: bigint;
   token: `0x${string}`;
   status: InvoiceStatus;
+  /** World ID external ID for the issuer when exposed on-chain; empty string when unknown. */
+  issuerWorldId: string;
 };
 
 export function invoiceStatusI18nKey(

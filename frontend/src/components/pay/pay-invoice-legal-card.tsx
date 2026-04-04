@@ -8,15 +8,28 @@ import { PayInvoiceDetailRow } from '@/components/pay/pay-invoice-detail-row';
 
 export function PayInvoiceLegalCard({
   invoice,
-}: Readonly<{ invoice: InvoiceView }>) {
+  embedded = false,
+}: Readonly<{ invoice: InvoiceView; embedded?: boolean }>) {
   const { t } = useTranslation('common');
 
   return (
-    <section className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8">
-      <h2 className="mb-4 text-lg font-bold text-heading">
+    <section
+      className={
+        embedded
+          ? 'rounded-3xl border border-border/70 bg-muted/10 p-5 sm:p-6'
+          : 'rounded-3xl border border-border/80 bg-card p-6 shadow-sm sm:p-8'
+      }
+    >
+      <h2
+        className={
+          embedded
+            ? 'mb-3 text-base font-bold text-heading'
+            : 'mb-4 text-lg font-bold text-heading'
+        }
+      >
         {t('pay.legalTitle')}
       </h2>
-      <dl className="space-y-4">
+      <dl className={embedded ? 'space-y-3' : 'space-y-4'}>
         <PayInvoiceDetailRow
           label={t('pay.creditorLegalName')}
           value={t('pay.creditorMockName')}
@@ -36,10 +49,22 @@ export function PayInvoiceLegalCard({
           mono
         />
       </dl>
-      <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
+      <p
+        className={
+          embedded
+            ? 'mt-4 text-xs leading-relaxed text-muted-foreground'
+            : 'mt-6 text-xs leading-relaxed text-muted-foreground'
+        }
+      >
         {t('pay.paymentNature')}
       </p>
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+      <p
+        className={
+          embedded
+            ? 'mt-2 text-xs leading-relaxed text-muted-foreground'
+            : 'mt-3 text-xs leading-relaxed text-muted-foreground'
+        }
+      >
         {t('pay.issuerRecords')}
       </p>
     </section>

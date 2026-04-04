@@ -111,5 +111,6 @@ export function parseGetInvoiceResult(
     amount,
     token: getAddress(tokenRaw),
     status,
+    issuerWorldId: '',
   };
 }
