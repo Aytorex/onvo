@@ -7,17 +7,10 @@ import {
   orbLegacy,
   type RpContext,
 } from '@worldcoin/idkit';
+import Image from 'next/image';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from '@/components/ui/card';
 import { useWorldID, fetchRpContext, WORLD_ID_CONFIG } from '@/lib/worldid';
-import { LanguageToggle } from '@/components/shared/language-toggle';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -60,60 +53,78 @@ export default function LoginPage() {
   if (isVerified) return null;
 
   return (
-    <div className="flex w-full max-w-md flex-col items-end gap-2 px-4">
-      <div className="flex gap-2">
-        <LanguageToggle />
-        <ThemeToggle />
-      </div>
-      <Card className="w-full border-border/60 bg-card shadow-md backdrop-blur-sm">
-        <CardHeader className="items-center space-y-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/15">
-            <ShieldCheck className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <OnvoLogo className="text-center text-3xl sm:text-4xl" />
-            <CardDescription className="text-base text-muted-foreground">
+    <div className="flex flex-col items-center gap-6">
+      <div className="w-full rounded-2xl border border-border/40 bg-card/80 p-8 shadow-xl backdrop-blur-md sm:p-10">
+        <div className="flex flex-col items-center gap-6">
+          {/* Logo + tagline */}
+          <div className="flex flex-col items-center gap-3">
+            <OnvoLogo className="text-3xl sm:text-4xl" />
+            <p className="max-w-xs text-center text-sm text-muted-foreground">
               {t('auth.tagline')}
-            </CardDescription>
+            </p>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4 pb-8">
-          <p className="text-center text-sm text-muted-foreground">
-            {t('auth.verifyIntro')}
-          </p>
 
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={handleVerifyClick}
-            disabled={isLoadingRp}
-          >
-            {isLoadingRp ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ShieldCheck className="mr-2 h-4 w-4" />
-            )}
-            {t('auth.verifyButton')}
-          </Button>
+          {/* Divider */}
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
 
-          {error && (
-            <p className="text-center text-sm text-destructive">{error}</p>
-          )}
+          {/* Verify section */}
+          <div className="flex w-full flex-col items-center gap-4">
+            <p className="text-center text-sm text-muted-foreground">
+              {t('auth.verifyIntro')}
+            </p>
 
-          <p className="text-center text-xs text-muted-foreground/60">
-            {t('auth.stagingNoteBefore')}{' '}
-            <a
-              href="https://simulator.worldcoin.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-muted-foreground"
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={handleVerifyClick}
+              disabled={isLoadingRp}
             >
-              {t('auth.simulatorLink')}
-            </a>{' '}
-            {t('auth.stagingNoteAfter')}
-          </p>
-        </CardContent>
-      </Card>
+              {isLoadingRp ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="mr-2 h-4 w-4" />
+              )}
+              {t('auth.verifyButton')}
+            </Button>
+
+            {error && (
+              <p className="text-center text-sm text-destructive">{error}</p>
+            )}
+
+            <p className="text-center text-xs text-muted-foreground/60">
+              {t('auth.stagingNoteBefore')}{' '}
+              <a
+                href="https://simulator.worldcoin.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-muted-foreground"
+              >
+                {t('auth.simulatorLink')}
+              </a>{' '}
+              {t('auth.stagingNoteAfter')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Powered by World */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
+        <span>Powered by</span>
+        <Image
+          src="/logos/world.svg"
+          alt="World"
+          width={60}
+          height={16}
+          className="block h-4 w-auto opacity-60 dark:hidden"
+        />
+        <Image
+          src="/logos/world-dark.svg"
+          alt="World"
+          width={60}
+          height={16}
+          className="hidden h-4 w-auto opacity-60 dark:block"
+        />
+      </div>
 
       {rpContext && (
         <IDKitRequestWidget
