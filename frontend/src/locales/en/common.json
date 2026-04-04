@@ -119,6 +119,9 @@
     "viewOnArcScan": "View on ArcScan",
     "viewRegistryOnArcScan": "View InvoiceRegistry on ArcScan",
     "registryContractLabel": "Registry contract",
+    "registryContractName": "InvoiceRegistry (contract)",
+    "registryOnChainCall": "On-chain payment: payInvoice(uint256 invoiceId)",
+    "registryVerifyWarning": "Always check that this address is the official registry before you sign. A wrong contract could steal your funds.",
     "arcScanLinkUnavailable": "No block explorer is configured for this network."
   },
   "notFound": {
@@ -204,8 +207,7 @@
       "listCount": "{{shown}} of {{total}} invoices",
       "noFilterResults": "No invoices match your filters",
       "noFilterResultsHint": "Try another search or reset the status filter.",
-      "colId": "ID",
-      "colInvoiceNumber": "Invoice #",
+      "colInvoiceRef": "Invoice #",
       "colClient": "Client",
       "colRecipient": "Recipient wallet",
       "colAmount": "Amount",
@@ -425,7 +427,6 @@
       "pdfNotStored": "PDF is only available on the browser where the invoice was created (not on-chain).",
       "walletIssuerRequired": "Connect your issuer wallet to sign the invoice.",
       "previewUnavailable": "Preview unavailable.",
-      "tokenEnv": "Set NEXT_PUBLIC_TOKEN_USDC and NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).",
       "receiptNoId": "Transaction OK but invoiceId not found in logs.",
       "invoiceCreated": "Invoice created on-chain.",
       "invoiceCreateFailed": "Could not create invoice.",

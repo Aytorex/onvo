@@ -119,6 +119,9 @@
     "viewOnArcScan": "Voir sur ArcScan",
     "viewRegistryOnArcScan": "Voir InvoiceRegistry sur ArcScan",
     "registryContractLabel": "Contrat registry",
+    "registryContractName": "InvoiceRegistry (contrat)",
+    "registryOnChainCall": "Paiement on-chain : payInvoice(uint256 invoiceId)",
+    "registryVerifyWarning": "Vérifiez que cette adresse est bien le registry officiel avant de signer. Un mauvais contrat pourrait détourner vos fonds.",
     "arcScanLinkUnavailable": "Aucun explorateur n’est configuré pour ce réseau."
   },
   "notFound": {
@@ -204,8 +207,7 @@
       "listCount": "{{shown}} sur {{total}} factures",
       "noFilterResults": "Aucune facture ne correspond aux filtres",
       "noFilterResultsHint": "Essayez une autre recherche ou réinitialisez le statut.",
-      "colId": "ID",
-      "colInvoiceNumber": "N° facture",
+      "colInvoiceRef": "N° facture",
       "colClient": "Client",
       "colRecipient": "Wallet destinataire",
       "colAmount": "Montant",
@@ -425,7 +427,6 @@
       "pdfNotStored": "Le PDF n’est disponible que sur le navigateur où la facture a été créée (non stocké on-chain).",
       "walletIssuerRequired": "Connectez le wallet émetteur pour signer la facture.",
       "previewUnavailable": "Aperçu indisponible.",
-      "tokenEnv": "Configurez NEXT_PUBLIC_TOKEN_USDC et NEXT_PUBLIC_TOKEN_EURC (Arc Testnet).",
       "receiptNoId": "Transaction OK mais invoiceId introuvable dans les logs.",
       "invoiceCreated": "Facture créée on-chain.",
       "invoiceCreateFailed": "Échec de la création de la facture.",

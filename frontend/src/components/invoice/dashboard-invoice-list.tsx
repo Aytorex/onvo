@@ -278,10 +278,7 @@ export function DashboardInvoiceList({
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="whitespace-nowrap">
-                  {t('invoice.dashboard.colId')}
-                </TableHead>
-                <TableHead className="whitespace-nowrap">
-                  {t('invoice.dashboard.colInvoiceNumber')}
+                  {t('invoice.dashboard.colInvoiceRef')}
                 </TableHead>
                 <TableHead>{t('invoice.dashboard.colClient')}</TableHead>
                 <TableHead className="whitespace-nowrap">
@@ -317,15 +314,6 @@ export function DashboardInvoiceList({
                           r.invoiceId,
                         )}
                       />
-                    </TableCell>
-                    <TableCell className="align-top text-sm">
-                      {r.meta?.invoiceNumber ? (
-                        <span className="font-medium">
-                          {r.meta.invoiceNumber}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
                     </TableCell>
                     <TableCell className="align-top">
                       <span className="font-medium">{clientLabel}</span>
