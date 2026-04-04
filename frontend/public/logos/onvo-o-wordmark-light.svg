@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient
+      id="onvo-o-mark-light"
+      gradientUnits="userSpaceOnUse"
+      x1="5"
+      y1="16"
+      x2="27"
+      y2="16"
+    >
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+  </defs>
+  <text
+    x="16"
+    y="16"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="24"
+    font-weight="700"
+    letter-spacing="-0.04em"
+    fill="url(#onvo-o-mark-light)"
+  >
+    O
+  </text>
+</svg>

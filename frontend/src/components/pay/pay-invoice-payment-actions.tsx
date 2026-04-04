@@ -1,19 +1,20 @@
 'use client';
 
+import { ExternalLink, Loader2, Usb, Wallet } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChainId } from 'wagmi';
-import { ExternalLink, Loader2, Usb, Wallet } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import {
   explorerTxUrl,
   generateMockTxHash,
   INVOICE_STATUS,
   type InvoiceView,
 } from '@/lib/pay-invoice';
+import { cn } from '@/lib/utils';
 
 import { PayInvoiceCopyHashButton } from '@/components/pay/pay-invoice-copy-hash-button';
 
@@ -91,45 +92,65 @@ export function PayInvoicePaymentActions({
     <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-card via-card to-muted/30 p-6 shadow-lg shadow-primary/5 sm:p-8">
       <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/10 blur-3xl" />
       <div className="relative space-y-4">
-        <p className="text-center text-sm font-medium text-heading">
-          {t('pay.choosePayment')}
-        </p>
+        <div className="space-y-1.5 text-center">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t('pay.payPathIntro')}
+          </p>
+          <p className="text-sm font-semibold text-heading">
+            {t('pay.choosePayment')}
+          </p>
+        </div>
         <div className="flex flex-col gap-3">
-          <Button
-            type="button"
-            size="lg"
-            disabled={phase === 'simulating'}
-            className="h-14 w-full rounded-xl bg-[#000000] text-base font-semibold text-white shadow-md transition hover:bg-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
-            onClick={() => void runMockPayment('ledger')}
-          >
-            {simulatingLedger ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t('pay.payingLedger')}
-              </>
-            ) : (
-              <>
-                <Usb className="mr-2 h-5 w-5 shrink-0" />
-                {t('pay.payWithLedger')}
-              </>
-            )}
-          </Button>
+          <div className="relative">
+            <Badge className="absolute -right-1 -top-2 z-10 border border-emerald-600/30 bg-emerald-600 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+              {t('pay.payLedgerRecommended')}
+            </Badge>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={phase === 'simulating'}
+              className={cn(
+                'h-14 w-full rounded-xl border-0 bg-[#000000] text-base font-semibold text-white shadow-md',
+                'hover:bg-neutral-900 hover:text-white',
+                'focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2',
+              )}
+              onClick={() => void runMockPayment('ledger')}
+            >
+              {simulatingLedger ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  {t('pay.payingLedger')}
+                </>
+              ) : (
+                <>
+                  <Usb className="mr-2 h-5 w-5 shrink-0" />
+                  {t('pay.payWithLedger')}
+                </>
+              )}
+            </Button>
+          </div>
           <Button
             type="button"
             variant="outline"
             size="lg"
             disabled={phase === 'simulating'}
-            className="h-12 w-full rounded-xl border-2 border-heading bg-background/80 text-base font-medium text-foreground hover:bg-muted/60"
+            className={cn(
+              'h-14 w-full rounded-xl border border-neutral-300 bg-neutral-100 text-base font-semibold text-neutral-950',
+              'hover:bg-neutral-200 hover:text-neutral-950',
+              'dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-50 dark:hover:bg-neutral-700',
+              'focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2',
+            )}
             onClick={() => void runMockPayment('other')}
           >
             {simulatingOther ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 {t('pay.payingOther')}
               </>
             ) : (
               <>
-                <Wallet className="mr-2 h-4 w-4 shrink-0" />
+                <Wallet className="mr-2 h-5 w-5 shrink-0" />
                 {t('pay.payOther')}
               </>
             )}

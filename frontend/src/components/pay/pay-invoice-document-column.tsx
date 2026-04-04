@@ -2,18 +2,28 @@
 
 import { useTranslation } from 'react-i18next';
 
+import type { useArcScanTokenInfo } from '@/hooks/use-arcscan-token';
 import {
   formatInvoiceAmount,
   invoiceStatusI18nKey,
   type InvoiceView,
 } from '@/lib/pay-invoice';
 
+import { PayInvoiceDocumentPaymentToken } from '@/components/pay/pay-invoice-document-payment-token';
 import { PayInvoiceLegalCard } from '@/components/pay/pay-invoice-legal-card';
 import { PayInvoiceStatusBadge } from '@/components/pay/pay-invoice-status-badge';
 
+type ArcTokenInfoState = ReturnType<typeof useArcScanTokenInfo>;
+
 export function PayInvoiceDocumentColumn({
   invoice,
-}: Readonly<{ invoice: InvoiceView }>) {
+  chainId,
+  arcTokenInfo,
+}: Readonly<{
+  invoice: InvoiceView;
+  chainId: number;
+  arcTokenInfo: ArcTokenInfoState;
+}>) {
   const { t } = useTranslation('common');
   const { formatted, symbol } = formatInvoiceAmount(
     invoice.amount,
@@ -22,7 +32,7 @@ export function PayInvoiceDocumentColumn({
   const sk = invoiceStatusI18nKey(invoice.status);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <section
         className="rounded-3xl border border-border/80 bg-card p-6 shadow-md sm:p-8"
         aria-labelledby="pay-invoice-heading"
@@ -62,6 +72,12 @@ export function PayInvoiceDocumentColumn({
             </span>
           </p>
         </div>
+
+        <PayInvoiceDocumentPaymentToken
+          invoice={invoice}
+          chainId={chainId}
+          arcTokenInfo={arcTokenInfo}
+        />
       </section>
 
       <PayInvoiceLegalCard invoice={invoice} />
