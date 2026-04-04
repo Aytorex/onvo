@@ -424,7 +424,7 @@ function StatCard({
             {value}
           </p>
         </div>
-        <div className="rounded-xl bg-muted/80 p-2.5 text-muted-foreground">
+        <div className="relative -right-2.5 -top-2.5 rounded-xl bg-muted/80 p-2.5 text-muted-foreground">
           <Icon className="size-5" aria-hidden />
         </div>
       </div>
