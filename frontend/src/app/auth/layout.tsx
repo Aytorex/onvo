@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MagicRings } from '@/components/shared/magic-rings';
+import { LanguageToggle } from '@/components/shared/language-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function AuthLayout({
   children,
@@ -40,6 +42,11 @@ export default function AuthLayout({
             Back
           </Button>
         </Link>
+      </div>
+
+      <div className="absolute right-4 top-4 z-20 flex gap-1 sm:right-6 sm:top-6">
+        <LanguageToggle />
+        <ThemeToggle />
       </div>
 
       <div className="relative z-10 w-full max-w-md px-4">{children}</div>

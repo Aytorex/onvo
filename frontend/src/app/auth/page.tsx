@@ -11,8 +11,6 @@ import Image from 'next/image';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
 import { Button } from '@/components/ui/button';
 import { useWorldID, fetchRpContext, WORLD_ID_CONFIG } from '@/lib/worldid';
-import { LanguageToggle } from '@/components/shared/language-toggle';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -60,9 +58,6 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-6">
           {/* Logo + tagline */}
           <div className="flex flex-col items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-onvo-purple/15 to-onvo-cyan/15">
-              <ShieldCheck className="h-7 w-7 text-onvo-purple" />
-            </div>
             <OnvoLogo className="text-3xl sm:text-4xl" />
             <p className="max-w-xs text-center text-sm text-muted-foreground">
               {t('auth.tagline')}
@@ -108,15 +103,6 @@ export default function LoginPage() {
               </a>{' '}
               {t('auth.stagingNoteAfter')}
             </p>
-          </div>
-
-          {/* Divider */}
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
-
-          {/* Settings row */}
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
           </div>
         </div>
       </div>
