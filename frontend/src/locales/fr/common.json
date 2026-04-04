@@ -215,11 +215,14 @@
       "client": "Client",
       "emitterWorldId": "Numéro World ID (émetteur)",
       "vatNumber": "Numéro de TVA (on-chain)",
+      "back": "Retour",
       "backDashboard": "Tableau de bord",
       "payPage": "Page paiement",
       "downloadPdf": "Télécharger PDF",
       "downloadStarted": "Téléchargement démarré.",
       "pdfUnavailable": "PDF non disponible en local.",
+      "storedMetaMissing": "La mise en page complète de la facture n’est pas stockée sur cet appareil — seuls les champs on-chain sont affichés ci-dessous.",
+      "onChainDetailsSummary": "Détails on-chain",
       "loadingSessionAria": "Chargement de la session"
     },
     "commission": {

@@ -2,11 +2,8 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  formatClientPhysicalAddressFromMeta,
-  formatEmitterPhysicalAddressFromMeta,
-} from '@/lib/invoice-address';
 import { InvoiceCommissionPanel } from '@/components/invoice/invoice-commission-panel';
+import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
 import {
   formatWorldIdNullifierForDisplay,
   readCommissionConfig,
@@ -14,6 +11,7 @@ import {
   type CommissionConfig,
 } from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import { invoiceMetaToFormValues } from '@/lib/invoice-meta-to-form';
 import {
   downloadBase64Pdf,
   getInvoiceMeta,
@@ -22,7 +20,7 @@ import {
 import { useWorldID } from '@/lib/worldid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { usePublicClient } from 'wagmi';
@@ -39,6 +37,7 @@ export function InvoiceDetailClient() {
   const params = useParams();
   const idStr = typeof params.id === 'string' ? params.id : '';
   const invoiceId = idStr ? BigInt(idStr) : undefined;
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const { authReady, isVerified } = useWorldID();
   const publicClient = usePublicClient();
@@ -70,6 +69,7 @@ export function InvoiceDetailClient() {
   }, [invoiceId, publicClient]);
 
   const meta = invoiceId ? getInvoiceMeta(invoiceId) : null;
+  const previewValues = meta ? invoiceMetaToFormValues(meta) : null;
 
   useEffect(() => {
     if (!authReady) return;
@@ -113,142 +113,33 @@ export function InvoiceDetailClient() {
   }
 
   const pdf = getInvoicePdfBase64(invoiceId);
-  const registeredOfficeText = meta
-    ? formatEmitterPhysicalAddressFromMeta(meta).trim()
-    : '';
-  const clientRegisteredOfficeText = meta
-    ? formatClientPhysicalAddressFromMeta(meta).trim()
-    : '';
 
   const worldIdDisplay =
     data.worldIdNullifierHash !== 0n
       ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
       : (meta?.emitterWorldIdNullifier?.trim() ?? '');
 
+  const worldIdForPreview =
+    meta?.emitterWorldIdNullifier?.trim() ||
+    (data.worldIdNullifierHash !== 0n
+      ? formatWorldIdNullifierForDisplay(data.worldIdNullifierHash)
+      : '');
+
   return (
-    <div className="mx-auto max-w-2xl space-y-8 px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold">
-            {formatOnvoInvoiceLabel(invoiceId)}
-          </h2>
-          <p className="mt-1 font-mono text-xs text-muted-foreground break-all">
-            {invoiceId.toString()}
-          </p>
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div className="flex justify-between gap-2 w-full">
+        <div className="flex gap-4">
+          <Button asChild variant="secondary">
+            <Link href={`/pay/${invoiceId.toString()}`}>
+              {t('invoice.detail.back')}
+            </Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link href={`/pay/${invoiceId.toString()}`}>
+              {t('invoice.detail.payPage')}
+            </Link>
+          </Button>
         </div>
-        <Badge variant="outline">{statusLabel(data.status, t)}</Badge>
-      </div>
-
-      <dl className="grid gap-4 rounded-xl border border-border/80 bg-card/50 p-6 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-muted-foreground">
-            {t('invoice.detail.hashPdf')}
-          </dt>
-          <dd className="mt-1 break-all font-mono text-xs">
-            {data.invoiceHash}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">
-            {t('invoice.detail.emitter')}
-          </dt>
-          <dd className="mt-1 font-mono text-xs">{data.emitter}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">
-            {t('invoice.detail.recipient')}
-          </dt>
-          <dd className="mt-1 font-mono text-xs">{data.recipient}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">
-            {t('invoice.detail.amountWei')}
-          </dt>
-          <dd className="mt-1 font-mono text-xs">{data.amount.toString()}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">{t('invoice.detail.token')}</dt>
-          <dd className="mt-1 font-mono text-xs">{data.token}</dd>
-        </div>
-        {data.vatNumber.trim() || meta?.emitterVatNumber?.trim() ? (
-          <div>
-            <dt className="text-muted-foreground">
-              {t('invoice.detail.vatNumber')}
-            </dt>
-            <dd className="mt-1 font-mono text-sm">
-              {(data.vatNumber.trim() || meta?.emitterVatNumber?.trim()) ?? ''}
-            </dd>
-          </div>
-        ) : null}
-        {worldIdDisplay ? (
-          <div className="sm:col-span-2">
-            <dt className="text-muted-foreground">
-              {t('invoice.detail.emitterWorldId')}
-            </dt>
-            <dd className="mt-1 break-all font-mono text-xs">
-              {worldIdDisplay}
-            </dd>
-          </div>
-        ) : null}
-        {meta ? (
-          <>
-            <div>
-              <dt className="text-muted-foreground">
-                {t('invoice.detail.docNumber')}
-              </dt>
-              <dd className="mt-1">{meta.invoiceNumber}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">
-                {t('invoice.detail.client')}
-              </dt>
-              <dd className="mt-1">{meta.clientName}</dd>
-            </div>
-            {registeredOfficeText ? (
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">
-                  {t('invoice.detail.registeredOffice')}
-                </dt>
-                <dd className="mt-1 whitespace-pre-line text-sm">
-                  {registeredOfficeText}
-                </dd>
-              </div>
-            ) : null}
-            {clientRegisteredOfficeText ? (
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">
-                  {t('invoice.detail.clientRegisteredOffice')}
-                </dt>
-                <dd className="mt-1 whitespace-pre-line text-sm">
-                  {clientRegisteredOfficeText}
-                </dd>
-              </div>
-            ) : null}
-          </>
-        ) : null}
-      </dl>
-
-      {data.status === 0 && commissionConfig ? (
-        <InvoiceCommissionPanel
-          config={commissionConfig}
-          grossAmount={data.amount}
-        />
-      ) : null}
-      {data.status === 0 && !commissionConfig && !loading ? (
-        <p className="text-sm text-muted-foreground">
-          {t('invoice.commission.unavailable')}
-        </p>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="secondary">
-          <Link href="/dashboard">{t('invoice.detail.backDashboard')}</Link>
-        </Button>
-        <Button asChild>
-          <Link href={`/pay/${invoiceId.toString()}`}>
-            {t('invoice.detail.payPage')}
-          </Link>
-        </Button>
         {pdf ? (
           <Button
             variant="outline"
@@ -265,6 +156,163 @@ export function InvoiceDetailClient() {
           </p>
         )}
       </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold">
+            {formatOnvoInvoiceLabel(invoiceId)}
+          </h2>
+          <p className="mt-1 font-mono text-xs text-muted-foreground break-all">
+            {invoiceId.toString()}
+          </p>
+        </div>
+        <Badge variant="outline">{statusLabel(data.status, t)}</Badge>
+      </div>
+
+      {previewValues ? (
+        <InvoicePreviewDocument
+          values={previewValues}
+          previewRef={previewRef}
+          emitterWorldIdNullifier={worldIdForPreview || null}
+        />
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {t('invoice.detail.storedMetaMissing')}
+          </p>
+          <dl className="grid gap-4 rounded-xl border border-border/80 bg-card/50 p-6 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.hashPdf')}
+              </dt>
+              <dd className="mt-1 break-all font-mono text-xs">
+                {data.invoiceHash}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.emitter')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">{data.emitter}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.recipient')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">{data.recipient}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.amountWei')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">
+                {data.amount.toString()}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.token')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">{data.token}</dd>
+            </div>
+            {data.vatNumber.trim() ? (
+              <div>
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.vatNumber')}
+                </dt>
+                <dd className="mt-1 font-mono text-sm">
+                  {data.vatNumber.trim()}
+                </dd>
+              </div>
+            ) : null}
+            {worldIdDisplay ? (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.emitterWorldId')}
+                </dt>
+                <dd className="mt-1 break-all font-mono text-xs">
+                  {worldIdDisplay}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </>
+      )}
+
+      {previewValues ? (
+        <details className="rounded-xl border border-border/80 bg-card/30 text-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 font-medium text-foreground hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
+            {t('invoice.detail.onChainDetailsSummary')}
+          </summary>
+          <dl className="grid gap-4 border-t border-border/60 p-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.hashPdf')}
+              </dt>
+              <dd className="mt-1 break-all font-mono text-xs">
+                {data.invoiceHash}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.emitter')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">{data.emitter}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.recipient')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">{data.recipient}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.amountWei')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">
+                {data.amount.toString()}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t('invoice.detail.token')}
+              </dt>
+              <dd className="mt-1 font-mono text-xs">{data.token}</dd>
+            </div>
+            {data.vatNumber.trim() ? (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.vatNumber')}
+                </dt>
+                <dd className="mt-1 font-mono text-sm">
+                  {data.vatNumber.trim()}
+                </dd>
+              </div>
+            ) : null}
+            {worldIdDisplay ? (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.emitterWorldId')}
+                </dt>
+                <dd className="mt-1 break-all font-mono text-xs">
+                  {worldIdDisplay}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </details>
+      ) : null}
+
+      {data.status === 0 && commissionConfig ? (
+        <InvoiceCommissionPanel
+          config={commissionConfig}
+          grossAmount={data.amount}
+        />
+      ) : null}
+      {data.status === 0 && !commissionConfig && !loading ? (
+        <p className="text-sm text-muted-foreground">
+          {t('invoice.commission.unavailable')}
+        </p>
+      ) : null}
     </div>
   );
 }
