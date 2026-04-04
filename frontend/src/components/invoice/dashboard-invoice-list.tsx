@@ -150,9 +150,6 @@ export function DashboardInvoiceList({
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <Button asChild variant="secondary">
-          <Link href="/dashboard">{t('invoice.detail.back')}</Link>
-        </Button>
         <p className="max-w-xl text-muted-foreground text-sm">
           {t('invoice.dashboard.invoiceListLead')}
         </p>
