@@ -18,6 +18,7 @@ import {
   getStoredInvoiceIds,
 } from '@/lib/invoice-storage';
 import { useWorldID } from '@/lib/worldid';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -167,8 +168,11 @@ export function DashboardClient({
 
   const actionsRow = (
     <div className="flex flex-wrap gap-2 shrink-0">
-      <Button variant="default" asChild>
-        <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
+      <Button variant="default" className="gap-2" asChild>
+        <Link href="/invoice/new">
+          <Plus className="size-4 shrink-0" aria-hidden />
+          {t('invoice.dashboard.newInvoice')}
+        </Link>
       </Button>
       <Button
         variant="outline"

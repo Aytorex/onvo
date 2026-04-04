@@ -170,7 +170,7 @@ export function DashboardHomeView({
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button size="lg" className="gap-2" asChild>
                   <Link href="/invoice/new">
-                    <Plus className="size-4" aria-hidden />
+                    <Plus className="size-4 shrink-0" aria-hidden />
                     {t('invoice.dashboard.newInvoice')}
                   </Link>
                 </Button>
@@ -287,7 +287,7 @@ export function DashboardHomeView({
               </p>
               <Button className="mt-6 gap-2" asChild>
                 <Link href="/invoice/new">
-                  <Plus className="size-4" aria-hidden />
+                  <Plus className="size-4 shrink-0" aria-hidden />
                   {t('invoice.dashboard.newInvoice')}
                 </Link>
               </Button>

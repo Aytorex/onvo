@@ -40,6 +40,7 @@ import {
   FileDown,
   Link2,
   MoreVertical,
+  Plus,
   Search,
   X,
   XCircle,
@@ -237,8 +238,11 @@ export function DashboardInvoiceList({
           <p className="mt-4 text-muted-foreground text-sm">
             {t('invoice.dashboard.emptyState')}
           </p>
-          <Button className="mt-6" asChild>
-            <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
+          <Button className="mt-6 gap-2" asChild>
+            <Link href="/invoice/new">
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {t('invoice.dashboard.newInvoice')}
+            </Link>
           </Button>
         </div>
       ) : filtered.length === 0 ? (

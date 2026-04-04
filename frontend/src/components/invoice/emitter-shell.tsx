@@ -25,11 +25,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
-  FilePlus2,
   LayoutDashboard,
   List,
   LogOut,
   Menu,
+  Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -134,7 +134,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
       },
       {
         href: '/invoice/new',
-        icon: FilePlus2,
+        icon: Plus,
         labelKey: 'emitterNav.newInvoice',
         match: (p) => p.startsWith('/invoice/new'),
       },
