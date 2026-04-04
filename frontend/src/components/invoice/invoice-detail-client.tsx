@@ -129,12 +129,9 @@ export function InvoiceDetailClient() {
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">
-            {t('invoice.detail.invoiceLabel')}
-          </p>
-          <h1 className="text-2xl font-semibold">
+          <h2 className="text-2xl font-semibold">
             {formatOnvoInvoiceLabel(invoiceId)}
-          </h1>
+          </h2>
           <p className="mt-1 font-mono text-xs text-muted-foreground break-all">
             {invoiceId.toString()}
           </p>

@@ -64,7 +64,13 @@ function shortAddr(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
 
-export function DashboardClient() {
+export type DashboardClientVariant = 'home' | 'invoices';
+
+export function DashboardClient({
+  variant = 'home',
+}: {
+  variant?: DashboardClientVariant;
+}) {
   const { t } = useTranslation('common');
   const router = useRouter();
   const { authReady, isVerified } = useWorldID();
@@ -181,29 +187,131 @@ export function DashboardClient() {
     );
   }
 
-  return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t('invoice.dashboard.title')}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+  const pendingCount = rows.filter((r) => r.status === 0).length;
+  const paidCount = rows.filter((r) => r.status === 1).length;
+
+  const invoiceTable = loading ? (
+    <p className="text-sm text-muted-foreground">
+      {t('invoice.dashboard.loading')}
+    </p>
+  ) : rows.length === 0 ? (
+    <p className="text-sm text-muted-foreground">
+      {t('invoice.dashboard.emptyState')}
+    </p>
+  ) : (
+    <div className="rounded-xl border border-border/80">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('invoice.dashboard.colId')}</TableHead>
+            <TableHead>{t('invoice.dashboard.colRecipient')}</TableHead>
+            <TableHead>{t('invoice.dashboard.colAmountRaw')}</TableHead>
+            <TableHead>{t('invoice.dashboard.colToken')}</TableHead>
+            <TableHead>{t('invoice.dashboard.colStatus')}</TableHead>
+            <TableHead className="text-right">
+              {t('invoice.dashboard.colActions')}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => (
+            <TableRow key={r.invoiceId.toString()}>
+              <TableCell className="font-mono text-xs">
+                {formatOnvoInvoiceLabel(r.invoiceId)}
+              </TableCell>
+              <TableCell className="font-mono text-xs">
+                {shortAddr(r.recipient)}
+              </TableCell>
+              <TableCell className="font-mono text-xs">
+                {r.amount.toString()}
+              </TableCell>
+              <TableCell className="font-mono text-xs">
+                {shortAddr(r.token)}
+              </TableCell>
+              <TableCell>{statusBadge(r.status, t)}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex flex-wrap justify-end gap-1">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/invoice/${r.invoiceId.toString()}`}>
+                      {t('invoice.dashboard.view')}
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => exportPdf(r.invoiceId)}
+                  >
+                    {t('invoice.dashboard.export')}
+                  </Button>
+                  {r.status === 0 ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      disabled={isCancelPending}
+                      onClick={() => void onCancel(r.invoiceId)}
+                    >
+                      {t('invoice.dashboard.cancel')}
+                    </Button>
+                  ) : null}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  const actionsRow = (
+    <div className="flex flex-wrap gap-2">
+      <Button asChild>
+        <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
+      </Button>
+      <Button
+        variant="outline"
+        disabled={rows.length === 0}
+        onClick={() => exportInvoicesCSV(rows)}
+      >
+        {t('invoice.dashboard.exportAllCsv')}
+      </Button>
+    </div>
+  );
+
+  if (variant === 'invoices') {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <p className="text-sm text-muted-foreground">
             {t('invoice.dashboard.subtitle')}
           </p>
+          {actionsRow}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link href="/invoice/new">{t('invoice.dashboard.newInvoice')}</Link>
-          </Button>
-          <Button
-            variant="outline"
-            disabled={rows.length === 0}
-            onClick={() => exportInvoicesCSV(rows)}
-          >
-            {t('invoice.dashboard.exportAllCsv')}
-          </Button>
-        </div>
+
+        {!isConnected ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+            {t('invoice.dashboard.connectWalletHint')}
+          </p>
+        ) : null}
+
+        {isConnected && emitterVerified === false ? (
+          <RegisterEmitterWidget
+            onRegistered={() => void refetchEmitterVerified()}
+          />
+        ) : null}
+
+        {invoiceTable}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <p className="max-w-xl text-sm text-muted-foreground">
+          {t('invoice.dashboard.subtitle')}
+        </p>
+        {actionsRow}
       </div>
 
       {!isConnected ? (
@@ -218,78 +326,50 @@ export function DashboardClient() {
         />
       ) : null}
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">
-          {t('invoice.dashboard.loading')}
+      {!loading && rows.length > 0 ? (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border/80 bg-card/40 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('invoice.dashboard.statTotal')}
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {rows.length}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-card/40 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('invoice.dashboard.statPending')}
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-amber-400">
+              {pendingCount}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-card/40 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('invoice.dashboard.statPaid')}
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-400">
+              {paidCount}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {!loading && rows.length > 0 ? (
+        <p className="text-sm">
+          <Button variant="link" className="h-auto p-0" asChild>
+            <Link href="/dashboard/invoices">
+              {t('invoice.dashboard.seeAllInvoices')}
+            </Link>
+          </Button>
         </p>
-      ) : rows.length === 0 ? (
+      ) : null}
+
+      {!loading && rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {t('invoice.dashboard.emptyState')}
         </p>
-      ) : (
-        <div className="rounded-xl border border-border/80">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('invoice.dashboard.colId')}</TableHead>
-                <TableHead>{t('invoice.dashboard.colRecipient')}</TableHead>
-                <TableHead>{t('invoice.dashboard.colAmountRaw')}</TableHead>
-                <TableHead>{t('invoice.dashboard.colToken')}</TableHead>
-                <TableHead>{t('invoice.dashboard.colStatus')}</TableHead>
-                <TableHead className="text-right">
-                  {t('invoice.dashboard.colActions')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.invoiceId.toString()}>
-                  <TableCell className="font-mono text-xs">
-                    {formatOnvoInvoiceLabel(r.invoiceId)}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {shortAddr(r.recipient)}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {r.amount.toString()}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {shortAddr(r.token)}
-                  </TableCell>
-                  <TableCell>{statusBadge(r.status, t)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex flex-wrap justify-end gap-1">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/invoice/${r.invoiceId.toString()}`}>
-                          {t('invoice.dashboard.view')}
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => exportPdf(r.invoiceId)}
-                      >
-                        {t('invoice.dashboard.export')}
-                      </Button>
-                      {r.status === 0 ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          disabled={isCancelPending}
-                          onClick={() => void onCancel(r.invoiceId)}
-                        >
-                          {t('invoice.dashboard.cancel')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

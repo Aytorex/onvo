@@ -171,8 +171,11 @@
   },
   "emitterNav": {
     "dashboard": "Tableau de bord",
+    "invoiceList": "Factures",
     "newInvoice": "Nouvelle facture",
-    "logOut": "Déconnexion"
+    "logOut": "Déconnexion",
+    "collapseSidebar": "Réduire le menu",
+    "expandSidebar": "Agrandir le menu"
   },
   "invoice": {
     "status": {
@@ -182,7 +185,12 @@
     },
     "dashboard": {
       "title": "Tableau de bord",
+      "invoiceListPageTitle": "Liste des factures",
       "subtitle": "Factures émises par votre wallet sur Arc Testnet.",
+      "statTotal": "Total",
+      "statPending": "En attente",
+      "statPaid": "Payées",
+      "seeAllInvoices": "Voir toutes les factures →",
       "newInvoice": "Nouvelle facture",
       "exportAllCsv": "Exporter tout (CSV)",
       "connectWalletHint": "Connectez votre wallet pour voir les factures liées à cette adresse.",

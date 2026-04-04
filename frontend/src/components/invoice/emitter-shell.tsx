@@ -2,68 +2,362 @@
 
 import { LanguageToggle } from '@/components/shared/language-toggle';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
+import { OnvoLogoMark } from '@/components/shared/onvo-logo-mark';
 import { WalletButton } from '@/components/shared/wallet-button';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { cn } from '@/lib/utils';
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import { useWorldID } from '@/lib/worldid';
-import { FilePlus2, LayoutDashboard, LogOut } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  FilePlus2,
+  LayoutDashboard,
+  List,
+  LogOut,
+  Menu,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+const SIDEBAR_COLLAPSED_KEY = 'onvo_emitter_sidebar_collapsed';
+
+type NavItem = {
+  href: string;
+  icon: typeof LayoutDashboard;
+  labelKey: string;
+  match: (pathname: string) => boolean;
+};
 
 export function EmitterShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { logout } = useWorldID();
+  const { authReady, isVerified, logout } = useWorldID();
   const { t } = useTranslation('common');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHydrated, setSidebarHydrated] = useState(false);
 
-  return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      if (v === '1') setSidebarCollapsed(true);
+    } catch {
+      /* ignore */
+    }
+    setSidebarHydrated(true);
+  }, []);
+
+  const setCollapsed = (next: boolean) => {
+    setSidebarCollapsed(next);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const navItems: NavItem[] = useMemo(
+    () => [
+      {
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        labelKey: 'emitterNav.dashboard',
+        match: (p) => p === '/dashboard',
+      },
+      {
+        href: '/dashboard/invoices',
+        icon: List,
+        labelKey: 'emitterNav.invoiceList',
+        match: (p) => p === '/dashboard/invoices',
+      },
+      {
+        href: '/invoice/new',
+        icon: FilePlus2,
+        labelKey: 'emitterNav.newInvoice',
+        match: (p) => p.startsWith('/invoice/new'),
+      },
+    ],
+    [],
+  );
+
+  const pageTitle = useMemo(() => {
+    if (pathname === '/dashboard') return t('invoice.dashboard.title');
+    if (pathname === '/dashboard/invoices')
+      return t('invoice.dashboard.invoiceListPageTitle');
+    if (pathname?.startsWith('/invoice/new')) return t('invoice.form.title');
+    const detailMatch = pathname?.match(/^\/invoice\/(\d+)$/);
+    if (detailMatch) {
+      try {
+        const id = BigInt(detailMatch[1]);
+        return `${t('invoice.detail.invoiceLabel')} · ${formatOnvoInvoiceLabel(id)}`;
+      } catch {
+        return t('invoice.detail.invoiceLabel');
+      }
+    }
+    return t('meta.title');
+  }, [pathname, t]);
+
+  const renderNavLinks = (mobile: boolean) =>
+    navItems.map((item) => {
+      const active = item.match(pathname ?? '');
+      const base = mobile
+        ? `${active ? 'bg-muted text-heading' : 'text-foreground'} mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-primary`
+        : `${active ? 'bg-muted text-heading' : 'text-muted-foreground'} flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:text-primary`;
+      return (
+        <Link key={item.href} href={item.href} className={base}>
+          <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
+          {t(item.labelKey)}
+        </Link>
+      );
+    });
+
+  const renderDesktopNavLinks = (collapsed: boolean) =>
+    navItems.map((item) => {
+      const active = item.match(pathname ?? '');
+      const label = t(item.labelKey);
+      const linkClass = cn(
+        'flex items-center rounded-xl text-sm font-medium transition-all hover:text-primary',
+        collapsed
+          ? 'mx-auto size-10 shrink-0 justify-center p-0'
+          : 'gap-3 px-3 py-2',
+        active ? 'bg-muted text-heading' : 'text-muted-foreground',
+      );
+
+      const link = (
+        <Link
+          href={item.href}
+          className={linkClass}
+          aria-label={collapsed ? label : undefined}
+        >
+          <item.icon
+            className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')}
+          />
+          <span
+            className={cn(
+              'truncate transition-[opacity,width,margin] duration-200',
+              collapsed
+                ? 'sr-only w-0 overflow-hidden opacity-0'
+                : 'opacity-100',
+            )}
+          >
+            {label}
+          </span>
+        </Link>
+      );
+
+      if (collapsed) {
+        return (
+          <Tooltip key={item.href} delayDuration={0}>
+            <TooltipTrigger asChild>{link}</TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              {label}
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+
+      return <div key={item.href}>{link}</div>;
+    });
+
+  const shellMainClass =
+    'flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full max-w-6xl mx-auto';
+
+  if (!authReady || !isVerified) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center border-b border-border bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 lg:h-[60px] lg:px-6">
+          <Link href="/" className="flex items-center gap-2">
             <OnvoLogo className="text-xl" />
           </Link>
-          <nav className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
-            <Button
-              variant={pathname === '/dashboard' ? 'secondary' : 'ghost'}
-              size="sm"
-              asChild
+        </header>
+        <main className="flex flex-1 flex-col px-4 py-8 lg:px-6">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  const collapsed = sidebarHydrated && sidebarCollapsed;
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <div className="flex min-h-screen w-full">
+        <div
+          className={cn(
+            'hidden h-[100dvh] max-h-[100dvh] shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 ease-out md:sticky md:top-0 md:z-30 md:flex',
+            collapsed ? 'w-[4.5rem]' : 'w-[220px] lg:w-[280px]',
+          )}
+          id="emitter-sidebar"
+        >
+          <div className="flex h-full min-h-0 flex-col gap-2">
+            <div
+              className={cn(
+                'flex shrink-0 items-center border-b lg:h-[60px]',
+                collapsed
+                  ? 'h-14 flex-col justify-center gap-1 py-1.5'
+                  : 'h-14 justify-between gap-2 px-3 lg:px-4',
+              )}
             >
-              <Link href="/dashboard">
-                <LayoutDashboard className="mr-1.5 h-4 w-4" />
-                {t('emitterNav.dashboard')}
-              </Link>
-            </Button>
-            <Button
-              variant={
-                pathname?.startsWith('/invoice/new') ? 'secondary' : 'ghost'
-              }
-              size="sm"
-              asChild
+              {!collapsed ? (
+                <Link
+                  href="/dashboard"
+                  className="shrink-0 font-bold text-heading"
+                >
+                  <OnvoLogo className="text-lg" />
+                </Link>
+              ) : null}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-9 shrink-0"
+                    aria-expanded={!collapsed}
+                    aria-controls="emitter-sidebar"
+                    onClick={() => setCollapsed(!sidebarCollapsed)}
+                  >
+                    {collapsed ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronLeft className="h-4 w-4" />
+                    )}
+                    <span className="sr-only">
+                      {collapsed
+                        ? t('emitterNav.expandSidebar')
+                        : t('emitterNav.collapseSidebar')}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {collapsed
+                    ? t('emitterNav.expandSidebar')
+                    : t('emitterNav.collapseSidebar')}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <nav
+                className={cn(
+                  'grid items-start text-sm font-medium',
+                  collapsed ? 'gap-1 px-1.5 py-1' : 'gap-0.5 px-2 lg:px-4',
+                )}
+              >
+                {renderDesktopNavLinks(collapsed)}
+              </nav>
+            </div>
+            <div
+              className={cn(
+                'shrink-0 border-t border-border',
+                collapsed ? 'flex justify-center p-1.5' : 'p-2 lg:p-4',
+              )}
             >
-              <Link href="/invoice/new">
-                <FilePlus2 className="mr-1.5 h-4 w-4" />
-                {t('emitterNav.newInvoice')}
-              </Link>
-            </Button>
-            <LanguageToggle />
-            <ThemeToggle />
-            <WalletButton />
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={() => void logout()}
-            >
-              <LogOut className="mr-1.5 h-4 w-4" />
-              {t('emitterNav.logOut')}
-            </Button>
-          </nav>
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-10 shrink-0 rounded-xl text-muted-foreground hover:text-primary"
+                      onClick={() => void logout()}
+                      aria-label={t('emitterNav.logOut')}
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8}>
+                    {t('emitterNav.logOut')}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 rounded-xl text-muted-foreground hover:text-primary"
+                  onClick={() => void logout()}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t('emitterNav.logOut')}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-      </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        {children}
-      </main>
-    </div>
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-4 border-b border-border bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 lg:h-[60px] lg:px-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 md:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="flex flex-col"
+                aria-describedby={undefined}
+              >
+                <SheetTitle className="sr-only">
+                  {t('nav.mobileMenu')}
+                </SheetTitle>
+                <nav className="grid gap-2 text-lg font-medium">
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2 text-lg font-semibold"
+                  >
+                    <OnvoLogo className="text-lg" />
+                  </Link>
+                  {renderNavLinks(true)}
+                  <Button
+                    variant="ghost"
+                    className="justify-start gap-4 text-lg font-medium"
+                    onClick={() => void logout()}
+                  >
+                    <LogOut className="h-5 w-5" />
+                    {t('emitterNav.logOut')}
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              {collapsed ? (
+                <Link
+                  href="/dashboard"
+                  aria-label={`${t('meta.title')} — ${t('emitterNav.dashboard')}`}
+                  className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <OnvoLogo />
+                </Link>
+              ) : null}
+              <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-heading">
+                {pageTitle}
+              </h1>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+              <WalletButton />
+            </div>
+          </header>
+          <main className={shellMainClass}>{children}</main>
+        </div>
+      </div>
+    </TooltipProvider>
   );
 }

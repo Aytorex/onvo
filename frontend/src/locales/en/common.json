@@ -171,8 +171,11 @@
   },
   "emitterNav": {
     "dashboard": "Dashboard",
+    "invoiceList": "Invoices",
     "newInvoice": "New invoice",
-    "logOut": "Log out"
+    "logOut": "Log out",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "invoice": {
     "status": {
@@ -182,7 +185,12 @@
     },
     "dashboard": {
       "title": "Dashboard",
+      "invoiceListPageTitle": "Invoices",
       "subtitle": "Invoices issued from your wallet on Arc Testnet.",
+      "statTotal": "Total",
+      "statPending": "Pending",
+      "statPaid": "Paid",
+      "seeAllInvoices": "View all invoices →",
       "newInvoice": "New invoice",
       "exportAllCsv": "Export all (CSV)",
       "connectWalletHint": "Connect your wallet to see invoices linked to this address.",

@@ -546,10 +546,7 @@ export function InvoiceNewClient() {
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
         <form onSubmit={onSubmit} className="space-y-8">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {t('invoice.form.title')}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t('invoice.form.subtitle')}
             </p>
           </div>
