@@ -14,7 +14,7 @@ const buttonVariants = cva(
         destructive:
           'rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90',
         outline:
-          'rounded-xl border-2 border-heading bg-background text-foreground hover:bg-accent hover:text-accent-foreground',
+          'border border-primary/35 bg-card text-heading shadow-sm hover:border-primary/55 hover:bg-primary/10 hover:text-foreground',
         secondary:
           'rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'rounded-md hover:bg-accent hover:text-accent-foreground',
@@ -31,8 +31,7 @@ const buttonVariants = cva(
       {
         variant: 'outline',
         size: 'icon',
-        class:
-          'relative rounded-md border border-input shadow-sm hover:bg-accent hover:text-accent-foreground',
+        class: 'border-primary/35 hover:border-primary/55 hover:bg-primary/10',
       },
     ],
     defaultVariants: {

@@ -5,6 +5,7 @@ import { InvoicePreviewDocument } from '@/components/invoice/invoice-preview';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RequiredFieldMark } from '@/components/ui/required-field-mark';
 import {
   Select,
   SelectContent,
@@ -12,24 +13,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RequiredFieldMark } from '@/components/ui/required-field-mark';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
+import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { computeTotalsFromLines } from '@/lib/invoice-calculations';
-import type { InvoiceFormValues, InvoiceMetaRecord } from '@/lib/invoice-types';
+import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
+import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import {
   appendInvoiceId,
   setInvoiceMeta,
   setInvoicePdfBase64,
 } from '@/lib/invoice-storage';
 import { getTokenAddress, tokenDecimals } from '@/lib/invoice-tokens';
-import { parseInvoiceCreatedInvoiceId } from '@/lib/invoice-contract';
-import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
+import type { InvoiceFormValues, InvoiceMetaRecord } from '@/lib/invoice-types';
 import {
   blobToBase64,
-  generatePdfBlobFromElement,
+  generateInvoicePdf,
   pdfBlobToBytes32,
 } from '@/lib/pdf-utils';
 import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
@@ -40,16 +40,16 @@ import {
   verifyProof,
   WORLD_ID_CONFIG,
 } from '@/lib/worldid';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
 import { IDKitRequestWidget, orbLegacy } from '@worldcoin/idkit';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useTranslation } from 'react-i18next';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { parseUnits, zeroAddress } from 'viem';
 import {
@@ -98,6 +98,61 @@ function defaultForm(): InvoiceFormValues {
   };
 }
 
+const IS_DEV = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+
+function devSampleForm(): InvoiceFormValues {
+  const uid = () =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`;
+  return {
+    emitterName: 'Onvo Labs SAS',
+    emitterStreet: '42 Rue de la Croisette',
+    emitterStreetLine2: 'Bâtiment B, 3e étage',
+    emitterPostalCode: '06400',
+    emitterCity: 'Cannes',
+    emitterCountry: 'France',
+    emitterSiret: '123 456 789 00012',
+    emitterVatNumber: 'FR85939527636',
+    emitterEmail: 'billing@onvo.dev',
+    clientName: 'Client Digital SAS',
+    clientStreet: '15 Avenue des Champs-Élysées',
+    clientStreetLine2: '',
+    clientPostalCode: '75008',
+    clientCity: 'Paris',
+    clientCountry: 'France',
+    clientEmail: 'finance@client-digital.fr',
+    lines: [
+      {
+        id: uid(),
+        description: 'Smart contract audit',
+        quantity: 3,
+        unitPrice: 450,
+        vatPercent: 20,
+      },
+      {
+        id: uid(),
+        description: 'Frontend integration',
+        quantity: 5,
+        unitPrice: 380,
+        vatPercent: 20,
+      },
+      {
+        id: uid(),
+        description: 'Deployment & DevOps',
+        quantity: 1,
+        unitPrice: 600,
+        vatPercent: 20,
+      },
+    ],
+    invoiceNumber: `INV-${new Date().getFullYear()}-0042`,
+    issueDate: format(new Date(), 'yyyy-MM-dd'),
+    dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    currency: 'EURC',
+    notes: 'Payment due within 30 days. Thank you for your business.',
+  };
+}
+
 export function InvoiceNewClient() {
   const { t } = useTranslation('common');
   const router = useRouter();
@@ -109,7 +164,8 @@ export function InvoiceNewClient() {
   } = useWorldID();
   const { address, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
-  const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
+  const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
+  const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
 
   const [debouncedPreview, setDebouncedPreview] =
@@ -119,11 +175,13 @@ export function InvoiceNewClient() {
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [idKitOpen, setIdKitOpen] = useState(false);
   const [loadingRpForSubmit, setLoadingRpForSubmit] = useState(false);
-  /** Nullifier issu du dernier IDKit (première facture) — appliqué au preview PDF avant capture. */
   const [idKitWorldIdNullifier, setIdKitWorldIdNullifier] = useState<
     string | null
   >(null);
   const pendingFormDataRef = useRef<InvoiceFormValues | null>(null);
+
+  const TAB_ORDER = ['issuer', 'client', 'items'] as const;
+  const [activeTab, setActiveTab] = useState<string>(TAB_ORDER[0]);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -163,8 +221,9 @@ export function InvoiceNewClient() {
     isPending: isNextInvoiceIdPending,
     isFetching: isNextInvoiceIdFetching,
     isError: isNextInvoiceIdError,
+    error: nextInvoiceIdError,
   } = useReadContract({
-    chainId: arcTestnet.id,
+    chainId: invoiceRegistryContract.chainId,
     address: invoiceRegistryContract.address,
     abi: invoiceRegistryContract.abi,
     functionName: 'getNextInvoiceId',
@@ -175,6 +234,15 @@ export function InvoiceNewClient() {
       ),
     },
   });
+
+  useEffect(() => {
+    if (nextInvoiceIdError) {
+      console.error(
+        '[InvoiceNew] getNextInvoiceId read failed:',
+        nextInvoiceIdError,
+      );
+    }
+  }, [nextInvoiceIdError]);
 
   const nextInvoiceFromChainLoading =
     registryDeployed &&
@@ -215,14 +283,34 @@ export function InvoiceNewClient() {
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
 
-  const { data: emitterVerified, refetch: refetchEmitterVerified } =
-    useReadContract({
-      address: invoiceRegistryContract.address,
-      abi: invoiceRegistryContract.abi,
-      functionName: 'isEmitterVerified',
-      args: address ? [address] : undefined,
-      query: { enabled: !!address },
+  const {
+    data: emitterVerified,
+    refetch: refetchEmitterVerified,
+    error: emitterVerifiedError,
+    status: emitterVerifiedStatus,
+  } = useReadContract({
+    chainId: invoiceRegistryContract.chainId,
+    address: invoiceRegistryContract.address,
+    abi: invoiceRegistryContract.abi,
+    functionName: 'isEmitterVerified',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  useEffect(() => {
+    if (emitterVerifiedError) {
+      console.error(
+        '[InvoiceNew] isEmitterVerified read failed:',
+        emitterVerifiedError,
+      );
+    }
+    console.debug('[InvoiceNew] emitterVerified:', {
+      status: emitterVerifiedStatus,
+      data: emitterVerified,
+      address,
+      contract: invoiceRegistryContract.address,
     });
+  }, [emitterVerifiedError, emitterVerifiedStatus, emitterVerified, address]);
 
   const totals = useMemo(
     () => computeTotalsFromLines(debouncedPreview.lines),
@@ -242,17 +330,11 @@ export function InvoiceNewClient() {
         return;
       }
       try {
-        await switchWalletToArcTestnet(switchChainAsync);
+        await switchChainAsync({ chainId: registryChainId });
       } catch {
         toast.error(t('invoice.toast.arcNetworkRequired'));
         return;
       }
-      const el = previewRef.current;
-      if (!el) {
-        toast.error(t('invoice.toast.previewUnavailable'));
-        return;
-      }
-
       const emitterWorldIdForDoc =
         worldIdNullifierOverride?.trim() ||
         sessionWorldIdNullifier?.trim() ||
@@ -262,7 +344,7 @@ export function InvoiceNewClient() {
 
       setStepSubmitting(true);
       try {
-        const pdfBlob = await generatePdfBlobFromElement(el);
+        const pdfBlob = await generateInvoicePdf(data, emitterWorldIdForDoc);
         const invoiceHash = await pdfBlobToBytes32(pdfBlob);
         const base64 = await blobToBase64(pdfBlob);
 
@@ -289,7 +371,6 @@ export function InvoiceNewClient() {
           args: [address, invYear, invMonth],
         });
 
-        // `recipient` must be non-zero on-chain ; payment still settles to the emitter.
         const onChainRecipient = address;
         const vatNumberOnChain = data.emitterVatNumber.trim().slice(0, 64);
 
@@ -308,8 +389,7 @@ export function InvoiceNewClient() {
             invYear,
             invMonth,
           ],
-          chainId: arcTestnet.id,
-          chain: arcTestnet,
+          chainId: registryChainId,
         });
 
         const receipt = await publicClientArc!.waitForTransactionReceipt({
@@ -361,6 +441,17 @@ export function InvoiceNewClient() {
         setInvoiceMeta(newId, meta);
 
         setSuccessId(newId);
+
+        const label = formatOnvoInvoiceLabel(newId);
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${label}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
         toast.success(t('invoice.toast.invoiceCreated'));
       } catch (e) {
         console.error(e);
@@ -370,7 +461,6 @@ export function InvoiceNewClient() {
             : t('invoice.toast.invoiceCreateFailed'),
         );
       } finally {
-        setIdKitWorldIdNullifier(null);
         setStepSubmitting(false);
       }
     },
@@ -410,6 +500,7 @@ export function InvoiceNewClient() {
           switchChainAsync,
           writeContractAsync,
           publicClientArc,
+          registryChainId,
         });
         await refetchEmitterVerified();
         const kitNullifier = extractNullifierFromIdKitResult(result).trim();
@@ -445,35 +536,76 @@ export function InvoiceNewClient() {
     ],
   );
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (!address) {
-      toast.error(t('invoice.toast.walletIssuerRequired'));
-      return;
-    }
+  const FIELD_TO_TAB: Record<string, (typeof TAB_ORDER)[number]> = {
+    emitterName: 'issuer',
+    emitterStreet: 'issuer',
+    emitterStreetLine2: 'issuer',
+    emitterPostalCode: 'issuer',
+    emitterCity: 'issuer',
+    emitterCountry: 'issuer',
+    emitterSiret: 'issuer',
+    emitterVatNumber: 'issuer',
+    emitterEmail: 'issuer',
+    clientName: 'client',
+    clientStreet: 'client',
+    clientStreetLine2: 'client',
+    clientPostalCode: 'client',
+    clientCity: 'client',
+    clientCountry: 'client',
+    clientEmail: 'client',
+    lines: 'items',
+    invoiceNumber: 'items',
+    issueDate: 'items',
+    dueDate: 'items',
+    currency: 'items',
+    notes: 'items',
+  };
 
-    if (address && emitterVerified === undefined) {
-      toast.error(t('invoice.toast.verifyingOnChain'));
-      return;
-    }
-
-    if (emitterVerified === false) {
-      pendingFormDataRef.current = data;
-      setLoadingRpForSubmit(true);
-      try {
-        const ctx = await fetchRpContext();
-        setRpContext(ctx);
-        setIdKitOpen(true);
-      } catch {
-        toast.error(t('invoice.toast.worldIdInitRp'));
-        pendingFormDataRef.current = null;
-      } finally {
-        setLoadingRpForSubmit(false);
+  const onSubmit = form.handleSubmit(
+    async (data) => {
+      if (!address) {
+        toast.error(t('invoice.toast.walletIssuerRequired'));
+        return;
       }
-      return;
-    }
 
-    await createInvoiceFromVerifiedForm(data);
-  });
+      if (address && emitterVerified === undefined) {
+        toast.error(t('invoice.toast.verifyingOnChain'));
+        return;
+      }
+
+      if (emitterVerified === false) {
+        pendingFormDataRef.current = data;
+        setLoadingRpForSubmit(true);
+        try {
+          const ctx = await fetchRpContext();
+          setRpContext(ctx);
+          setIdKitOpen(true);
+        } catch {
+          toast.error(t('invoice.toast.worldIdInitRp'));
+          pendingFormDataRef.current = null;
+        } finally {
+          setLoadingRpForSubmit(false);
+        }
+        return;
+      }
+
+      await createInvoiceFromVerifiedForm(data);
+    },
+    (errors) => {
+      const firstField = Object.keys(errors)[0];
+      if (firstField) {
+        const tab = FIELD_TO_TAB[firstField];
+        if (tab) setActiveTab(tab);
+      }
+      toast.error(t('invoice.toast.formValidationError'));
+    },
+  );
+
+  const fillDevData = useCallback(() => {
+    const sample = devSampleForm();
+    form.reset(sample);
+    toast.success('Dev: form filled with sample data');
+  }, [form]);
 
   const addLine = useCallback(() => {
     append({
@@ -543,473 +675,568 @@ export function InvoiceNewClient() {
 
   return (
     <>
-      <form
-        onSubmit={onSubmit}
-        className="grid w-full min-w-0 grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12"
-      >
-        <div className="min-w-0 space-y-8">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {t('invoice.form.subtitle')}
-            </p>
-          </div>
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+        <form
+          onSubmit={onSubmit}
+          className="flex min-h-0 w-full min-w-0 flex-1 flex-row gap-4"
+        >
+          {/* ── Left panel: tabbed form (40% ≥ lg) ── */}
+          <div className="flex min-h-0 w-full min-w-0 flex-col lg:flex-[2]">
+            {IS_DEV ? (
+              <div className="flex shrink-0 items-center justify-end border-b border-border/60 py-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs text-amber-500 border-amber-500/40 hover:bg-amber-500/10"
+                  onClick={fillDevData}
+                >
+                  Dev: Fill
+                </Button>
+              </div>
+            ) : null}
 
-          {!isConnected ? (
-            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-              {t('invoice.form.walletConnectHint')}
-            </p>
-          ) : null}
+            {!isConnected ? (
+              <p className="mx-5 mt-4 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                {t('invoice.form.walletConnectHint')}
+              </p>
+            ) : null}
 
-          {isConnected && emitterVerified === false ? (
-            <p className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-              {t('invoice.form.firstInvoiceHint')}
-            </p>
-          ) : null}
+            {isConnected && emitterVerified === false ? (
+              <p className="mx-5 mt-4 shrink-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                {t('invoice.form.firstInvoiceHint')}
+              </p>
+            ) : null}
 
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {t('invoice.form.sectionEmitter')}
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="emitterName">
-                  {t('invoice.form.emitterName')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="emitterName"
-                  aria-required
-                  {...form.register('emitterName')}
-                />
-                {form.formState.errors.emitterName ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.emitterName.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="emitterStreet">
-                  {t('invoice.form.emitterStreet')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="emitterStreet"
-                  aria-required
-                  placeholder={t('invoice.form.emitterStreetPlaceholder')}
-                  {...form.register('emitterStreet')}
-                />
-                {form.formState.errors.emitterStreet ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.emitterStreet.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="emitterStreetLine2">
-                  {t('invoice.form.emitterStreetLine2')}
-                </Label>
-                <Input
-                  id="emitterStreetLine2"
-                  placeholder={t('invoice.form.emitterStreetLine2Placeholder')}
-                  {...form.register('emitterStreetLine2')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emitterPostalCode">
-                  {t('invoice.form.emitterPostalCode')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="emitterPostalCode"
-                  aria-required
-                  autoComplete="postal-code"
-                  {...form.register('emitterPostalCode')}
-                />
-                {form.formState.errors.emitterPostalCode ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.emitterPostalCode.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emitterCity">
-                  {t('invoice.form.emitterCity')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="emitterCity"
-                  aria-required
-                  autoComplete="address-level2"
-                  {...form.register('emitterCity')}
-                />
-                {form.formState.errors.emitterCity ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.emitterCity.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="emitterCountry">
-                  {t('invoice.form.emitterCountry')}
-                </Label>
-                <Input
-                  id="emitterCountry"
-                  autoComplete="country-name"
-                  placeholder={t('invoice.form.emitterCountryPlaceholder')}
-                  {...form.register('emitterCountry')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emitterSiret">
-                  {t('invoice.form.emitterSiret')}
-                </Label>
-                <Input id="emitterSiret" {...form.register('emitterSiret')} />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="emitterVatNumber">
-                  {t('invoice.form.emitterVatNumber')}
-                </Label>
-                <Input
-                  id="emitterVatNumber"
-                  placeholder={t('invoice.form.emitterVatNumberPlaceholder')}
-                  {...form.register('emitterVatNumber')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emitterEmail">
-                  {t('invoice.form.emitterEmail')}
-                </Label>
-                <Input
-                  id="emitterEmail"
-                  type="email"
-                  {...form.register('emitterEmail')}
-                />
-              </div>
-            </div>
-          </section>
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <TabsList className="flex h-10 w-full shrink-0">
+                <TabsTrigger className="flex-1" value="issuer">
+                  {t('invoice.form.sectionEmitter')}
+                </TabsTrigger>
+                <TabsTrigger className="flex-1" value="client">
+                  {t('invoice.form.sectionClient')}
+                </TabsTrigger>
+                <TabsTrigger className="flex-1" value="items">
+                  {t('invoice.form.sectionLines')}
+                </TabsTrigger>
+              </TabsList>
 
-          <Separator />
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6">
+                {/* ── Tab: Issuer ── */}
+                <TabsContent value="issuer" className="mt-4 space-y-4">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="emitterName">
+                        {t('invoice.form.emitterName')}
+                        <RequiredFieldMark />
+                      </Label>
+                      <Input
+                        id="emitterName"
+                        aria-required
+                        {...form.register('emitterName')}
+                      />
+                      {form.formState.errors.emitterName ? (
+                        <p className="text-xs text-destructive">
+                          {form.formState.errors.emitterName.message}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emitterStreet">
+                        {t('invoice.form.emitterStreet')}
+                        <RequiredFieldMark />
+                      </Label>
+                      <Input
+                        id="emitterStreet"
+                        aria-required
+                        placeholder={t('invoice.form.emitterStreetPlaceholder')}
+                        {...form.register('emitterStreet')}
+                      />
+                      {form.formState.errors.emitterStreet ? (
+                        <p className="text-xs text-destructive">
+                          {form.formState.errors.emitterStreet.message}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emitterStreetLine2">
+                        {t('invoice.form.emitterStreetLine2')}
+                      </Label>
+                      <Input
+                        id="emitterStreetLine2"
+                        placeholder={t(
+                          'invoice.form.emitterStreetLine2Placeholder',
+                        )}
+                        {...form.register('emitterStreetLine2')}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="emitterPostalCode">
+                          {t('invoice.form.emitterPostalCode')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="emitterPostalCode"
+                          aria-required
+                          autoComplete="postal-code"
+                          {...form.register('emitterPostalCode')}
+                        />
+                        {form.formState.errors.emitterPostalCode ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.emitterPostalCode.message}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="emitterCity">
+                          {t('invoice.form.emitterCity')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="emitterCity"
+                          aria-required
+                          autoComplete="address-level2"
+                          {...form.register('emitterCity')}
+                        />
+                        {form.formState.errors.emitterCity ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.emitterCity.message}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emitterCountry">
+                        {t('invoice.form.emitterCountry')}
+                      </Label>
+                      <Input
+                        id="emitterCountry"
+                        autoComplete="country-name"
+                        placeholder={t(
+                          'invoice.form.emitterCountryPlaceholder',
+                        )}
+                        {...form.register('emitterCountry')}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="emitterSiret">
+                          {t('invoice.form.emitterSiret')}
+                        </Label>
+                        <Input
+                          id="emitterSiret"
+                          {...form.register('emitterSiret')}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="emitterEmail">
+                          {t('invoice.form.emitterEmail')}
+                        </Label>
+                        <Input
+                          id="emitterEmail"
+                          type="email"
+                          {...form.register('emitterEmail')}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emitterVatNumber">
+                        {t('invoice.form.emitterVatNumber')}
+                      </Label>
+                      <Input
+                        id="emitterVatNumber"
+                        placeholder={t(
+                          'invoice.form.emitterVatNumberPlaceholder',
+                        )}
+                        {...form.register('emitterVatNumber')}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
 
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {t('invoice.form.sectionClient')}
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="clientName">
-                  {t('invoice.form.clientName')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="clientName"
-                  aria-required
-                  {...form.register('clientName')}
-                />
-                {form.formState.errors.clientName ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.clientName.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="clientStreet">
-                  {t('invoice.form.clientStreet')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="clientStreet"
-                  aria-required
-                  placeholder={t('invoice.form.clientStreetPlaceholder')}
-                  {...form.register('clientStreet')}
-                />
-                {form.formState.errors.clientStreet ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.clientStreet.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="clientStreetLine2">
-                  {t('invoice.form.clientStreetLine2')}
-                </Label>
-                <Input
-                  id="clientStreetLine2"
-                  placeholder={t('invoice.form.clientStreetLine2Placeholder')}
-                  {...form.register('clientStreetLine2')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="clientPostalCode">
-                  {t('invoice.form.clientPostalCode')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="clientPostalCode"
-                  aria-required
-                  autoComplete="postal-code"
-                  {...form.register('clientPostalCode')}
-                />
-                {form.formState.errors.clientPostalCode ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.clientPostalCode.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="clientCity">
-                  {t('invoice.form.clientCity')}
-                  <RequiredFieldMark />
-                </Label>
-                <Input
-                  id="clientCity"
-                  aria-required
-                  autoComplete="address-level2"
-                  {...form.register('clientCity')}
-                />
-                {form.formState.errors.clientCity ? (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.clientCity.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="clientCountry">
-                  {t('invoice.form.clientCountry')}
-                </Label>
-                <Input
-                  id="clientCountry"
-                  autoComplete="country-name"
-                  placeholder={t('invoice.form.clientCountryPlaceholder')}
-                  {...form.register('clientCountry')}
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="clientEmail">
-                  {t('invoice.form.clientEmail')}
-                </Label>
-                <Input
-                  id="clientEmail"
-                  type="email"
-                  {...form.register('clientEmail')}
-                />
-              </div>
-            </div>
-          </section>
+                {/* ── Tab: Client ── */}
+                <TabsContent value="client" className="mt-4 space-y-4">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="clientName">
+                        {t('invoice.form.clientName')}
+                        <RequiredFieldMark />
+                      </Label>
+                      <Input
+                        id="clientName"
+                        aria-required
+                        {...form.register('clientName')}
+                      />
+                      {form.formState.errors.clientName ? (
+                        <p className="text-xs text-destructive">
+                          {form.formState.errors.clientName.message}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientStreet">
+                        {t('invoice.form.clientStreet')}
+                        <RequiredFieldMark />
+                      </Label>
+                      <Input
+                        id="clientStreet"
+                        aria-required
+                        placeholder={t('invoice.form.clientStreetPlaceholder')}
+                        {...form.register('clientStreet')}
+                      />
+                      {form.formState.errors.clientStreet ? (
+                        <p className="text-xs text-destructive">
+                          {form.formState.errors.clientStreet.message}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientStreetLine2">
+                        {t('invoice.form.clientStreetLine2')}
+                      </Label>
+                      <Input
+                        id="clientStreetLine2"
+                        placeholder={t(
+                          'invoice.form.clientStreetLine2Placeholder',
+                        )}
+                        {...form.register('clientStreetLine2')}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="clientPostalCode">
+                          {t('invoice.form.clientPostalCode')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="clientPostalCode"
+                          aria-required
+                          autoComplete="postal-code"
+                          {...form.register('clientPostalCode')}
+                        />
+                        {form.formState.errors.clientPostalCode ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.clientPostalCode.message}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientCity">
+                          {t('invoice.form.clientCity')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="clientCity"
+                          aria-required
+                          autoComplete="address-level2"
+                          {...form.register('clientCity')}
+                        />
+                        {form.formState.errors.clientCity ? (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.clientCity.message}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientCountry">
+                        {t('invoice.form.clientCountry')}
+                      </Label>
+                      <Input
+                        id="clientCountry"
+                        autoComplete="country-name"
+                        placeholder={t('invoice.form.clientCountryPlaceholder')}
+                        {...form.register('clientCountry')}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientEmail">
+                        {t('invoice.form.clientEmail')}
+                      </Label>
+                      <Input
+                        id="clientEmail"
+                        type="email"
+                        {...form.register('clientEmail')}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
 
-          <Separator />
+                {/* ── Tab: Items ── */}
+                <TabsContent value="items" className="mt-4 space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-medium text-muted-foreground">
+                        {t('invoice.form.sectionLines')}
+                      </h2>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addLine}
+                      >
+                        {t('invoice.form.addLine')}
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {fields.map((field, index) => (
+                        <div
+                          key={field.id}
+                          className="space-y-3 rounded-lg border border-border/80 p-3"
+                        >
+                          <div className="space-y-2">
+                            <Label>
+                              {t('invoice.form.description')}
+                              <RequiredFieldMark />
+                            </Label>
+                            <Input
+                              aria-required
+                              {...form.register(
+                                `lines.${index}.description` as const,
+                              )}
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-2">
+                              <Label>
+                                {t('invoice.form.qty')}
+                                <RequiredFieldMark />
+                              </Label>
+                              <Input
+                                type="number"
+                                step={1}
+                                aria-required
+                                {...form.register(
+                                  `lines.${index}.quantity` as const,
+                                )}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>
+                                {t('invoice.form.unitPriceHt')}
+                                <RequiredFieldMark />
+                              </Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                aria-required
+                                {...form.register(
+                                  `lines.${index}.unitPrice` as const,
+                                )}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>
+                                {t('invoice.form.vatPercent')}
+                                <RequiredFieldMark />
+                              </Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min={0}
+                                max={100}
+                                aria-required
+                                {...form.register(`lines.${index}.vatPercent`, {
+                                  valueAsNumber: true,
+                                })}
+                              />
+                            </div>
+                          </div>
+                          {fields.length > 1 ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive"
+                              onClick={() => remove(index)}
+                            >
+                              {t('invoice.form.removeLine')}
+                            </Button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('invoice.form.sectionLines')}
-              </h2>
+                  <div className="space-y-4 border-t border-border/60 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>
+                          {t('invoice.form.currency')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Select
+                          value={form.watch('currency')}
+                          onValueChange={(v) =>
+                            form.setValue(
+                              'currency',
+                              v as InvoiceFormValues['currency'],
+                            )
+                          }
+                        >
+                          <SelectTrigger aria-required>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USDC">USDC</SelectItem>
+                            <SelectItem value="EURC">EURC</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="invoiceNumber">
+                          {t('invoice.form.invoiceNumber')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="invoiceNumber"
+                          aria-required
+                          placeholder={t(
+                            'invoice.form.invoiceNumberPlaceholder',
+                          )}
+                          readOnly={nextInvoiceFromChainLoading}
+                          aria-busy={nextInvoiceFromChainLoading}
+                          {...form.register('invoiceNumber')}
+                        />
+                        {nextInvoiceFromChainLoading ? (
+                          <p className="text-xs text-muted-foreground">
+                            {t('invoice.form.invoiceNumberLoading')}
+                          </p>
+                        ) : null}
+                        {registryDeployed &&
+                        nextIdArgs &&
+                        !nextInvoiceFromChainLoading &&
+                        isNextInvoiceIdError ? (
+                          <p className="text-xs text-amber-600 dark:text-amber-500">
+                            {t('invoice.form.invoiceNumberChainError')}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="issueDate">
+                          {t('invoice.form.issueDate')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="issueDate"
+                          type="date"
+                          aria-required
+                          {...form.register('issueDate')}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dueDate">
+                          {t('invoice.form.dueDate')}
+                          <RequiredFieldMark />
+                        </Label>
+                        <Input
+                          id="dueDate"
+                          type="date"
+                          aria-required
+                          {...form.register('dueDate')}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">{t('invoice.form.notes')}</Label>
+                      <Textarea
+                        id="notes"
+                        rows={3}
+                        {...form.register('notes')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+                    <p className="font-medium">{t('invoice.form.summary')}</p>
+                    <p className="mt-2 text-muted-foreground">
+                      {t('invoice.form.summaryLine', {
+                        ht: totals.totalHt.toFixed(2),
+                        vat: totals.tvaAmount.toFixed(2),
+                        ttc: totals.totalTtc.toFixed(2),
+                      })}
+                    </p>
+                  </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+
+            {/* ── Tab navigation: prev / next / validate ── */}
+            <div className="flex shrink-0 items-center justify-between border-t border-border/60 py-3">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={addLine}
+                disabled={activeTab === TAB_ORDER[0]}
+                onClick={() => {
+                  const idx = TAB_ORDER.indexOf(
+                    activeTab as (typeof TAB_ORDER)[number],
+                  );
+                  if (idx > 0) setActiveTab(TAB_ORDER[idx - 1]);
+                }}
               >
-                {t('invoice.form.addLine')}
+                {t('invoice.form.tabPrev')}
               </Button>
-            </div>
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="grid gap-3 rounded-lg border border-border/80 p-4 sm:grid-cols-12"
+              <span className="text-xs text-muted-foreground">
+                {TAB_ORDER.indexOf(activeTab as (typeof TAB_ORDER)[number]) + 1}{' '}
+                / {TAB_ORDER.length}
+              </span>
+              {activeTab === TAB_ORDER[TAB_ORDER.length - 1] ? (
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={
+                    stepSubmitting || isWritePending || loadingRpForSubmit
+                  }
                 >
-                  <div className="sm:col-span-4">
-                    <Label>
-                      {t('invoice.form.description')}
-                      <RequiredFieldMark />
-                    </Label>
-                    <Input
-                      aria-required
-                      {...form.register(`lines.${index}.description` as const)}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>
-                      {t('invoice.form.qty')}
-                      <RequiredFieldMark />
-                    </Label>
-                    <Input
-                      type="number"
-                      step={1}
-                      aria-required
-                      {...form.register(`lines.${index}.quantity` as const)}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>
-                      {t('invoice.form.unitPriceHt')}
-                      <RequiredFieldMark />
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      aria-required
-                      {...form.register(`lines.${index}.unitPrice` as const)}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>
-                      {t('invoice.form.vatPercent')}
-                      <RequiredFieldMark />
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min={0}
-                      max={100}
-                      aria-required
-                      {...form.register(`lines.${index}.vatPercent`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                  </div>
-                  <div className="flex items-end sm:col-span-2">
-                    {fields.length > 1 ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => remove(index)}
-                      >
-                        {t('invoice.form.removeLine')}
-                      </Button>
-                    ) : null}
-                  </div>
+                  {loadingRpForSubmit
+                    ? t('invoice.form.submitPreparingWorldId')
+                    : stepSubmitting || isWritePending
+                      ? t('invoice.form.submitTransaction')
+                      : t('invoice.form.tabValidate')}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const idx = TAB_ORDER.indexOf(
+                      activeTab as (typeof TAB_ORDER)[number],
+                    );
+                    if (idx < TAB_ORDER.length - 1)
+                      setActiveTab(TAB_ORDER[idx + 1]);
+                  }}
+                >
+                  {t('invoice.form.tabNext')}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Right panel: invoice preview (60% ≥ lg) ── */}
+          <div className="hidden min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl bg-muted/20 lg:flex lg:flex-[3]">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 lg:p-3">
+              <div className="flex min-h-full w-full items-start justify-center">
+                <div className="w-full">
+                  <InvoicePreviewDocument
+                    values={debouncedPreview}
+                    previewRef={previewRef}
+                    emitterWorldIdNullifier={previewWorldIdNullifier}
+                  />
                 </div>
-              ))}
+              </div>
             </div>
-          </section>
-
-          <section className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>
-                {t('invoice.form.currency')}
-                <RequiredFieldMark />
-              </Label>
-              <Select
-                value={form.watch('currency')}
-                onValueChange={(v) =>
-                  form.setValue('currency', v as InvoiceFormValues['currency'])
-                }
-              >
-                <SelectTrigger aria-required>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USDC">USDC</SelectItem>
-                  <SelectItem value="EURC">EURC</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invoiceNumber">
-                {t('invoice.form.invoiceNumber')}
-                <RequiredFieldMark />
-              </Label>
-              <Input
-                id="invoiceNumber"
-                aria-required
-                placeholder={t('invoice.form.invoiceNumberPlaceholder')}
-                readOnly={nextInvoiceFromChainLoading}
-                aria-busy={nextInvoiceFromChainLoading}
-                {...form.register('invoiceNumber')}
-              />
-              {nextInvoiceFromChainLoading ? (
-                <p className="text-xs text-muted-foreground">
-                  {t('invoice.form.invoiceNumberLoading')}
-                </p>
-              ) : null}
-              {registryDeployed &&
-              nextIdArgs &&
-              !nextInvoiceFromChainLoading &&
-              isNextInvoiceIdError ? (
-                <p className="text-xs text-amber-600 dark:text-amber-500">
-                  {t('invoice.form.invoiceNumberChainError')}
-                </p>
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="issueDate">
-                {t('invoice.form.issueDate')}
-                <RequiredFieldMark />
-              </Label>
-              <Input
-                id="issueDate"
-                type="date"
-                aria-required
-                {...form.register('issueDate')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">
-                {t('invoice.form.dueDate')}
-                <RequiredFieldMark />
-              </Label>
-              <Input
-                id="dueDate"
-                type="date"
-                aria-required
-                {...form.register('dueDate')}
-              />
-            </div>
-          </section>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">{t('invoice.form.notes')}</Label>
-            <Textarea id="notes" rows={3} {...form.register('notes')} />
           </div>
-
-          <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
-            <p className="font-medium">{t('invoice.form.summary')}</p>
-            <p className="mt-2 text-muted-foreground">
-              {t('invoice.form.summaryLine', {
-                ht: totals.totalHt.toFixed(2),
-                vat: totals.tvaAmount.toFixed(2),
-                ttc: totals.totalTtc.toFixed(2),
-              })}
-            </p>
-          </div>
-        </div>
-
-        <div className="min-w-0 w-full lg:sticky lg:top-24 lg:self-start lg:col-start-2 lg:row-start-1 lg:row-span-2">
-          <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">
-            {t('invoice.form.previewLabel')}
-          </p>
-          <InvoicePreviewDocument
-            values={debouncedPreview}
-            previewRef={previewRef}
-            emitterWorldIdNullifier={previewWorldIdNullifier}
-          />
-        </div>
-
-        <div className="min-w-0 lg:col-start-1 lg:row-start-2">
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full sm:w-auto"
-            disabled={
-              stepSubmitting ||
-              isWritePending ||
-              loadingRpForSubmit ||
-              !isConnected ||
-              (address !== undefined && emitterVerified === undefined) ||
-              nextInvoiceFromChainLoading
-            }
-          >
-            {loadingRpForSubmit
-              ? t('invoice.form.submitPreparingWorldId')
-              : stepSubmitting || isWritePending
-                ? t('invoice.form.submitTransaction')
-                : t('invoice.form.submitGenerate')}
-          </Button>
-        </div>
-      </form>
+        </form>
+      </div>
 
       {rpContext && address ? (
         <IDKitRequestWidget

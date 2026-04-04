@@ -1,4 +1,3 @@
-import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { parseRegisterWithWorldIdArgs } from '@/lib/worldid-register-args';
 import type { IDKitResult } from '@worldcoin/idkit';
@@ -8,7 +7,7 @@ import type { UseWriteContractReturnType } from 'wagmi';
 type SwitchChainAsync = (args: { chainId: number }) => Promise<unknown>;
 
 /**
- * Passe sur Arc, envoie `registerWithWorldId`, attend le receipt.
+ * Switch to the registry chain, send `registerWithWorldId`, wait for receipt.
  */
 export async function registerEmitterOnChain(
   result: IDKitResult,
@@ -16,9 +15,10 @@ export async function registerEmitterOnChain(
     switchChainAsync: SwitchChainAsync;
     writeContractAsync: UseWriteContractReturnType['writeContractAsync'];
     publicClientArc: PublicClient | null | undefined;
+    registryChainId: number;
   },
 ): Promise<void> {
-  await switchWalletToArcTestnet(deps.switchChainAsync);
+  await deps.switchChainAsync({ chainId: deps.registryChainId });
   const args = parseRegisterWithWorldIdArgs(result);
   const hash = await deps.writeContractAsync({
     address: invoiceRegistryContract.address,
@@ -39,8 +39,7 @@ export async function registerEmitterOnChain(
         bigint,
       ],
     ],
-    chainId: arcTestnet.id,
-    chain: arcTestnet,
+    chainId: deps.registryChainId,
   });
   await deps.publicClientArc!.waitForTransactionReceipt({ hash });
 }

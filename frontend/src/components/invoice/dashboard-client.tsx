@@ -4,7 +4,7 @@ import { DashboardHomeView } from '@/components/invoice/dashboard-home';
 import { DashboardInvoiceList } from '@/components/invoice/dashboard-invoice-list';
 import { RegisterEmitterWidget } from '@/components/invoice/register-emitter-widget';
 import { Button } from '@/components/ui/button';
-import { arcTestnet, switchWalletToArcTestnet } from '@/lib/arc-chain';
+import { arcTestnet } from '@/lib/arc-chain';
 import { invoiceRegistryContract } from '@/lib/contract';
 import { exportInvoicesCSV } from '@/lib/invoice-csv';
 import { readInvoice } from '@/lib/invoice-contract';
@@ -40,12 +40,14 @@ export function DashboardClient({
   const router = useRouter();
   const { authReady, isVerified } = useWorldID();
   const { address, isConnected } = useAccount();
-  const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
+  const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
+  const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync, isPending: isCancelPending } = useWriteContract();
 
   const { data: emitterVerified, refetch: refetchEmitterVerified } =
     useReadContract({
+      chainId: registryChainId,
       address: invoiceRegistryContract.address,
       abi: invoiceRegistryContract.abi,
       functionName: 'isEmitterVerified',
@@ -100,7 +102,7 @@ export function DashboardClient({
   const onCancel = async (invoiceId: bigint) => {
     if (!address) return;
     try {
-      await switchWalletToArcTestnet(switchChainAsync);
+      await switchChainAsync({ chainId: registryChainId });
     } catch {
       toast.error(t('invoice.toast.arcNetworkRequired'));
       return;
@@ -111,8 +113,7 @@ export function DashboardClient({
         abi: invoiceRegistryContract.abi,
         functionName: 'cancelInvoice',
         args: [invoiceId],
-        chainId: arcTestnet.id,
-        chain: arcTestnet,
+        chainId: registryChainId,
       });
       toast.success(t('invoice.toast.cancelSent'));
       await load();
@@ -135,7 +136,7 @@ export function DashboardClient({
   if (!authReady) {
     return (
       <div
-        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30"
+        className="min-h-[40vh] animate-pulse rounded-xl bg-muted/30 p-4"
         aria-busy
         aria-label={t('invoice.dashboard.loadingSessionAria')}
       />
@@ -144,7 +145,7 @@ export function DashboardClient({
 
   if (!isVerified) {
     return (
-      <p className="text-center text-muted-foreground">
+      <p className="p-4 text-center text-muted-foreground">
         <Link href="/" className="text-primary underline">
           {t('invoice.dashboard.connectWorldIdLink')}
         </Link>
@@ -169,7 +170,7 @@ export function DashboardClient({
 
   if (variant === 'invoices') {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 p-4">
         {!isConnected ? (
           <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
             {t('invoice.dashboard.connectWalletHint')}
@@ -195,28 +196,30 @@ export function DashboardClient({
   }
 
   return (
-    <DashboardHomeView
-      rows={rows}
-      loading={loading}
-      alertsSlot={
-        <>
-          {!isConnected ? (
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-              {t('invoice.dashboard.connectWalletHint')}
-            </p>
-          ) : null}
-          {isConnected && emitterVerified === false ? (
-            <RegisterEmitterWidget
-              onRegistered={() => void refetchEmitterVerified()}
-            />
-          ) : null}
-        </>
-      }
-      onExportAllCsv={() => exportInvoicesCSV(rows)}
-      exportDisabled={rows.length === 0}
-      onCancel={(invoiceId) => void onCancel(invoiceId)}
-      onExportPdf={exportPdf}
-      isCancelPending={isCancelPending}
-    />
+    <div className="p-4">
+      <DashboardHomeView
+        rows={rows}
+        loading={loading}
+        alertsSlot={
+          <>
+            {!isConnected ? (
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+                {t('invoice.dashboard.connectWalletHint')}
+              </p>
+            ) : null}
+            {isConnected && emitterVerified === false ? (
+              <RegisterEmitterWidget
+                onRegistered={() => void refetchEmitterVerified()}
+              />
+            ) : null}
+          </>
+        }
+        onExportAllCsv={() => exportInvoicesCSV(rows)}
+        exportDisabled={rows.length === 0}
+        onCancel={(invoiceId) => void onCancel(invoiceId)}
+        onExportPdf={exportPdf}
+        isCancelPending={isCancelPending}
+      />
+    </div>
   );
 }

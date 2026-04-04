@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { arcTestnet } from '@/lib/arc-chain';
+import { invoiceRegistryContract } from '@/lib/contract';
 import { registerEmitterOnChain } from '@/lib/register-emitter-onchain';
 import { fetchRpContext, verifyProof, WORLD_ID_CONFIG } from '@/lib/worldid';
 import type { IDKitResult, RpContext } from '@worldcoin/idkit';
@@ -30,8 +31,8 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
   const { t } = useTranslation('common');
   const { address, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
-  /** Client Arc pour le receipt même si le wallet était sur un autre réseau au montage. */
-  const publicClientArc = usePublicClient({ chainId: arcTestnet.id });
+  const registryChainId = invoiceRegistryContract.chainId ?? arcTestnet.id;
+  const publicClientArc = usePublicClient({ chainId: registryChainId });
   const { writeContractAsync, isPending } = useWriteContract();
 
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
@@ -59,6 +60,7 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
           switchChainAsync,
           writeContractAsync,
           publicClientArc,
+          registryChainId,
         });
         toast.success(t('invoice.toast.registerSuccess'));
         setOpen(false);
@@ -75,6 +77,7 @@ export function RegisterEmitterWidget({ onRegistered }: Props) {
       address,
       onRegistered,
       publicClientArc,
+      registryChainId,
       switchChainAsync,
       t,
       writeContractAsync,
