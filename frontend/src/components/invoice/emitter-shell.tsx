@@ -2,7 +2,6 @@
 
 import { LanguageToggle } from '@/components/shared/language-toggle';
 import { OnvoLogo } from '@/components/shared/onvo-logo';
-import { OnvoLogoMark } from '@/components/shared/onvo-logo-mark';
 import { WalletButton } from '@/components/shared/wallet-button';
 import { Button } from '@/components/ui/button';
 import {
@@ -177,7 +176,7 @@ export function EmitterShell({ children }: { children: React.ReactNode }) {
     });
 
   const shellMainClass =
-    'flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full max-w-6xl mx-auto';
+    'flex min-w-0 flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full max-w-6xl mx-auto';
 
   if (!authReady || !isVerified) {
     return (

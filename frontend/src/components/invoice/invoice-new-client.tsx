@@ -543,8 +543,11 @@ export function InvoiceNewClient() {
 
   return (
     <>
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-        <form onSubmit={onSubmit} className="space-y-8">
+      <form
+        onSubmit={onSubmit}
+        className="grid w-full min-w-0 grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12"
+      >
+        <div className="min-w-0 space-y-8">
           <div>
             <p className="text-sm text-muted-foreground">
               {t('invoice.form.subtitle')}
@@ -972,7 +975,20 @@ export function InvoiceNewClient() {
               })}
             </p>
           </div>
+        </div>
 
+        <div className="min-w-0 w-full lg:sticky lg:top-24 lg:self-start lg:col-start-2 lg:row-start-1 lg:row-span-2">
+          <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">
+            {t('invoice.form.previewLabel')}
+          </p>
+          <InvoicePreviewDocument
+            values={debouncedPreview}
+            previewRef={previewRef}
+            emitterWorldIdNullifier={previewWorldIdNullifier}
+          />
+        </div>
+
+        <div className="min-w-0 lg:col-start-1 lg:row-start-2">
           <Button
             type="submit"
             size="lg"
@@ -992,19 +1008,8 @@ export function InvoiceNewClient() {
                 ? t('invoice.form.submitTransaction')
                 : t('invoice.form.submitGenerate')}
           </Button>
-        </form>
-
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">
-            {t('invoice.form.previewLabel')}
-          </p>
-          <InvoicePreviewDocument
-            values={debouncedPreview}
-            previewRef={previewRef}
-            emitterWorldIdNullifier={previewWorldIdNullifier}
-          />
         </div>
-      </div>
+      </form>
 
       {rpContext && address ? (
         <IDKitRequestWidget

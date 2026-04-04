@@ -57,7 +57,7 @@ export function InvoicePreviewDocument({
   return (
     <div
       ref={previewRef}
-      className="invoice-print-root rounded-xl border border-zinc-700 bg-zinc-950 p-8 text-zinc-100 shadow-inner"
+      className="invoice-print-root max-w-full min-w-0 rounded-xl border border-zinc-700 bg-zinc-950 p-4 text-zinc-100 shadow-inner sm:p-8"
       style={{ fontFamily: 'var(--font-sans), system-ui, sans-serif' }}
     >
       <div className="flex flex-col justify-between gap-6 border-b border-zinc-700 pb-6 sm:flex-row">
@@ -141,8 +141,8 @@ export function InvoicePreviewDocument({
         </div>
       </div>
 
-      <div className="mt-10 overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
+      <div className="mt-10 -mx-4 w-[calc(100%+2rem)] min-w-0 overflow-x-auto sm:mx-0 sm:w-full">
+        <table className="w-full min-w-[min(100%,640px)] border-collapse text-sm md:min-w-[640px]">
           <thead>
             <tr className="border-b border-zinc-700 text-left text-xs uppercase text-zinc-500">
               <th className="pb-3 pr-3 font-medium">
