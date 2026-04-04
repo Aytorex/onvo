@@ -309,7 +309,7 @@ export function WalletButton() {
 
   return (
     <Button
-      variant="secondary"
+      variant="default"
       size="sm"
       className="gap-1.5"
       disabled={isPending || !injected}
