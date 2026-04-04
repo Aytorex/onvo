@@ -16,7 +16,6 @@ import {
 import { cn } from '@/lib/utils';
 import {
   ArrowRight,
-  ArrowUpRight,
   CheckCircle2,
   CircleDollarSign,
   Clock,
@@ -270,7 +269,7 @@ export function DashboardHomeView({
               >
                 <Link href="/dashboard/invoices">
                   {t('invoice.dashboard.viewFullList')}
-                  <ArrowUpRight className="size-3.5" aria-hidden />
+                  <ArrowRight className="size-4" aria-hidden />
                 </Link>
               </Button>
             ) : null}
