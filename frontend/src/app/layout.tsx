@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { Inter as FontSans } from 'next/font/google';
-import '@/styles/globals.css';
-import { cn } from '@/lib/utils';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/contexts/theme-provider';
 import { I18nProvider } from '@/contexts/i18n-provider';
+import { ThemeProvider } from '@/contexts/theme-provider';
 import { Web3Provider } from '@/contexts/web3-provider';
+import { cn } from '@/lib/utils';
+import '@/styles/globals.css';
+import type { Metadata } from 'next';
+import { Inter as FontSans } from 'next/font/google';
+import { headers } from 'next/headers';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -36,8 +36,8 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
           enableSystem
+          defaultTheme="dark"
           disableTransitionOnChange
         >
           <I18nProvider>
