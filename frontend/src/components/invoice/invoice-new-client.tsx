@@ -48,7 +48,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { isAddress, parseUnits, zeroAddress } from 'viem';
+import { parseUnits, zeroAddress } from 'viem';
 import {
   useAccount,
   usePublicClient,
@@ -60,11 +60,19 @@ import {
 function defaultForm(): InvoiceFormValues {
   return {
     emitterName: '',
-    emitterAddress: '',
+    emitterStreet: '',
+    emitterStreetLine2: '',
+    emitterPostalCode: '',
+    emitterCity: '',
+    emitterCountry: '',
     emitterSiret: '',
     emitterEmail: '',
     clientName: '',
-    clientWallet: '',
+    clientStreet: '',
+    clientStreetLine2: '',
+    clientPostalCode: '',
+    clientCity: '',
+    clientCountry: '',
     clientEmail: '',
     lines: [
       {
@@ -191,12 +199,6 @@ export function InvoiceNewClient() {
   }, [watched]);
 
   useEffect(() => {
-    if (address) {
-      form.setValue('emitterAddress', address);
-    }
-  }, [address, form]);
-
-  useEffect(() => {
     if (!authReady) return;
     if (!isVerified) router.replace('/');
   }, [authReady, isVerified, router]);
@@ -217,8 +219,8 @@ export function InvoiceNewClient() {
 
   const createInvoiceFromVerifiedForm = useCallback(
     async (data: InvoiceFormValues) => {
-      if (!address || !isAddress(data.clientWallet)) {
-        toast.error(t('invoice.toast.walletAndClient'));
+      if (!address) {
+        toast.error(t('invoice.toast.walletIssuerRequired'));
         return;
       }
       try {
@@ -264,6 +266,9 @@ export function InvoiceNewClient() {
           args: [address, invYear, invMonth],
         });
 
+        // `recipient` must be non-zero on-chain ; payment still settles to the emitter.
+        const onChainRecipient = address;
+
         const hash = await writeContractAsync({
           address: invoiceRegistryContract.address,
           abi: invoiceRegistryContract.abi,
@@ -272,7 +277,7 @@ export function InvoiceNewClient() {
             nextInvoiceId,
             invoiceHash,
             address,
-            data.clientWallet as `0x${string}`,
+            onChainRecipient,
             amount,
             token,
             invYear,
@@ -298,11 +303,19 @@ export function InvoiceNewClient() {
           invoiceId: newId.toString(),
           invoiceNumber: data.invoiceNumber,
           emitterName: data.emitterName,
-          emitterAddress: data.emitterAddress,
+          emitterStreet: data.emitterStreet,
+          emitterStreetLine2: data.emitterStreetLine2,
+          emitterPostalCode: data.emitterPostalCode,
+          emitterCity: data.emitterCity,
+          emitterCountry: data.emitterCountry,
           emitterSiret: data.emitterSiret,
           emitterEmail: data.emitterEmail,
           clientName: data.clientName,
-          clientWallet: data.clientWallet,
+          clientStreet: data.clientStreet,
+          clientStreetLine2: data.clientStreetLine2,
+          clientPostalCode: data.clientPostalCode,
+          clientCity: data.clientCity,
+          clientCountry: data.clientCountry,
           clientEmail: data.clientEmail,
           lines: data.lines,
           subtotal: lineTotals.totalHt,
@@ -388,8 +401,8 @@ export function InvoiceNewClient() {
   );
 
   const onSubmit = form.handleSubmit(async (data) => {
-    if (!address || !isAddress(data.clientWallet)) {
-      toast.error(t('invoice.toast.walletAndClient'));
+    if (!address) {
+      toast.error(t('invoice.toast.walletIssuerRequired'));
       return;
     }
 
@@ -525,12 +538,69 @@ export function InvoiceNewClient() {
                 ) : null}
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="emitterAddress">
-                  {t('invoice.form.emitterAddress')}
+                <Label htmlFor="emitterStreet">
+                  {t('invoice.form.emitterStreet')}
                 </Label>
                 <Input
-                  id="emitterAddress"
-                  {...form.register('emitterAddress')}
+                  id="emitterStreet"
+                  placeholder={t('invoice.form.emitterStreetPlaceholder')}
+                  {...form.register('emitterStreet')}
+                />
+                {form.formState.errors.emitterStreet ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.emitterStreet.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="emitterStreetLine2">
+                  {t('invoice.form.emitterStreetLine2')}
+                </Label>
+                <Input
+                  id="emitterStreetLine2"
+                  placeholder={t('invoice.form.emitterStreetLine2Placeholder')}
+                  {...form.register('emitterStreetLine2')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emitterPostalCode">
+                  {t('invoice.form.emitterPostalCode')}
+                </Label>
+                <Input
+                  id="emitterPostalCode"
+                  autoComplete="postal-code"
+                  {...form.register('emitterPostalCode')}
+                />
+                {form.formState.errors.emitterPostalCode ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.emitterPostalCode.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emitterCity">
+                  {t('invoice.form.emitterCity')}
+                </Label>
+                <Input
+                  id="emitterCity"
+                  autoComplete="address-level2"
+                  {...form.register('emitterCity')}
+                />
+                {form.formState.errors.emitterCity ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.emitterCity.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="emitterCountry">
+                  {t('invoice.form.emitterCountry')}
+                </Label>
+                <Input
+                  id="emitterCountry"
+                  autoComplete="country-name"
+                  placeholder={t('invoice.form.emitterCountryPlaceholder')}
+                  {...form.register('emitterCountry')}
                 />
               </div>
               <div className="space-y-2">
@@ -558,30 +628,85 @@ export function InvoiceNewClient() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t('invoice.form.sectionClient')}
             </h2>
-            <div className="grid gap-4">
-              <div className="space-y-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="clientName">
                   {t('invoice.form.clientName')}
                 </Label>
                 <Input id="clientName" {...form.register('clientName')} />
+                {form.formState.errors.clientName ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.clientName.message}
+                  </p>
+                ) : null}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="clientWallet">
-                  {t('invoice.form.clientWallet')}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="clientStreet">
+                  {t('invoice.form.clientStreet')}
                 </Label>
                 <Input
-                  id="clientWallet"
-                  placeholder={t('invoice.form.walletPlaceholder')}
-                  className="font-mono text-sm"
-                  {...form.register('clientWallet')}
+                  id="clientStreet"
+                  placeholder={t('invoice.form.clientStreetPlaceholder')}
+                  {...form.register('clientStreet')}
                 />
-                {form.formState.errors.clientWallet ? (
+                {form.formState.errors.clientStreet ? (
                   <p className="text-xs text-destructive">
-                    {form.formState.errors.clientWallet.message}
+                    {form.formState.errors.clientStreet.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="clientStreetLine2">
+                  {t('invoice.form.clientStreetLine2')}
+                </Label>
+                <Input
+                  id="clientStreetLine2"
+                  placeholder={t('invoice.form.clientStreetLine2Placeholder')}
+                  {...form.register('clientStreetLine2')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientPostalCode">
+                  {t('invoice.form.clientPostalCode')}
+                </Label>
+                <Input
+                  id="clientPostalCode"
+                  autoComplete="postal-code"
+                  {...form.register('clientPostalCode')}
+                />
+                {form.formState.errors.clientPostalCode ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.clientPostalCode.message}
                   </p>
                 ) : null}
               </div>
               <div className="space-y-2">
+                <Label htmlFor="clientCity">
+                  {t('invoice.form.clientCity')}
+                </Label>
+                <Input
+                  id="clientCity"
+                  autoComplete="address-level2"
+                  {...form.register('clientCity')}
+                />
+                {form.formState.errors.clientCity ? (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.clientCity.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="clientCountry">
+                  {t('invoice.form.clientCountry')}
+                </Label>
+                <Input
+                  id="clientCountry"
+                  autoComplete="country-name"
+                  placeholder={t('invoice.form.clientCountryPlaceholder')}
+                  {...form.register('clientCountry')}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="clientEmail">
                   {t('invoice.form.clientEmailOptional')}
                 </Label>

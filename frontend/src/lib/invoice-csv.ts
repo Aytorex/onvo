@@ -1,6 +1,10 @@
 'use client';
 
 import i18n from '@/lib/i18n/client';
+import {
+  formatClientPhysicalAddressFromMeta,
+  formatEmitterPhysicalAddressFromMeta,
+} from '@/lib/invoice-address';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import type { InvoiceMetaRecord, InvoiceRowView } from '@/lib/invoice-types';
 
@@ -26,7 +30,9 @@ export function exportInvoicesCSV(rows: InvoiceRowView[]): void {
     'invoiceHash',
     'invoiceNumber',
     'emitterName',
+    'emitterAddress',
     'clientName',
+    'clientAddress',
     'totalTtc',
     'currency',
     'issueDate',
@@ -47,7 +53,9 @@ export function exportInvoicesCSV(rows: InvoiceRowView[]): void {
       r.invoiceHash,
       m?.invoiceNumber ?? '',
       m?.emitterName ?? '',
+      m != null ? formatEmitterPhysicalAddressFromMeta(m) : '',
       m?.clientName ?? '',
+      m != null ? formatClientPhysicalAddressFromMeta(m) : '',
       m != null ? String(m.totalTtc) : '',
       m?.currency ?? '',
       m?.issueDate ?? '',

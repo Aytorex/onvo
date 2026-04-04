@@ -2,6 +2,10 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  formatClientPhysicalAddressFromMeta,
+  formatEmitterPhysicalAddressFromMeta,
+} from '@/lib/invoice-address';
 import { readInvoice } from '@/lib/invoice-contract';
 import { formatOnvoInvoiceLabel } from '@/lib/invoice-id';
 import {
@@ -92,6 +96,12 @@ export function InvoiceDetailClient() {
   }
 
   const pdf = getInvoicePdfBase64(invoiceId);
+  const registeredOfficeText = meta
+    ? formatEmitterPhysicalAddressFromMeta(meta).trim()
+    : '';
+  const clientRegisteredOfficeText = meta
+    ? formatClientPhysicalAddressFromMeta(meta).trim()
+    : '';
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -155,6 +165,26 @@ export function InvoiceDetailClient() {
               </dt>
               <dd className="mt-1">{meta.clientName}</dd>
             </div>
+            {registeredOfficeText ? (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.registeredOffice')}
+                </dt>
+                <dd className="mt-1 whitespace-pre-line text-sm">
+                  {registeredOfficeText}
+                </dd>
+              </div>
+            ) : null}
+            {clientRegisteredOfficeText ? (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">
+                  {t('invoice.detail.clientRegisteredOffice')}
+                </dt>
+                <dd className="mt-1 whitespace-pre-line text-sm">
+                  {clientRegisteredOfficeText}
+                </dd>
+              </div>
+            ) : null}
           </>
         ) : null}
       </dl>

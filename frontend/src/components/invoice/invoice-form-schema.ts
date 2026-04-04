@@ -1,5 +1,4 @@
 import type { TFunction } from 'i18next';
-import { isAddress } from 'viem';
 import { z } from 'zod';
 
 export function createInvoiceFormSchema(t: TFunction<'common'>) {
@@ -24,18 +23,27 @@ export function createInvoiceFormSchema(t: TFunction<'common'>) {
 
   return z.object({
     emitterName: z.string().min(1, t('invoice.validation.emitterNameRequired')),
-    emitterAddress: z
+    emitterStreet: z
       .string()
-      .min(1, t('invoice.validation.emitterAddressRequired')),
+      .min(1, t('invoice.validation.emitterStreetRequired')),
+    emitterStreetLine2: z.string(),
+    emitterPostalCode: z
+      .string()
+      .min(1, t('invoice.validation.emitterPostalCodeRequired')),
+    emitterCity: z.string().min(1, t('invoice.validation.emitterCityRequired')),
+    emitterCountry: z.string(),
     emitterSiret: z.string(),
     emitterEmail: optionalEmail,
     clientName: z.string().min(1, t('invoice.validation.clientRequired')),
-    clientWallet: z
+    clientStreet: z
       .string()
-      .min(1, t('invoice.validation.walletRequired'))
-      .refine((v) => isAddress(v), {
-        message: t('invoice.validation.invalidEthAddress'),
-      }),
+      .min(1, t('invoice.validation.clientStreetRequired')),
+    clientStreetLine2: z.string(),
+    clientPostalCode: z
+      .string()
+      .min(1, t('invoice.validation.clientPostalCodeRequired')),
+    clientCity: z.string().min(1, t('invoice.validation.clientCityRequired')),
+    clientCountry: z.string(),
     clientEmail: optionalEmail,
     lines: z.array(lineSchema).min(1, t('invoice.validation.minOneLine')),
     invoiceNumber: z

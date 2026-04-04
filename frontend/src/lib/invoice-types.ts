@@ -13,11 +13,19 @@ export interface InvoiceLine {
 
 export interface InvoiceFormValues {
   emitterName: string;
-  emitterAddress: string;
+  emitterStreet: string;
+  emitterStreetLine2: string;
+  emitterPostalCode: string;
+  emitterCity: string;
+  emitterCountry: string;
   emitterSiret: string;
   emitterEmail: string;
   clientName: string;
-  clientWallet: string;
+  clientStreet: string;
+  clientStreetLine2: string;
+  clientPostalCode: string;
+  clientCity: string;
+  clientCountry: string;
   clientEmail: string;
   lines: InvoiceLine[];
   invoiceNumber: string;
@@ -31,11 +39,25 @@ export interface InvoiceMetaRecord {
   invoiceId: string;
   invoiceNumber: string;
   emitterName: string;
-  emitterAddress: string;
+  /** @deprecated Anciennes factures : une seule ligne d’adresse. */
+  emitterAddress?: string;
+  emitterStreet?: string;
+  emitterStreetLine2?: string;
+  emitterPostalCode?: string;
+  emitterCity?: string;
+  emitterCountry?: string;
   emitterSiret: string;
   emitterEmail: string;
   clientName: string;
-  clientWallet: string;
+  /** @deprecated Anciennes factures : adresse client sur une ligne. */
+  clientAddress?: string;
+  clientStreet?: string;
+  clientStreetLine2?: string;
+  clientPostalCode?: string;
+  clientCity?: string;
+  clientCountry?: string;
+  /** @deprecated Anciennes factures ; le contrat stocke un `recipient` (souvent = émetteur si non saisi). */
+  clientWallet?: string;
   clientEmail: string;
   lines: InvoiceLine[];
   subtotal: number;

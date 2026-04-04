@@ -6,6 +6,10 @@ import {
   computeLineVatAmount,
   computeTotalsFromLines,
 } from '@/lib/invoice-calculations';
+import {
+  formatClientPhysicalAddress,
+  formatEmitterPhysicalAddress,
+} from '@/lib/invoice-address';
 import type { InvoiceFormValues } from '@/lib/invoice-types';
 import { enUS, fr } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -86,7 +90,9 @@ export function InvoicePreviewDocument({
             {t('invoice.preview.emitter')}
           </p>
           <p className="mt-1 font-medium text-white">{values.emitterName}</p>
-          <p className="text-sm text-zinc-400">{values.emitterAddress}</p>
+          <p className="whitespace-pre-line text-sm text-zinc-400">
+            {formatEmitterPhysicalAddress(values)}
+          </p>
           {values.emitterSiret ? (
             <p className="text-sm text-zinc-500">
               {t('invoice.preview.siretPrefix')} {values.emitterSiret}
@@ -101,8 +107,8 @@ export function InvoicePreviewDocument({
             {t('invoice.preview.client')}
           </p>
           <p className="mt-1 font-medium text-white">{values.clientName}</p>
-          <p className="break-all font-mono text-sm text-zinc-400">
-            {values.clientWallet}
+          <p className="whitespace-pre-line text-sm text-zinc-400">
+            {formatClientPhysicalAddress(values)}
           </p>
           {values.clientEmail ? (
             <p className="text-sm text-zinc-500">{values.clientEmail}</p>
