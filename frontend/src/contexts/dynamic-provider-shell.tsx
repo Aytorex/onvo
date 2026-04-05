@@ -6,7 +6,13 @@ import {
   DynamicContextProvider,
 } from '@dynamic-labs/sdk-react-core';
 import { DynamicWagmiConnector } from '@dynamic-labs/wagmi-connector';
-import { type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   DynamicBridgeContext,
   type DynamicBridge,

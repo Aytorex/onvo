@@ -11,8 +11,7 @@ const queryClient = new QueryClient();
 const DYNAMIC_ENV_ID = process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID ?? '';
 
 const DynamicProviderShell = dynamic(
-  () =>
-    import('./dynamic-provider-shell').then((m) => m.DynamicProviderShell),
+  () => import('./dynamic-provider-shell').then((m) => m.DynamicProviderShell),
   { ssr: false },
 );
 

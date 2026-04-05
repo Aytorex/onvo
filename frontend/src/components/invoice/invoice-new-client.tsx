@@ -294,13 +294,40 @@ export function InvoiceNewClient() {
     return { dueFormatted, amountStr, mailtoHref };
   }, [successContext, i18n.language, t]);
 
+  /** Always show a pay URL on the success screen (derive from id if context is incomplete). */
+  const resolvedPaymentUrl = useMemo(() => {
+    if (!successContext || successId === null) return '';
+    const trimmed = successContext.paymentUrl?.trim();
+    if (trimmed) return trimmed;
+    if (typeof window === 'undefined') return '';
+    return `${window.location.origin}/pay/${invoiceIdToUrlSegment(successId)}`;
+  }, [successContext, successId]);
+
   const copyPaymentLink = useCallback(() => {
-    if (!successContext?.paymentUrl) return;
-    void navigator.clipboard.writeText(successContext.paymentUrl).then(
+    if (!resolvedPaymentUrl) return;
+    void navigator.clipboard.writeText(resolvedPaymentUrl).then(
       () => toast.success(t('invoice.form.copyPaymentLinkSuccess')),
       () => toast.error(t('invoice.form.copyPaymentLinkError')),
     );
-  }, [successContext, t]);
+  }, [resolvedPaymentUrl, t]);
+
+  const showDevInvoiceSavedPreview = useCallback(() => {
+    const mockId = 42n;
+    const label = formatOnvoInvoiceLabel(mockId);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    setSuccessContext({
+      paymentUrl: `${origin}/pay/${invoiceIdToUrlSegment(mockId)}`,
+      clientEmail: 'client@example.com',
+      clientName: 'Client Demo',
+      emitterName: 'Emitter Demo',
+      invoiceLabel: label,
+      totalTtc: 1299.99,
+      currency: 'EURC',
+      dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    });
+    setSuccessId(mockId);
+    toast.message('Dev: Invoice saved preview');
+  }, []);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -778,25 +805,31 @@ export function InvoiceNewClient() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
+            <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 shadow-inner backdrop-blur-sm">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('invoice.form.paymentLinkCaption')}
               </p>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-                <div className="min-h-[3rem] flex-1 rounded-xl border border-border/80 bg-background/90 px-3 py-2.5 font-mono text-xs leading-relaxed text-muted-foreground shadow-inner sm:text-sm">
-                  <span className="break-all text-foreground/90">
-                    {successContext.paymentUrl}
+              <div className="mt-3 flex min-h-12 overflow-hidden rounded-xl border border-border/60 bg-background/80 shadow-inner">
+                <div className="flex min-w-0 flex-1 items-center overflow-hidden px-3 py-2.5 font-mono text-xs text-foreground/90 sm:text-sm">
+                  <span
+                    className="min-w-0 flex-1 truncate"
+                    title={resolvedPaymentUrl}
+                  >
+                    {resolvedPaymentUrl}
                   </span>
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="h-auto shrink-0 gap-2 rounded-xl border-onvo-purple/30 py-2.5 hover:bg-onvo-purple/5"
+                  variant="ghost"
+                  className="h-auto min-h-12 shrink-0 gap-2 rounded-none border-l border-border/60 px-4 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   onClick={copyPaymentLink}
+                  disabled={!resolvedPaymentUrl}
                   aria-label={t('invoice.form.copyPaymentLinkAria')}
                 >
-                  <Copy className="h-4 w-4 shrink-0 text-onvo-purple" />
-                  {t('invoice.form.copyPaymentLink')}
+                  <Copy className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="hidden sm:inline">
+                    {t('invoice.form.copyPaymentLink')}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -824,14 +857,14 @@ export function InvoiceNewClient() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-12 w-full gap-2 rounded-full border-onvo-purple/35 bg-card/60 hover:bg-onvo-purple/5"
+                className="h-12 w-full gap-2 rounded-full border-border/80 bg-transparent font-normal text-muted-foreground shadow-none hover:bg-muted/40 hover:text-foreground"
                 asChild
               >
                 <a
                   href={mailtoHref}
                   aria-label={t('invoice.form.sendEmailClientAria')}
                 >
-                  <Mail className="h-4 w-4 shrink-0 text-onvo-purple" />
+                  <Mail className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   {t('invoice.form.sendEmailClient')}
                 </a>
               </Button>
@@ -1358,15 +1391,26 @@ export function InvoiceNewClient() {
                   </span>
                   <div className="flex shrink-0 items-center gap-2">
                     {IS_DEV ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
-                        onClick={fillDevData}
-                      >
-                        Dev: Autofill
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
+                          onClick={fillDevData}
+                        >
+                          Dev: Autofill
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
+                          onClick={showDevInvoiceSavedPreview}
+                        >
+                          Dev: Invoice saved
+                        </Button>
+                      </>
                     ) : null}
                     {stepIndex === INVOICE_TAB_LAST ? (
                       <Button
