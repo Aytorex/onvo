@@ -294,40 +294,13 @@ export function InvoiceNewClient() {
     return { dueFormatted, amountStr, mailtoHref };
   }, [successContext, i18n.language, t]);
 
-  /** Always show a pay URL on the success screen (derive from id if context is incomplete). */
-  const resolvedPaymentUrl = useMemo(() => {
-    if (!successContext || successId === null) return '';
-    const trimmed = successContext.paymentUrl?.trim();
-    if (trimmed) return trimmed;
-    if (typeof window === 'undefined') return '';
-    return `${window.location.origin}/pay/${invoiceIdToUrlSegment(successId)}`;
-  }, [successContext, successId]);
-
   const copyPaymentLink = useCallback(() => {
-    if (!resolvedPaymentUrl) return;
-    void navigator.clipboard.writeText(resolvedPaymentUrl).then(
+    if (!successContext?.paymentUrl) return;
+    void navigator.clipboard.writeText(successContext.paymentUrl).then(
       () => toast.success(t('invoice.form.copyPaymentLinkSuccess')),
       () => toast.error(t('invoice.form.copyPaymentLinkError')),
     );
-  }, [resolvedPaymentUrl, t]);
-
-  const showDevInvoiceSavedPreview = useCallback(() => {
-    const mockId = 42n;
-    const label = formatOnvoInvoiceLabel(mockId);
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    setSuccessContext({
-      paymentUrl: `${origin}/pay/${invoiceIdToUrlSegment(mockId)}`,
-      clientEmail: 'client@example.com',
-      clientName: 'Client Demo',
-      emitterName: 'Emitter Demo',
-      invoiceLabel: label,
-      totalTtc: 1299.99,
-      currency: 'EURC',
-      dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
-    });
-    setSuccessId(mockId);
-    toast.message('Dev: Invoice saved preview');
-  }, []);
+  }, [successContext, t]);
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -813,9 +786,9 @@ export function InvoiceNewClient() {
                 <div className="flex min-w-0 flex-1 items-center overflow-hidden px-3 py-2.5 font-mono text-xs text-foreground/90 sm:text-sm">
                   <span
                     className="min-w-0 flex-1 truncate"
-                    title={resolvedPaymentUrl}
+                    title={successContext.paymentUrl}
                   >
-                    {resolvedPaymentUrl}
+                    {successContext.paymentUrl}
                   </span>
                 </div>
                 <Button
@@ -823,7 +796,6 @@ export function InvoiceNewClient() {
                   variant="ghost"
                   className="h-auto min-h-12 shrink-0 gap-2 rounded-none border-l border-border/60 px-4 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   onClick={copyPaymentLink}
-                  disabled={!resolvedPaymentUrl}
                   aria-label={t('invoice.form.copyPaymentLinkAria')}
                 >
                   <Copy className="h-4 w-4 shrink-0" aria-hidden />
@@ -1391,26 +1363,15 @@ export function InvoiceNewClient() {
                   </span>
                   <div className="flex shrink-0 items-center gap-2">
                     {IS_DEV ? (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
-                          onClick={fillDevData}
-                        >
-                          Dev: Autofill
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
-                          onClick={showDevInvoiceSavedPreview}
-                        >
-                          Dev: Invoice saved
-                        </Button>
-                      </>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs text-amber-600 border-amber-500/40 hover:bg-amber-500/10 dark:text-amber-400"
+                        onClick={fillDevData}
+                      >
+                        Dev: Autofill
+                      </Button>
                     ) : null}
                     {stepIndex === INVOICE_TAB_LAST ? (
                       <Button
